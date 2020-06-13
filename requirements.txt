@@ -16,3 +16,4 @@ python-ffmpeg
 mutagen
 hachoir
 sanic
+instaloader
