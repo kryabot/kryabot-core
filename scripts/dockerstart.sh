@@ -19,6 +19,7 @@ monitor_script(){
 	if [ $PROC_STATUS -ne 0 ]; then
 		echo "Failed to detect process for script $name ($PROC_STATUS), restarting $name..."
 		start_script $name
+	fi
 }
 
 start_script info_bot.sh
