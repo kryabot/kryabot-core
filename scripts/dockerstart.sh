@@ -14,7 +14,7 @@ start_script(){
 
 monitor_script(){
 	name=$1
-	ps aux |grep &1 |grep -q -v grep
+	ps aux |grep $1 |grep -q -v grep
 	PROC_STATUS=$?
 	if [ $PROC_STATUS -ne 0 ]; then
 		echo "Failed to detect process for script $name ($PROC_STATUS), restarting $name..."
