@@ -1,0 +1,4 @@
+*.pyc
+/kryabot/log/*.log
+__pycache__
+/kryabot/.idea

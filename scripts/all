@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+echo $1 ' all'
+$WORK_DIR/scripts/twitch_bot.sh $1
+$WORK_DIR/scripts/guard_bot.sh $1
+echo 'finished.'
