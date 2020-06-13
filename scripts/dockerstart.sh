@@ -27,7 +27,8 @@ start_script twitch_bot.sh
 start_script guard_bot.sh
 
 while sleep 60; do
-	monitor_script twitch_bot.sh
-	monitor_script guard_bot.sh
-	monitor_script info_bot.sh
+	sleep 60
+	#monitor_script twitch_bot.sh
+	#monitor_script guard_bot.sh
+	#monitor_script info_bot.sh
 done

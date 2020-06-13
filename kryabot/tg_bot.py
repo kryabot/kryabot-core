@@ -24,7 +24,7 @@ async def main():
         except Exception as ex:
             logger.exception(ex)
             logger.error('Main loop container failed, restarting in 10 seconds')
-            asyncio.sleep(10)
+            await asyncio.sleep(10)
             continue
 
 loop = asyncio.get_event_loop()
