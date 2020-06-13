@@ -16,7 +16,7 @@ from twitchio.ext.commands import CommandNotFound
 from utils import redis_key
 import asyncio
 import logging
-from utils.array import get_first
+from utils.array import get_first, split_array_into_parts
 from utils.json_parser import json_to_dict
 import queue
 
@@ -39,7 +39,7 @@ class Bot(commands.Bot):
         self.rate_list = []
         self.last_webhook_resubscribe = None
         self.webhook_queue = queue.Queue()
-        self.webhook_queue_reader_started = False
+        #self.webhook_queue_reader_started = False
         self.problems_to_report = []
 
         self.bot_ep = EventProcessor(self.is_silent, self.logger)
@@ -85,6 +85,21 @@ class Bot(commands.Bot):
         self.bot_in_update = False
 
     async def bot_auto_join(self):
+        id_list = []
+        for ch in self.bot_auto_join_channels:
+            id_list.append(ch['tw_id'])
+
+        split_id_list = split_array_into_parts(id_list, 50)
+
+        stream_datas = []
+        for ids in split_id_list:
+            self.logger.info('Requesting stream info for these IDs: {}'.format(ids))
+            data = await self.bot_api_helper.twitch.get_stream_info_by_ids(ids)
+            for info in data['data']:
+                stream_datas.append(info)
+
+        self.logger.info('Total live stream data size: {}'.format(len(stream_datas)))
+
         # Join channels and set stream info
         for ch in self.bot_auto_join_channels:
             try:
@@ -95,15 +110,12 @@ class Bot(commands.Bot):
                         break
 
                 await self.join_channels([new_channel.channel_name])
-                flow_data = await self.db.get_stream_flows(new_channel.tw_id)
-                self.logger.info(flow_data)
-                if len(flow_data) > 0:
-                    flow_data = flow_data[-1]['data']
-                else:
-                    flow_data = []
-                    
-                self.logger.info('updating status')
-                await new_channel.update_status(flow_data, notify=False, db=self.db)
+                for stream_info in stream_datas:
+                    if int(stream_info['user_id']) == int(new_channel.tw_id):
+                        self.logger.info('Updating live status for {}'.format(new_channel.channel_name))
+                        new_channel.is_live = True
+                        new_channel.stream_started = stream_info['started_at']
+
                 await self.update_channel_cache(new_channel)
 
                 self.logger.info('Auto join to channel {chname} successful'.format(chname=new_channel.channel_name))
@@ -145,15 +157,16 @@ class Bot(commands.Bot):
     async def redis_subscribe(self):
         await self.db.redis.subscribe_event(redis_key.get_token_update_topic(), self.main_token_update)
         await self.db.redis.subscribe_event(redis_key.get_sync_topic(), self.sync_event)
+        await self.db.redis.subscribe_event(redis_key.get_streams_forward_data(), self.on_stream_change)
 
     # Events don't need decorators when subclassed
     async def event_ready(self):
         await self.bot_data_update_all()
         self.loop.create_task(self.timed_task_processor())
-        self.loop.create_task(self.webhook_queue_reader())
+        #self.loop.create_task(self.webhook_queue_reader())
 
         await self.resubstribe_pubsub()
-        await self.resubscribe_webhooks()
+        #await self.resubscribe_webhooks()
 
         self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
 
@@ -167,24 +180,24 @@ class Bot(commands.Bot):
                 self.logger.info('Resubscribing pubsub redepntions for channel {} {}'.format(auth['tw_id'], auth['token']))
                 await self.pubsub_subscribe(auth['token'], 'channel-points-channel-v1.{}'.format(auth['tw_id']))
 
-    async def resubscribe_webhooks(self):
-        # Auto-refresh stream webbooks each 7 days.
-        if not self.last_webhook_resubscribe is None and self.last_webhook_resubscribe > datetime.now() - timedelta(days=7):
-            return
-
-        self.last_webhook_resubscribe = datetime.now()
-        self.logger.info('>>> Subscribing webhook stream events')
-        for ch in self.custom_working_channels:
-            if ch.tw_id == 0:
-                continue
-
-            await asyncio.sleep(1)
-            self.logger.info('> ' + ch.channel_name)
-            # Json error is returned as no json actually is returned
-            try:
-                await self.bot_ep.twitch_api.webhook_subscribe_stream(user_id=ch.tw_id, channel_name=ch.channel_name)
-            except Exception as e:
-                pass
+    # async def resubscribe_webhooks(self):
+    #     # Auto-refresh stream webbooks each 7 days.
+    #     if not self.last_webhook_resubscribe is None and self.last_webhook_resubscribe > datetime.now() - timedelta(days=7):
+    #         return
+    #
+    #     self.last_webhook_resubscribe = datetime.now()
+    #     self.logger.info('>>> Subscribing webhook stream events')
+    #     for ch in self.custom_working_channels:
+    #         if ch.tw_id == 0:
+    #             continue
+    #
+    #         await asyncio.sleep(1)
+    #         self.logger.info('> ' + ch.channel_name)
+    #         # Json error is returned as no json actually is returned
+    #         try:
+    #             await self.bot_ep.twitch_api.webhook_subscribe_stream(user_id=ch.tw_id, channel_name=ch.channel_name)
+    #         except Exception as e:
+    #             pass
 
     async def update_channel_chat_activity_time(self, name):
         for ch in self.custom_working_channels:
@@ -535,54 +548,54 @@ class Bot(commands.Bot):
         task = {'channel_name': channel_name, 'topic': topic, 'data': data['data']}
         self.webhook_queue.put(task)
 
-    async def process_webhook_stream(self, channel_name, data):
-        for ch in self.custom_working_channels:
-            if ch.channel_name.lower() == channel_name.lower():
-                try:
-                    answer = await ch.update_status(data, db=self.db)
-                    if answer is not None and len(answer) > 0:
-                        await self._ws.send_privmsg(ch.channel_name, answer)
-                except Exception as e:
-                    self.logger.error(e)
+    # async def process_webhook_stream(self, channel_name, data):
+    #     for ch in self.custom_working_channels:
+    #         if ch.channel_name.lower() == channel_name.lower():
+    #             try:
+    #                 answer = await ch.update_status(data, db=self.db)
+    #                 if answer is not None and len(answer) > 0:
+    #                     await self._ws.send_privmsg(ch.channel_name, answer)
+    #             except Exception as e:
+    #                 self.logger.error(e)
 
-    async def process_webhook_sub(self, channel_name, data):
-        try:
-            channel = await self.get_db_channel(channel_name)
-            data = data[0]
-            event_data = data['event_data']
+    # async def process_webhook_sub(self, channel_name, data):
+    #     try:
+    #         channel = await self.get_db_channel(channel_name)
+    #         data = data[0]
+    #         event_data = data['event_data']
+    #
+    #         user = await self.get_db_user_inputs(event_data['user_id'], event_data['user_name'])
+    #         if user is None:
+    #             self.logger.info('Failed to found user for received sub event. User id: {}'.format(event_data['user_id']))
+    #
+    #         await self.db.saveTwitchSubEvent(channel['channel_id'],
+    #                                          user['user_id'],
+    #                                          data['id'],
+    #                                          data['event_type'],
+    #                                          data['event_timestamp'],
+    #                                          event_data['is_gift'],
+    #                                          event_data['tier'],
+    #                                          event_data['message'])
+    #     except Exception as e:
+    #         self.logger.error(str(e))
 
-            user = await self.get_db_user_inputs(event_data['user_id'], event_data['user_name'])
-            if user is None:
-                self.logger.info('Failed to found user for received sub event. User id: {}'.format(event_data['user_id']))
-
-            await self.db.saveTwitchSubEvent(channel['channel_id'],
-                                             user['user_id'],
-                                             data['id'],
-                                             data['event_type'],
-                                             data['event_timestamp'],
-                                             event_data['is_gift'],
-                                             event_data['tier'],
-                                             event_data['message'])
-        except Exception as e:
-            self.logger.error(str(e))
-
-    async def webhook_queue_reader(self):
-        if self.webhook_queue_reader_started is True:
-            return
-
-        self.webhook_queue_reader_started = True
-        while True:
-            while self.webhook_queue.empty():
-                await asyncio.sleep(0.5)
-
-            task = self.webhook_queue.get()
-
-            if task['topic'] == 'streams':
-                await self.process_webhook_stream(task['channel_name'], task['data'])
-            if task['topic'] == 'subscriptions':
-                await self.process_webhook_sub(task['channel_name'], task['data'])
-
-            self.webhook_queue.task_done()
+    # async def webhook_queue_reader(self):
+    #     if self.webhook_queue_reader_started is True:
+    #         return
+    #
+    #     self.webhook_queue_reader_started = True
+    #     while True:
+    #         while self.webhook_queue.empty():
+    #             await asyncio.sleep(0.5)
+    #
+    #         task = self.webhook_queue.get()
+    #
+    #         if task['topic'] == 'streams':
+    #             await self.process_webhook_stream(task['channel_name'], task['data'])
+    #         if task['topic'] == 'subscriptions':
+    #             await self.process_webhook_sub(task['channel_name'], task['data'])
+    #
+    #         self.webhook_queue.task_done()
 
     async def task_save_badge_info(self, irc_data):
         try:
@@ -689,3 +702,15 @@ class Bot(commands.Bot):
             await self.bot_np.update(channel_id)
         if msg['topic'] == 'twitch_point_reward':
             await self.bot_pp.update(channel_id)
+
+    async def on_stream_change(self, data):
+        self.logger.info(data)
+
+        for ch in self.custom_working_channels:
+            if int(ch.channel_id) == int(data['channel_id']):
+                try:
+                    answer = await ch.update_status(data)
+                    if answer is not None and len(answer) > 0:
+                        await self._ws.send_privmsg(ch.channel_name, answer)
+                except Exception as e:
+                    self.logger.error(e)

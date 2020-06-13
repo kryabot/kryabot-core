@@ -34,6 +34,7 @@ class Twitch(Core):
         self.webhooks_url = 'https://api.twitch.tv/helix/webhooks/hub'
         self.remote_url = self.cfg.getKbApiConfig()['URL']
         self.remote_sub_endpoint = self.remote_url + self.cfg.getKbApiConfig()['CALLBACK_ENDPOINT_SUB']
+        self.remote_stream_endpoint = self.remote_url + self.cfg.getKbApiConfig()['CALLBACK_ENDPOINT_STREAM']
         self.redis = redis
         self.webhook_secret = 'supermegasecret'
 
@@ -111,10 +112,11 @@ class Twitch(Core):
         body = {
             'hub.mode': await self.get_mode(enable),
             'hub.topic': topic_url,
-            'hub.callback': self.callback_url + '?channel=' + channel_name + '&topic=' + topic,
+            'hub.callback': self.remote_stream_endpoint + '?channel=' + channel_name + '&topic=' + topic,
             'hub.lease_seconds': lease_seconds,
             'hub.secret': self.webhook_secret
         }
+
         return await self.make_post_request(url=self.webhooks_url, body=body, headers=headers)
 
     async def webhook_subscribe_stream(self, user_id, channel_name, enable=True):
@@ -194,7 +196,8 @@ class Twitch(Core):
 
         return await self.make_get_request(url)
 
-    async def get_stream_info_by_ids(self, twitch_user_ids, first=100, after=None, before=None):
+    @app_auth()
+    async def get_stream_info_by_ids(self, twitch_user_ids, first=50, after=None, before=None):
         url = '{base}streams'.format(base=self.helix_url)
 
         params = [('user_id', x) for x in twitch_user_ids]

@@ -31,4 +31,4 @@ EXPOSE 5000
 COPY scripts/dockerstart.sh /
 RUN chmod +x /dockerstart.sh
 
-CMD /dockerstart.sh && tail -f /dev/null
+CMD /dockerstart.sh

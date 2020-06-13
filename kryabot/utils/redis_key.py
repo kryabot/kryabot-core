@@ -98,9 +98,14 @@ def get_streams_data():
     return 'tg.streams.data'
 
 
+def get_streams_forward_data():
+    return 'tg.streamsforward.data'
+
+
 def get_twitch_app_token():
     return 'twitch.app.token'
 
 
 def get_twitch_game_info(id):
     return 'twitch.gameinfo.{}'.format(id)
+

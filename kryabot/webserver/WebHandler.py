@@ -39,7 +39,6 @@ class WebHandler:
         self.app.add_route(self.endpoint_tg_point_action_message, '/tg/actions/message', methods=['POST'])
 
         self.app.add_route(self.endpoint_twitch_unsubscribe_event, '/twitch/report_unsub', methods=['GET'])
-        self.app.add_route(self.endpoint_twitch_stream_notification, '/twitch/notification', methods=['POST'])
         self.app.add_route(self.endpoint_twitch_unlink, '/twitch/tg_unlink', methods=['POST'])
         self.app.add_route(self.endpoint_twitch_stream_update, 'twitch/stream_update', methods=['POST'])
 
@@ -179,19 +178,6 @@ class WebHandler:
             return self.response_bad_input()
 
         self.loop.create_task(self.guard_bot.twitch_event_unsubscribe(event_id))
-        return self.response_success()
-
-    @authorized()
-    async def endpoint_twitch_stream_notification(self, request: Request):
-        if request.json is None:
-            return self.response_bad_input()
-
-        twitch_id = get_value('channel_tw_id', request.json)
-        twitch_name = get_value('channel_name', request.json)
-        action = get_value('action', request.json)
-        twitch_data = get_value('data', request.json)
-
-        await self.guard_bot.handle_twitch_stream_notification(twitch_id, twitch_name, action, twitch_data)
         return self.response_success()
 
     @authorized()

@@ -99,4 +99,19 @@ class TwitchEvent(Event):
             self.game_name = resp['data'][0]['name']
 
     def export(self)->Dict:
-        return {}
+        return {"channel_id": self.profile.twitch_id,
+                "channel_name:": self.profile.twitch_name,
+                "channel_url": self.get_channel_url(),
+                "started_at": self.started_at,
+                "title": self.title,
+                "recovery": self.recovery,
+                "start": self.start,
+                "update": self.update,
+                "down": self.down,
+                "game_id": self.game_id,
+                "game_name": self.game_name,
+                "img_url": self.get_formatted_image_url(),
+                "type": self.type,
+                "event_id": self.twitch_event_id,
+                "online": self.online,
+                "updated_data": self.updated_data}

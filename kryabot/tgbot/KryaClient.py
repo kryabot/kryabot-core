@@ -78,6 +78,7 @@ class KryaClient(TelegramClient):
         self.loop.create_task(self.connection_activity())
         self.logger.info('Creating task_oauth_refresher')
         self.loop.create_task(self.task_oauth_refresher())
+        self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
 
         await self.start()
         self.me = await self.get_me()
@@ -91,6 +92,10 @@ class KryaClient(TelegramClient):
 
         self.logger.info('Updating command list')
         self.loop.create_task(update_command_list(self))
+
+    # List of subscribes executed during initialization
+    async def redis_subscribe(self):
+        await self.db.redis.subscribe_event(redis_key.get_streams_forward_data(), self.on_stream_update)
 
     async def init_moderation(self, channel_id=None):
         words = await self.db.getTgWords()
@@ -708,6 +713,7 @@ class KryaClient(TelegramClient):
                             'ID fix for {uname} failed: {err}'.format(uname=row[0]['name'], err=str(e)))
                         new_id = -1
 
+                    self.logger.info('Updating Twitch ID for user {} to {}'.format(row[0]['name'], new_id))
                     await self.db.updateUserTwitchId(row[0]['user_id'], new_id)
                 except Exception as e:
                     await self.exception_reporter(e, 'User maintenance failed (maintenance_fix_twitch_id)')
@@ -723,6 +729,7 @@ class KryaClient(TelegramClient):
 
                     try:
                         tw_user = await self.api.twitch.get_user_by_id(row[0]['tw_id'], skip_cache=True)
+                        self.logger.info('Updating Twitch name for user {} to {}'.format(row[0]['tw_id'], tw_user['users'][0]['name']))
                         await self.db.updateUserTwitchName(row[0]['user_id'], tw_user['users'][0]['name'], tw_user['users'][0]['display_name'], tw_user_id=row[0]['tw_id'])
                     except Exception as e:
                         await self.exception_reporter(e, 'Name fix for ID {uid} failed:'.format(uid=row[0]['tw_id']))
@@ -734,14 +741,7 @@ class KryaClient(TelegramClient):
             await asyncio.sleep(3600)
             await self.report_to_monitoring('/ping')
             await maintenance_fix_twitch_id()
-
-    @log_exception_ignore(log=global_logger, reporter=reporter)
-    async def send_stream_notice(self, channel, action, url, text):
-
-        if channel['on_stream'] < 1 or action != 'new':
-            return
-
-        await self.send_file(channel['tg_chat_id'], caption=text, parse_mode="html", file=url, allow_cache=False)
+            await maintenance_fix_twitch_name()
 
     @log_exception_ignore(log=global_logger, reporter=reporter)
     async def is_media_banned(self, channel_id, media_id, media_type):
@@ -895,31 +895,27 @@ class KryaClient(TelegramClient):
     async def message_from_twitch(self, from_user_id, channel_id, message)->bool:
         return True
 
-    async def handle_twitch_stream_notification(self, twitch_id, twitch_name, action, twitch_data):
-        await self.report_to_monitoring('[Notification][{ch}] {msg}'.format(ch=twitch_name, msg=action))
+    async def on_stream_update(self, data):
+        await self.report_to_monitoring('<pre>{}<pre>'.format(data))
 
+        twitch_id = data['channel_id']
+        twitch_name = data['channel_name']
         channel = None
         channels = await self.db.get_auth_subchats()
         for ch in channels:
-            if ch['tw_id'] == twitch_id:
+            if int(ch['tw_id']) == int(twitch_id):
                 channel = ch
 
         if channel is None:
             self.logger.info('Skip. User {} has no telegram group for notification'.format(twitch_name))
             return
 
-        if channel['on_stream'] < 1 or action != 'new':
+        if channel['on_stream'] < 1 or data['start'] != 1:
             return
 
-        try:
-            cn_name = twitch_data['user_name']
-        except:
-            cn_name = twitch_name
-
-        custom_url = twitch_data['thumbnail_url'].format(width=1280, height=720)
-        custom_url += '?id={tmp_id}'.format(tmp_id=twitch_data['id'])
-        twitchurl = '<a href="https://twitch.tv/{ch}">{ch}</a>'.format(ch=cn_name)
-        notification_text = self.translator.getLangTranslation(channel['bot_lang'], 'NOTIFICATION_START').format(twitchurl=twitchurl, ttl=twitch_data['title'])
+        custom_url = data['img_url']
+        twitchurl = '<a href="https://twitch.tv/{ch}">{ch}</a>'.format(ch=twitch_name)
+        notification_text = self.translator.getLangTranslation(channel['bot_lang'], 'NOTIFICATION_START').format(twitchurl=twitchurl, ttl=data['title'])
         nofitication_message = await self.send_file(channel['tg_chat_id'], caption=notification_text, parse_mode="html", file=custom_url, allow_cache=False)
 
         if channel['on_stream'] == 2:

@@ -6,8 +6,8 @@ from object.BotConfig import BotConfig
 import async_timeout
 import io
 
-class Core:
 
+class Core:
     def __init__(self, cfg=None):
         self.logger = logging.getLogger('krya.api')
         self.max_retries = 3
@@ -62,7 +62,7 @@ class Core:
                     if not await self.is_success(response):
                         continue
 
-                    return await response.json()
+                    return await response.json(content_type=None)
             self.logger.error('All retries failed for {url}'.format(url=url))
             return None
 
@@ -82,7 +82,7 @@ class Core:
                     if not await self.is_success(response):
                         continue
 
-                    return await response.json()
+                    return await response.json(content_type=None)
             self.logger.error('All retries failed for {url}'.format(url=url))
             return None
 

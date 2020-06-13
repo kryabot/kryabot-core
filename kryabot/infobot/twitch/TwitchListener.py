@@ -26,6 +26,7 @@ class TwitchListener(Listener):
 
         if self.last_subscribe is None or self.last_subscribe < datetime.now() - timedelta(days=7):
             await self.subscribe_all()
+            self.last_subscribe = datetime.now()
 
         while True:
             data = await self.manager.db.redis.get_one_from_list_parsed(redis_key.get_streams_data())
@@ -48,6 +49,7 @@ class TwitchListener(Listener):
             await self.subscribe_profile(profile)
 
     async def subscribe_profile(self, profile: TwitchProfile)->None:
+        self.logger.info('Refreshing stream webhook for {}'.format(profile.twitch_name))
         await self.api.webhook_subscribe_stream(profile.twitch_id, profile.twitch_name)
 
     async def update_data(self, start: bool = False):

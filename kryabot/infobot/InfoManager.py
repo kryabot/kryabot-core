@@ -64,14 +64,13 @@ class InfoManager:
     async def event(self, event: Event):
         self.logger.debug('Common event received')
 
+        targets = []
         for link in self.links:
             if link.link_table == event.profile.link_table and link.link_id == event.profile.profile_id:
-                await self.process_event(link.target, event)
+                targets.append(link.target)
 
-            # if link['link_table'] == event.profile.link_table.value and link['link_id'] == event.profile.profile_id:
-            #     for target in self.targets:
-            #         if link['infobot_id'] == target['infobot_id']:
-            #             await self.process_event(target, event)
+        if targets:
+            await self.process_event(targets, event)
 
     async def subscribe(self):
         await self.db.redis.subscribe_event('infobot.update', self.on_update)
@@ -89,8 +88,6 @@ class InfoManager:
                     l = TargetLink(link, t)
                     self.links.append(l)
 
-
-
     async def on_update(self, message):
         await self.update()
 
@@ -100,8 +97,8 @@ class InfoManager:
     async def on_exception(self, ex: Exception):
         self.logger.debug('Received exception')
 
-    async def process_event(self, target: Target, event):
-        if target.is_target_telegram():
-            self.loop.create_task(self.tg_bot.info_event(target, event))
-        else:
-            self.logger.info('Received unknown target data: {}'.format(target))
+    async def process_event(self, targets: List[Target], event):
+        tg_targets = [t for t in targets if t.is_target_telegram()]
+
+        if tg_targets:
+            self.loop.create_task(self.tg_bot.info_event(tg_targets, event))

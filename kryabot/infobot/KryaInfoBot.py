@@ -1,7 +1,7 @@
 import asyncio
 import os
 import logging
-from typing import Dict
+from typing import Dict, List
 
 from telethon.errors import ChannelPrivateError
 from telethon.extensions import html
@@ -17,6 +17,7 @@ from infobot.Target import Target
 from infobot.instagram.InstagramEvents import InstagramPostEvent, InstagramStoryEvent
 from infobot.twitch.TwitchEvents import TwitchEvent
 from object.Translator import Translator
+from utils import redis_key
 
 
 @events.register(events.NewMessage(pattern='/ping'))
@@ -169,19 +170,17 @@ class KryaInfoBot(TelegramClient):
         if wait:
             await self.run_until_disconnected()
 
-    async def info_event(self, target: Target, event: Event):
+    async def info_event(self, targets: List[Target], event: Event):
         if isinstance(event, InstagramPostEvent):
-            await self.instagram_post_event(target, event)
+            await self.instagram_post_event(targets, event)
         elif isinstance(event, InstagramStoryEvent):
-            await self.instagram_story_event(target, event)
+            await self.instagram_story_event(targets, event)
         elif isinstance(event, TwitchEvent):
-            await self.twitch_stream_event(target, event)
+            await self.twitch_stream_event(targets, event)
         else:
             raise ValueError('Received unsupported event type: ' + str(type(event)))
 
-    async def instagram_post_event(self, target: Target, event: InstagramPostEvent):
-        print(event.stringify())
-        #await self.send_message(entity=target['target_id'], message="New event: <pre>{}</pre>".format(event.stringify()), parse_mode='html')
+    async def instagram_post_event(self, targets: List[Target], event: InstagramPostEvent):
         await event.save(self.db)
         files = []
 
@@ -192,48 +191,73 @@ class KryaInfoBot(TelegramClient):
                 files.append(file)
 
         if files:
-            await self.send_file(entity=target.target_id, file=files, caption=event.get_formatted_text(), parse_mode='html')
+            message = None
+            for target in targets:
+                if not message:
+                    await self.send_file(entity=target.target_id, file=files, caption=event.get_formatted_text(), parse_mode='html')
+                else:
+                    await self.send_file(entity=target.target_id, file=message.media, caption=event.get_formatted_text(), parse_mode='html')
 
-    async def instagram_story_event(self, target: Target, event: InstagramStoryEvent):
+    async def instagram_story_event(self, targets: List[Target], event: InstagramStoryEvent):
         await event.save(self.db)
-        #print(event.stringify())
+
         for item in reversed(event.items):
-            btn = None
+            media = None
+            for target in targets:
+                btn = None
 
-            if item.external_url:
-                btn = Button.url(self.translator.getLangTranslation(target.lang, 'INSTA_STORY_SWIPE_BUTTON'), url=item.external_url)
+                if item.external_url:
+                    btn = Button.url(self.translator.getLangTranslation(target.lang, 'INSTA_STORY_SWIPE_BUTTON'), url=item.external_url)
+                    btn = [btn]
 
-            if item.is_video:
-                await self.send_file(entity=target.target_id, file=item.video_url, buttons=[btn])
-            else:
-                file = await self.manager.api.twitch.download_file_io(item.url)
-                file.seek(0)
-                await self.send_file(entity=target.target_id, file=file, buttons=[btn])
+                if item.is_video:
+                    if not media:
+                        message = await self.send_file(entity=target.target_id, file=item.video_url, buttons=btn)
+                        media = message.media
+                    else:
+                        await self.send_file(entity=target.target_id, file=media, buttons=btn)
+                else:
+                    if not media:
+                        file = await self.manager.api.twitch.download_file_io(item.url)
+                        file.seek(0)
+                        message = await self.send_file(entity=target.target_id, file=file, buttons=btn)
+                        media = message.media
+                    else:
+                        await self.send_file(entity=target.target_id, file=media, buttons=btn)
 
-    async def twitch_stream_event(self, target: Target, event: TwitchEvent):
+    async def twitch_stream_event(self, targets: List[Target], event: TwitchEvent):
+        await self.db.redis.publish_event(redis_key.get_streams_forward_data(), event.export())
+
         send = False
         text = ''
         url = event.get_formatted_image_url()
         file = None
         button = None
 
+        text_key = 'TWITCH_NOTIFICATION_START'
         if event.recovery:
-            send = False
-        elif event.update and target.twitch_update:
-            text = self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATE')
-            file = InputMediaPhotoExternal(url)
-            button = Button.url(event.profile.twitch_name, url=event.get_channel_url())
-            send = True
-        elif event.down and target.twitch_end:
-            text = self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_FINISH')
-            send = True
-        elif event.start and target.twitch_start:
-            file = InputMediaPhotoExternal(url)
-            button = Button.url(event.profile.twitch_name, url=event.get_channel_url())
-            text = self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_START')
-            send = True
-
-        if not send:
             return
+        elif event.update:
+            text_key = 'TWITCH_NOTIFICATION_UPDATE'
+            file = InputMediaPhotoExternal(url)
+            button = Button.url(event.profile.twitch_name, url=event.get_channel_url())
+            send = True
+        elif event.down:
+            text_key = 'TWITCH_NOTIFICATION_FINISH'
+            send = True
+        elif event.start:
+            file = InputMediaPhotoExternal(url)
+            button = Button.url(event.profile.twitch_name, url=event.get_channel_url())
+            text_key = 'TWITCH_NOTIFICATION_START'
+            send = True
 
-        await self.send_message(target.target_id, message=text, file=file, buttons=[button])
+        for target in targets:
+            if event.update and not target.twitch_update:
+                continue
+            if event.start and not target.twitch_start:
+                continue
+            if event.down and not target.twitch_end:
+                continue
+
+            text = self.translator.getLangTranslation(target.lang, text_key)
+            await self.send_message(target.target_id, message=text, file=file, buttons=[button])

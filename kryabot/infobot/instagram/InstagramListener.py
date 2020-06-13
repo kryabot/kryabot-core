@@ -1,9 +1,9 @@
 import asyncio
 from typing import List
 from datetime import datetime
+import os
 
 from instaloader import Instaloader
-
 from infobot.instagram.InstagramEvents import InstagramPostEvent, InstagramStoryEvent
 from infobot.instagram.InstagramProfile import InstagramProfile
 from infobot.Listener import Listener
@@ -18,6 +18,9 @@ class InstagramListener(Listener):
         self.instagram: Instaloader = instaloader.Instaloader()
         self.instagram.dirname_pattern = "cache"
         self.profiles: List[InstagramProfile] = []
+        self.file_dir = os.getenv('SECRET_DIR')
+        if self.file_dir is None:
+            self.file_dir = ''
 
     async def start(self):
         await super().start()
@@ -40,14 +43,15 @@ class InstagramListener(Listener):
         self.instagram.context._session.cookies.update(connect(SESSION_FILE).execute("SELECT name, value FROM moz_cookies WHERE host='.instagram.com'"))
         username = self.instagram.test_login()
         self.instagram.context.username = username
-        self.instagram.save_session_to_file('instaloader-session-' + username)
+        self.instagram.save_session_to_file(self.file_dir + 'instaloader-session-' + username)
 
     def force_login(self):
         self.instagram.login(self.cfg.getConfig()['INSTAGRAM']['login'], self.cfg.getConfig()['INSTAGRAM']['password'])
         self.instagram.save_session_to_file()
 
     def session_login(self):
-        self.instagram.load_session_from_file(self.cfg.getConfig()['INSTAGRAM']['login'], filename='instaloader-session-' + self.cfg.getConfig()['INSTAGRAM']['login'])
+
+        self.instagram.load_session_from_file(self.cfg.getConfig()['INSTAGRAM']['login'], filename=self.file_dir + 'instaloader-session-' + self.cfg.getConfig()['INSTAGRAM']['login'])
 
     @run_in_executor
     def login(self):

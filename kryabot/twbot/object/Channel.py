@@ -50,53 +50,35 @@ class Channel:
     def update_activity(self):
         self.last_chat_activity = datetime.now()
 
-    async def update_status(self, data, notify=True, db=None):
-        new_data = {'received': datetime.now(), 'data': data}
-
+    async def update_status(self, data, notify=True):
         if notify is True:
-            await db.add_stream_flow(self.tw_id, new_data)
             self.logger.info('Processing channel stream update status.')
 
-        if data is None or len(data) == 0:
+        if data['down']:
             self.last_stream_down = datetime.now()
             self.is_live = False
             self.prev_stream_started = self.stream_started
             self.stream_started = None
             if notify:
-                await self.ah.guardbot.send_stream_notification(self.tw_id, self.channel_name, 'finish', {})
                 return '{ch} спасибо за стрим! <3'.format(ch=self.channel_name)
 
             return None
-        else:
-            data = data[0]
-            # Havent passed 5mins before last stream down
-            if self.is_live is False and self.last_stream_down + timedelta(seconds=300) > datetime.now():
-                self.is_live = True
-                self.recoveries += 1
-                if self.prev_stream_started is not None:
-                    self.stream_started = self.prev_stream_started
-                else:
-                    self.stream_started = data['started_at']
-                if notify:
-                    await self.ah.guardbot.send_stream_notification(self.tw_id, self.channel_name, 'recovery', data)
-                return None
-            # Stream up
-            if self.is_live is False:
-                self.is_live = True
-                self.stream_started = data['started_at']
-                self.recoveries = 0
-                if notify:
-                    await self.ah.guardbot.send_stream_notification(self.tw_id, self.channel_name, 'new', data)
-                    return '{ch} удачного тебе стрима <3'.format(ch=self.channel_name)
-                return None
-            # Stream update
+        elif data['recovery']:
+            self.is_live = True
+            self.recoveries += 1
+        elif data['start']:
+            self.is_live = True
+            self.stream_started = data['started_at']
+            self.recoveries = 0
+
+            if notify:
+                return '{ch} удачного тебе стрима <3'.format(ch=self.channel_name)
+        elif data['update']:
             if self.stream_started is None:
                 self.stream_started = data['started_at']
             self.is_live = True
-            if notify:
-                await self.ah.guardbot.send_stream_notification(self.tw_id, self.channel_name, 'update', data)
 
-            return None
+        return None
 
     async def get_stream_data(self)->{}:
         try:
