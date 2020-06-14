@@ -226,8 +226,6 @@ class KryaInfoBot(TelegramClient):
                         await self.send_file(entity=target.target_id, file=media, buttons=btn)
 
     async def twitch_stream_event(self, targets: List[Target], event: TwitchEvent):
-        await self.db.redis.publish_event(redis_key.get_streams_forward_data(), event.export())
-
         send = False
         text = ''
         url = event.get_formatted_image_url()

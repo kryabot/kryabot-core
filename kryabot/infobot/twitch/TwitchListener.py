@@ -29,6 +29,8 @@ class TwitchListener(Listener):
             if data is None:
                 break
 
+            self.logger.info(data)
+
             for prof in self.profiles:
                 if prof.twitch_id == data['twitch_id']:
                     event = TwitchEvent(prof, data['data'])
@@ -38,7 +40,7 @@ class TwitchListener(Listener):
                     self.loop.create_task(self.manager.event(event))
 
                     # Publish event to Twitch/Telegram bot
-                    await self.manager.db.redis.publish_event('tw.stream.forward', event.export())
+                    await self.manager.db.redis.publish_event(redis_key.get_streams_forward_data(), event.export())
 
     async def subscribe_all(self)->None:
         for profile in self.profiles:
