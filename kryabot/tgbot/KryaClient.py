@@ -803,7 +803,7 @@ class KryaClient(TelegramClient):
             return
         target_user = target_user[0]
 
-        participant = await self.find_participant(tg_chat['tg_chat_id'], target_user['tg_id'])
+        participant = await self.find_participant(int(tg_chat['tg_chat_id']), int(target_user['tg_id']))
         if participant is None:
             self.logger.info(
                 'Received unsubscribe event ID {}, but user {} is not participant of chat {}'.format(event_id, target_user['tg_id'], tg_chat['tg_chat_id']))

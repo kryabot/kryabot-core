@@ -107,7 +107,7 @@ class TwitchEvent(Event):
                 "started_at": self.started_at,
                 "title": self.title,
                 "recovery": self.recovery,
-                "start": self.start,
+                "start": self.start and not self.update,
                 "update": self.update,
                 "down": self.down,
                 "game_id": self.game_id,

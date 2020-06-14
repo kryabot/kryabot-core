@@ -252,5 +252,16 @@ class KryaInfoBot(TelegramClient):
             if event.down and not target.twitch_end:
                 continue
 
+            update_text = ''
+            if event.update:
+                for upd in event.updated_data:
+                    if 'title' in upd:
+                        update_text += '\n{} {}'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_TITLE'), event.title)
+                    if 'game' in upd:
+                        update_text += '\n{} {}'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_GAME'), event.game_name)
+
             text = self.translator.getLangTranslation(target.lang, text_key)
+            if len(update_text) > 0:
+                text = '{}\n{}'.format(text, update_text)
+
             await self.send_message(target.target_id, message=text, file=file, buttons=button, link_preview=False)
