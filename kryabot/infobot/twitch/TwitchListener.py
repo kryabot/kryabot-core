@@ -1,5 +1,5 @@
+import asyncio
 from typing import List
-from datetime import datetime, timedelta
 
 from api.twitch import Twitch
 from infobot.Listener import Listener
@@ -23,10 +23,7 @@ class TwitchListener(Listener):
     @Listener.repeatable
     async def listen(self):
         self.logger.debug('Subscribing for twitch data')
-
-        if self.last_subscribe is None or self.last_subscribe < datetime.now() - timedelta(days=7):
-            await self.subscribe_all()
-            self.last_subscribe = datetime.now()
+        await self.subscribe_all()
 
         while True:
             data = await self.manager.db.redis.get_one_from_list_parsed(redis_key.get_streams_data())
@@ -46,7 +43,10 @@ class TwitchListener(Listener):
 
     async def subscribe_all(self)->None:
         for profile in self.profiles:
-            await self.subscribe_profile(profile)
+            if profile.need_resubscribe():
+                await self.subscribe_profile(profile)
+                profile.subscribed()
+                await asyncio.sleep(2)
 
     async def subscribe_profile(self, profile: TwitchProfile)->None:
         self.logger.info('Refreshing stream webhook for {}'.format(profile.twitch_name))

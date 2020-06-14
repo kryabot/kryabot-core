@@ -39,7 +39,6 @@ class Bot(commands.Bot):
         self.rate_list = []
         self.last_webhook_resubscribe = None
         self.webhook_queue = queue.Queue()
-        #self.webhook_queue_reader_started = False
         self.problems_to_report = []
 
         self.bot_ep = EventProcessor(self.is_silent, self.logger)
@@ -163,10 +162,8 @@ class Bot(commands.Bot):
     async def event_ready(self):
         await self.bot_data_update_all()
         self.loop.create_task(self.timed_task_processor())
-        #self.loop.create_task(self.webhook_queue_reader())
 
         await self.resubstribe_pubsub()
-        #await self.resubscribe_webhooks()
 
         self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
 
@@ -179,25 +176,6 @@ class Bot(commands.Bot):
             if 'channel:read:redemptions' in auth['scope']:
                 self.logger.info('Resubscribing pubsub redepntions for channel {} {}'.format(auth['tw_id'], auth['token']))
                 await self.pubsub_subscribe(auth['token'], 'channel-points-channel-v1.{}'.format(auth['tw_id']))
-
-    # async def resubscribe_webhooks(self):
-    #     # Auto-refresh stream webbooks each 7 days.
-    #     if not self.last_webhook_resubscribe is None and self.last_webhook_resubscribe > datetime.now() - timedelta(days=7):
-    #         return
-    #
-    #     self.last_webhook_resubscribe = datetime.now()
-    #     self.logger.info('>>> Subscribing webhook stream events')
-    #     for ch in self.custom_working_channels:
-    #         if ch.tw_id == 0:
-    #             continue
-    #
-    #         await asyncio.sleep(1)
-    #         self.logger.info('> ' + ch.channel_name)
-    #         # Json error is returned as no json actually is returned
-    #         try:
-    #             await self.bot_ep.twitch_api.webhook_subscribe_stream(user_id=ch.tw_id, channel_name=ch.channel_name)
-    #         except Exception as e:
-    #             pass
 
     async def update_channel_chat_activity_time(self, name):
         for ch in self.custom_working_channels:
