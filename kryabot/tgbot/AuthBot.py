@@ -4,7 +4,6 @@ from telethon.errors import UserIsBlockedError
 from telethon.tl.custom import Button
 from telethon.extensions import html
 from object.Database import Database
-from object.BotConfig import BotConfig
 from object.ApiHelper import ApiHelper
 from object.Translator import Translator
 from utils.twitch import get_active_oauth_data
@@ -45,7 +44,6 @@ async def reloadtranslations(event):
 class AuthBot(TelegramClient):
     def __init__(self, loop=None, cfg=None):
         self.logger = logging.getLogger('krya.auth')
-        self.logger.setLevel(logging.DEBUG)
         self.cfg = cfg
         self.db = Database(None, 2, cfg=self.cfg)
         self.api = ApiHelper(cfg=self.cfg, redis=self.db.redis)

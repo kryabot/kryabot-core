@@ -226,8 +226,6 @@ class KryaInfoBot(TelegramClient):
                         await self.send_file(entity=target.target_id, file=media, buttons=btn)
 
     async def twitch_stream_event(self, targets: List[Target], event: TwitchEvent):
-        send = False
-        text = ''
         url = event.get_formatted_image_url()
         file = None
         button = None
@@ -239,15 +237,12 @@ class KryaInfoBot(TelegramClient):
             text_key = 'TWITCH_NOTIFICATION_UPDATE'
             file = InputMediaPhotoExternal(url)
             button = [Button.url(event.profile.twitch_name, url=event.get_channel_url())]
-            send = True
         elif event.down:
             text_key = 'TWITCH_NOTIFICATION_FINISH'
-            send = True
         elif event.start:
             file = InputMediaPhotoExternal(url)
             button = [Button.url(event.profile.twitch_name, url=event.get_channel_url())]
             text_key = 'TWITCH_NOTIFICATION_START'
-            send = True
 
         for target in targets:
             if event.update and not target.twitch_update:
@@ -258,4 +253,4 @@ class KryaInfoBot(TelegramClient):
                 continue
 
             text = self.translator.getLangTranslation(target.lang, text_key)
-            await self.send_message(target.target_id, message=text, file=file, buttons=button)
+            await self.send_message(target.target_id, message=text, file=file, buttons=button, link_preview=False)

@@ -49,7 +49,7 @@ class Listener:
 
         :return:
         """
-        self.logger.debug('Sleeping for {} seconds'.format(self.period))
+        #self.logger.debug('Sleeping for {} seconds'.format(self.period))
         await asyncio.sleep(self.period)
 
     async def on_update(self, data):

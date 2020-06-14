@@ -39,6 +39,7 @@ class TwitchListener(Listener):
                     # Publish event to Info bot
                     self.loop.create_task(self.manager.event(event))
 
+                    self.logger.info('Export data: {}', event.export())
                     # Publish event to Twitch/Telegram bot
                     await self.manager.db.redis.publish_event(redis_key.get_streams_forward_data(), event.export())
 

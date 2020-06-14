@@ -23,7 +23,7 @@ class TwitchEvent(Event):
         self.raw = data
 
         if data:
-            self.parse(data)
+            self.parse(data[0])
 
         self.updated_data = []
         self.start: bool = self.is_start() or False
@@ -34,15 +34,15 @@ class TwitchEvent(Event):
         self.profile.last_stream_start: datetime = self.started_at
 
     def parse(self, data):
-        self.title: str = self.get_attr(data, 'title', '')
-        self.game_id: int = int(self.get_attr(data, 'game_id', 0))
-        self.started_at: datetime = self.get_attr(data, 'started_at')
-        self.online: int = int(self.get_attr(data, 'viewer_count', 0))
-        self.url: str = str(self.get_attr(data, 'thumbnail_url', ''))
-        self.language: str = str(self.get_attr(data, 'language', ''))
-        self.communities: List = self.get_attr(data, 'community_ids')
-        self.type: str = str(self.get_attr(data, 'type'))
-        self.twitch_event_id: str = str(self.get_attr(data, 'id'))
+        self.title = self.get_attr(data, 'title', '')
+        self.game_id = int(self.get_attr(data, 'game_id', 0))
+        self.started_at = self.get_attr(data, 'started_at')
+        self.online = int(self.get_attr(data, 'viewer_count', 0))
+        self.url = str(self.get_attr(data, 'thumbnail_url', ''))
+        self.language = str(self.get_attr(data, 'language', ''))
+        self.communities = self.get_attr(data, 'community_ids')
+        self.type = str(self.get_attr(data, 'type'))
+        self.twitch_event_id = str(self.get_attr(data, 'id'))
 
     def is_start(self)->bool:
         return self.started_at is not None
