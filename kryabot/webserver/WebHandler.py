@@ -131,7 +131,7 @@ class WebHandler:
     async def endpoint_tg_report_error(self, request: Request, user_id: int):
         body = request.json
         if body is None:
-            return self.response_bad_input()
+            body = request.body
 
         await self.guard_bot.report_to_monitoring('ERR for user id {}\n\n<pre>{}</pre>'.format(user_id, body))
         return self.response_success()
