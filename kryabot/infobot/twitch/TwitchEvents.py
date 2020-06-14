@@ -17,6 +17,7 @@ class TwitchEvent(Event):
         self.url: str = None
         self.language: str = None
         self.communities: List = None
+        self.tags: List = []
         self.type: str = None
         self.twitch_event_id: str = None
         self.event_id = None
@@ -43,6 +44,7 @@ class TwitchEvent(Event):
         self.communities = self.get_attr(data, 'community_ids')
         self.type = str(self.get_attr(data, 'type'))
         self.twitch_event_id = str(self.get_attr(data, 'id'))
+        self.tags = self.get_attr(data, 'tag_ids', [])
 
     def is_start(self)->bool:
         return self.started_at is not None
@@ -74,7 +76,7 @@ class TwitchEvent(Event):
         if self.profile.last_stream_start is None:
             return False
 
-        if self.is_start() and self.profile.last_stream_start + timedelta(seconds=300) > datetime.now():
+        if self.is_start() and self.profile.last_stream_start + timedelta(seconds=300) > datetime.utcnow():
             return True
 
         return False
@@ -84,7 +86,7 @@ class TwitchEvent(Event):
             return None
 
         custom_url = self.url.format(width=1280, height=720)
-        custom_url += '?id={tmp_id}'.format(tmp_id=self.event_id)
+        custom_url += '?id={tmp_id}'.format(tmp_id=self.twitch_event_id)
         return custom_url
 
     def get_formatted_channel_url(self):
@@ -100,7 +102,7 @@ class TwitchEvent(Event):
 
     def export(self)->Dict:
         return {"channel_id": self.profile.twitch_id,
-                "channel_name:": self.profile.twitch_name,
+                "channel_name": self.profile.twitch_name,
                 "channel_url": self.get_channel_url(),
                 "started_at": self.started_at,
                 "title": self.title,
