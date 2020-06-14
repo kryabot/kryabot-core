@@ -509,71 +509,9 @@ class Bot(commands.Bot):
     async def event_raw_data(self, data):
         pass
 
-    # Do not do anything in event_webhook because it runs in different loop (no access to db/redis)
+    # Deprecated
     async def event_webhook(self, data, params=None):
-        self.logger.info('{p}: {d}'.format(p=params, d=data))
-        if params is None:
-            return
-
-        topic = 'streams'
-        try:
-            channel_name = params.query['channel']
-            topic = params.query['topic']
-        except Exception as e:
-            self.logger.error("{err}".format(err=str(e)))
-            return
-
-        task = {'channel_name': channel_name, 'topic': topic, 'data': data['data']}
-        self.webhook_queue.put(task)
-
-    # async def process_webhook_stream(self, channel_name, data):
-    #     for ch in self.custom_working_channels:
-    #         if ch.channel_name.lower() == channel_name.lower():
-    #             try:
-    #                 answer = await ch.update_status(data, db=self.db)
-    #                 if answer is not None and len(answer) > 0:
-    #                     await self._ws.send_privmsg(ch.channel_name, answer)
-    #             except Exception as e:
-    #                 self.logger.error(e)
-
-    # async def process_webhook_sub(self, channel_name, data):
-    #     try:
-    #         channel = await self.get_db_channel(channel_name)
-    #         data = data[0]
-    #         event_data = data['event_data']
-    #
-    #         user = await self.get_db_user_inputs(event_data['user_id'], event_data['user_name'])
-    #         if user is None:
-    #             self.logger.info('Failed to found user for received sub event. User id: {}'.format(event_data['user_id']))
-    #
-    #         await self.db.saveTwitchSubEvent(channel['channel_id'],
-    #                                          user['user_id'],
-    #                                          data['id'],
-    #                                          data['event_type'],
-    #                                          data['event_timestamp'],
-    #                                          event_data['is_gift'],
-    #                                          event_data['tier'],
-    #                                          event_data['message'])
-    #     except Exception as e:
-    #         self.logger.error(str(e))
-
-    # async def webhook_queue_reader(self):
-    #     if self.webhook_queue_reader_started is True:
-    #         return
-    #
-    #     self.webhook_queue_reader_started = True
-    #     while True:
-    #         while self.webhook_queue.empty():
-    #             await asyncio.sleep(0.5)
-    #
-    #         task = self.webhook_queue.get()
-    #
-    #         if task['topic'] == 'streams':
-    #             await self.process_webhook_stream(task['channel_name'], task['data'])
-    #         if task['topic'] == 'subscriptions':
-    #             await self.process_webhook_sub(task['channel_name'], task['data'])
-    #
-    #         self.webhook_queue.task_done()
+        pass
 
     async def task_save_badge_info(self, irc_data):
         try:

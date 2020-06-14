@@ -112,7 +112,7 @@ class Twitch(Core):
         body = {
             'hub.mode': await self.get_mode(enable),
             'hub.topic': topic_url,
-            'hub.callback': self.remote_stream_endpoint + '?channel=' + channel_name + '&topic=' + topic,
+            'hub.callback': self.remote_stream_endpoint + '?channel=' + user_id + '&topic=' + topic,
             'hub.lease_seconds': lease_seconds,
             'hub.secret': self.webhook_secret
         }
