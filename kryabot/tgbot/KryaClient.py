@@ -896,6 +896,8 @@ class KryaClient(TelegramClient):
         return True
 
     async def on_stream_update(self, data):
+        self.logger.info(data)
+        self.logger.info(type(data))
         await self.report_to_monitoring('<pre>{}<pre>'.format(data))
 
         twitch_id = data['channel_id']

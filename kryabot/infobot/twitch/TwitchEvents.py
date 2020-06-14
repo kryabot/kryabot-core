@@ -50,7 +50,7 @@ class TwitchEvent(Event):
     def is_update(self)->bool:
         updated = self.started_at and self.profile.last_event and self.profile.last_event.started_at == self.started_at
 
-        if updated and self.profile.last_event:
+        if updated:
             self.updated_data = []
 
             if self.title != self.profile.last_event.title:

@@ -45,7 +45,7 @@ async def getSql(sqlType):
         'validate_web_token': 'CALL validateWebToken(%s)',
         'add_tg_ban_media': 'INSERT INTO tg_banned_media (channel_id, media_type, media_id, user_id, about) values (%s, %s, %s, %s, %s)',
         'get_banned_media': 'SELECT * FROM tg_banned_media',
-        'get_user_rights_in_channel': 'SELECT * from tg_special_right sr where sr.channel = %s and sr.user_id = %s and sr.deleted = 0',
+        'get_user_rights_in_channel': 'SELECT * from tg_special_right sr where sr.channel_id = %s and sr.user_id = %s and sr.deleted = 0',
         'check_special_right_by_tg_user': 'SELECT * from tg_special_right where tg_special_right.tg_user_id = %s and tg_special_right.deleted = 0',
         'get_all_tg_special_rights': 'select * from tg_special_right where tg_special_right.deleted = 0',
         'get_tg_chat_rights': 'select * from tg_special_right where tg_special_right.deleted = 0 and tg_special_right.channel_id = %s',
