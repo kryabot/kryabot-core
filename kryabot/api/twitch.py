@@ -60,7 +60,7 @@ class Twitch(Core):
                 headers['Authorization'] = 'OAuth {}'.format(oauth_token)
             else:
                 if bearer_token is None:
-                    bearer_token = get_active_app_token(self)
+                    bearer_token = await get_active_app_token(self)
                 headers['Authorization'] = 'Bearer {}'.format(bearer_token)
 
         return headers
