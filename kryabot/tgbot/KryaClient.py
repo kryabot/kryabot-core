@@ -729,8 +729,8 @@ class KryaClient(TelegramClient):
 
                     try:
                         tw_user = await self.api.twitch.get_user_by_id(row[0]['tw_id'], skip_cache=True)
-                        self.logger.info('Updating Twitch name for user {} to {}'.format(row[0]['tw_id'], tw_user['users'][0]['name']))
-                        await self.db.updateUserTwitchName(row[0]['user_id'], tw_user['users'][0]['name'], tw_user['users'][0]['display_name'], tw_user_id=row[0]['tw_id'])
+                        self.logger.info('Updating Twitch name for user {} to {}'.format(row[0]['tw_id'], tw_user['name']))
+                        await self.db.updateUserTwitchName(row[0]['user_id'], tw_user['name'], tw_user['display_name'], tw_user_id=row[0]['tw_id'])
                     except Exception as e:
                         await self.exception_reporter(e, 'Name fix for ID {uid} failed:'.format(uid=row[0]['tw_id']))
 

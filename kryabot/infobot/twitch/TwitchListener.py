@@ -22,7 +22,6 @@ class TwitchListener(Listener):
 
     @Listener.repeatable
     async def listen(self):
-        self.logger.debug('Subscribing for twitch data')
         await self.subscribe_all()
 
         while True:
