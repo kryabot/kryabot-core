@@ -13,12 +13,12 @@ TOKEN_WHITELIST = []
 TOKEN_WHITELIST.append('token')
 
 
-def user():
+def user(mandatory=True):
     def decorator(f):
         @functools.wraps(f)
         async def decorated_function(self, request, *args, **kwargs):
             user_id = find_user_id(request)
-            if user_id > 0:
+            if not mandatory or user_id > 0:
                 return await f(self, request, user_id, *args, **kwargs)
             else:
                 return json({'code': 0, 'message': 'no_input'}, status=200)

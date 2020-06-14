@@ -127,7 +127,7 @@ class WebHandler:
         return self.response_success()
 
     @authorized()
-    @user()
+    @user(mandatory=False)
     async def endpoint_tg_report_error(self, request: Request, user_id: int):
         body = request.json
         if body is None:
