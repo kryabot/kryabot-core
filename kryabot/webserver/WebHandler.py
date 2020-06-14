@@ -195,7 +195,8 @@ class WebHandler:
 
     @authorized()
     async def endpoint_twitch_stream_update(self, request: Request):
-        await self.guard_bot.db.redis.push_list_to_right(redis_key.get_streams_data(), request.json)
+        self.logger.info(request.body)
+        await self.guard_bot.db.redis.push_list_to_right(redis_key.get_streams_data(), request.body)
         return self.response_success()
 
     @authorized()
