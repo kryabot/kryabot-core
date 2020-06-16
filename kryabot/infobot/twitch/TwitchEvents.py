@@ -76,7 +76,7 @@ class TwitchEvent(Event):
         if self.profile.last_stream_start is None:
             return False
 
-        if self.is_start() and self.profile.last_stream_start + timedelta(seconds=300) > datetime.utcnow():
+        if self.is_start() and self.profile.last_stream_start.replace(tzinfo=None) + timedelta(seconds=300) > datetime.utcnow():
             return True
 
         return False

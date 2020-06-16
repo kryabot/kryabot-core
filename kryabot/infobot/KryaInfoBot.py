@@ -252,16 +252,22 @@ class KryaInfoBot(TelegramClient):
             if event.down and not target.twitch_end:
                 continue
 
-            update_text = ''
+            base_text = self.translator.getLangTranslation(target.lang, text_key)
+            text = ''
+            if event.start:
+                text = '<b>{}</b>({})\n\n{}'.format(event.title, event.game_name, base_text)
             if event.update:
                 for upd in event.updated_data:
                     if 'title' in upd:
-                        update_text += '\n{} {}'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_TITLE'), event.title)
+                        text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_TITLE'), event.title)
                     if 'game' in upd:
-                        update_text += '\n{} {}'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_GAME'), event.game_name)
+                        text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_GAME'), event.game_name)
 
-            text = self.translator.getLangTranslation(target.lang, text_key)
-            if len(update_text) > 0:
-                text = '{}\n{}'.format(text, update_text)
+                if text != '':
+                    text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_ONLINE'), event.online)
 
-            await self.send_message(target.target_id, message=text, file=file, buttons=button, link_preview=False)
+                text = '{}\n{}'.format(base_text, text)
+            else:
+                text = base_text
+
+            await self.send_message(target.target_id, message=text, file=file, buttons=button, link_preview=False, parse_mode='html')

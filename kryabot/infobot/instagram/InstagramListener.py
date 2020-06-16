@@ -25,7 +25,7 @@ class InstagramListener(Listener):
     async def start(self):
         await super().start()
         await self.login()
-        self.period = 300
+        self.period = 400
 
     @Listener.repeatable
     async def listen(self):
@@ -38,7 +38,7 @@ class InstagramListener(Listener):
         # self.loop.create_task()
 
     def recreate_session_from_firefox(self):
-        SESSION_FILE = "C:/Users/Oskar/AppData/Roaming/Mozilla/Firefox/Profiles/t7kskj56.default/cookies.sqlite"
+        SESSION_FILE = self.file_dir + "cookies.sqlite"
         self.instagram = Instaloader(max_connection_attempts=1)
         self.instagram.context._session.cookies.update(connect(SESSION_FILE).execute("SELECT name, value FROM moz_cookies WHERE host='.instagram.com'"))
         username = self.instagram.test_login()
@@ -56,12 +56,10 @@ class InstagramListener(Listener):
     @run_in_executor
     def login(self):
         try:
-            print('trying session login')
+            self.logger.info('Trying to login via previous session')
             self.session_login()
         except Exception as e:
-            print(str(e))
-            print('reimporting session')
-            #self.force_login()
+            self.logger.exception('Login from previous session failed')
             self.recreate_session_from_firefox()
             self.session_login()
 

@@ -36,7 +36,7 @@ class InfoManager:
         # Source services
         self.listeners: List[Listener] = []
 
-        #self.listeners.append(InstagramListener(self))
+        self.listeners.append(InstagramListener(self))
         self.listeners.append(TwitchListener(self))
         self.listeners.append(GoodgameListener(self))
         self.listeners.append(TwitterListener(self))
