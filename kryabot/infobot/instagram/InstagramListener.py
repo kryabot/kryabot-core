@@ -1,6 +1,5 @@
 import asyncio
 from typing import List
-from datetime import datetime
 import os
 
 from instaloader import Instaloader
@@ -24,13 +23,14 @@ class InstagramListener(Listener):
 
     async def start(self):
         await super().start()
-        await self.login()
+        #await self.login()
         self.period = 400
 
     @Listener.repeatable
     async def listen(self):
         self.logger.debug('Checking instagram data')
 
+        self.login()
         self.listen_posts()
         self.listen_stories()
         #await asyncio.wait([self.listen_posts(), self.listen_stories()])

@@ -1,4 +1,5 @@
 from telethon import TelegramClient
+from telethon.errors import UserNotParticipantError
 from telethon.extensions import html
 from telethon.tl.functions.channels import LeaveChannelRequest, EditBannedRequest, GetParticipantRequest
 from telethon.tl.types import PeerUser, PeerChannel, InputStickerSetID, \
@@ -844,14 +845,15 @@ class KryaClient(TelegramClient):
 
     async def find_participant(self, tg_chat_id, tg_user_id):
         self.logger.info('Searching for user {} in chat {}'.format(tg_user_id, tg_chat_id))
-        #chat_entity = await self.get_entity(PeerChannel(tg_chat_id))
+        try:
 
-        return await self(GetParticipantRequest(channel=tg_chat_id, user_id=tg_user_id))
-        # async for user in self.iter_participants(chat_entity):
-        #     if int(user.id) == int(tg_user_id):
-        #         return user
-        #
-        # return None
+            channel_entity = await self.get_input_entity(int(tg_chat_id))
+            user_entity = await self.get_input_entity(int(tg_user_id))
+            return await self(GetParticipantRequest(channel=channel_entity, user_id=user_entity))
+        except UserNotParticipantError:
+            return None
+        except ValueError:
+            return None
 
     async def event_user_statistics(self):
         await self.update_data()

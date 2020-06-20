@@ -2,7 +2,11 @@ from utils.value_check import avoid_none
 
 
 async def format_html_user_mention(tg_user):
-    label = await avoid_none(tg_user.username)
+    try:
+        label = await avoid_none(tg_user.username)
+    except AttributeError:
+        label = None
+
     if label is None or label == '':
         label = await avoid_none(tg_user.first_name) + ' ' + await avoid_none(tg_user.last_name)
     label.strip()

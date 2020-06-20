@@ -35,7 +35,7 @@ class TwitchListener(Listener):
                 if prof.twitch_id == data['twitch_id']:
                     event = TwitchEvent(prof, data['data'])
                     await event.translate(self.api)
-
+                    await event.profile.store_to_cache(self.manager.redis)
                     # Publish event to Info bot
                     self.loop.create_task(self.manager.event(event))
 

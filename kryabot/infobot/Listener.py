@@ -102,6 +102,7 @@ class Listener:
 
             profile = self.get_new_profile_instance(row, update_ts)
             profile.set_history(histories)
+            await profile.restore_from_cache(self.manager.db.redis)
             self.profiles.append(profile)
             if not start:
                 await self.handle_new_profile(profile)

@@ -14,10 +14,10 @@ from telethon import TelegramClient, events, Button
 
 from infobot import Event
 from infobot.Target import Target
+from infobot.boosty.BoostyEvents import BoostyEvent
 from infobot.instagram.InstagramEvents import InstagramPostEvent, InstagramStoryEvent
 from infobot.twitch.TwitchEvents import TwitchEvent
 from object.Translator import Translator
-from utils import redis_key
 
 
 @events.register(events.NewMessage(pattern='/ping'))
@@ -151,7 +151,7 @@ class KryaInfoBot(TelegramClient):
         if path is None:
             path = ''
 
-        super().__init__(path + 'info_bot_session', base_logger=self.logger, api_id= self.cfg.getTelegramConfig()['API_ID'], api_hash=self.cfg.getTelegramConfig()['API_HASH'])
+        super().__init__(path + 'info_bot_session', base_logger=self.logger, api_id= self.cfg.getTelegramConfig()['API_ID'], api_hash=self.cfg.getTelegramConfig()['API_HASH'], flood_sleep_threshold=300)
         self._parse_mode = html
 
     async def run(self, wait=False):
@@ -177,11 +177,12 @@ class KryaInfoBot(TelegramClient):
             await self.instagram_story_event(targets, event)
         elif isinstance(event, TwitchEvent):
             await self.twitch_stream_event(targets, event)
+        elif isinstance(event, BoostyEvent):
+            await self.boosty_post_event(targets, event)
         else:
             raise ValueError('Received unsupported event type: ' + str(type(event)))
 
     async def instagram_post_event(self, targets: List[Target], event: InstagramPostEvent):
-        await event.save(self.db)
         files = []
 
         if event.media_list:
@@ -199,31 +200,29 @@ class KryaInfoBot(TelegramClient):
                     await self.send_file(entity=target.target_id, file=message.media, caption=event.get_formatted_text(), parse_mode='html')
 
     async def instagram_story_event(self, targets: List[Target], event: InstagramStoryEvent):
-        await event.save(self.db)
-
         for item in reversed(event.items):
             media = None
             for target in targets:
                 btn = None
-
+                caption = event.get_link_to_profile()
                 if item.external_url:
                     btn = Button.url(self.translator.getLangTranslation(target.lang, 'INSTA_STORY_SWIPE_BUTTON'), url=item.external_url)
                     btn = [btn]
 
                 if item.is_video:
                     if not media:
-                        message = await self.send_file(entity=target.target_id, file=item.video_url, buttons=btn)
+                        message = await self.send_file(entity=target.target_id, caption=caption, file=item.video_url, buttons=btn)
                         media = message.media
                     else:
-                        await self.send_file(entity=target.target_id, file=media, buttons=btn)
+                        await self.send_file(entity=target.target_id, file=media, caption=caption, buttons=btn)
                 else:
                     if not media:
                         file = await self.manager.api.twitch.download_file_io(item.url)
                         file.seek(0)
-                        message = await self.send_file(entity=target.target_id, file=file, buttons=btn)
+                        message = await self.send_file(entity=target.target_id, file=file, caption=caption, buttons=btn)
                         media = message.media
                     else:
-                        await self.send_file(entity=target.target_id, file=media, buttons=btn)
+                        await self.send_file(entity=target.target_id, file=media, caption=caption, buttons=btn)
 
     async def twitch_stream_event(self, targets: List[Target], event: TwitchEvent):
         url = event.get_formatted_image_url()
@@ -254,7 +253,7 @@ class KryaInfoBot(TelegramClient):
 
             base_text = self.translator.getLangTranslation(target.lang, text_key)
             text = ''
-            if event.start:
+            if event.start and not event.update:
                 text = '<b>{}</b>({})\n\n{}'.format(event.title, event.game_name, base_text)
             if event.update:
                 for upd in event.updated_data:
@@ -271,3 +270,31 @@ class KryaInfoBot(TelegramClient):
                 text = base_text
 
             await self.send_message(target.target_id, message=text, file=file, buttons=button, link_preview=False, parse_mode='html')
+
+    async def boosty_post_event(self, targets: List[Target], event: BoostyEvent):
+        max_length = 1000
+        print(event.stringify())
+
+        button = [Button.url('View full post  👀', url=event.get_post_url())]
+        text = '<b>New boosty post!</b>'
+
+        if event.title:
+            text += '\n\n{}'.format(event.title)
+
+        if event.get_text():
+            text += '\n\n{}'.format(event.get_text())
+
+        text = (text[:max_length] + '...') if len(text) > max_length else text
+
+        if event.access_name:
+            text += '\n\nAccess level: <b>{}</b>'.format(event.access_name)
+
+        for target in targets:
+            if event.videos:
+                for video in event.videos:
+                    await self.send_file(target.target_id, file=video, link_preview=False, parse_mode='html')
+
+            if event.images:
+                await self.send_file(target.target_id, caption=text, file=InputMediaPhotoExternal(event.images[0]), buttons=button, link_preview=False, parse_mode='html')
+            else:
+                await self.send_message(target.target_id, message=text, buttons=button, link_preview=False, parse_mode='html')

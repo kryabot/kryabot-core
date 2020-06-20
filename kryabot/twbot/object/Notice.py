@@ -50,6 +50,8 @@ class Notice:
         self.msg_param_prior_gifter_display_name = None  # Used in "paying forward" sub after receiving gift
         self.msg_param_prior_gifter_anonymous = None  # Used in "paying forward" sub after receiving gift
         self.msg_param_fun_string = None  # spotted when subgift from anonymous
+        self.msg_param_gift_months = None
+        self.msg_param_threshold = None
 
         self.bits = None
         self.room_id = None
@@ -98,6 +100,8 @@ class Notice:
                            'msg-param-prior-gifter-display-name',
                            'msg-param-prior-gifter-anonymous',
                            'msg-param-fun-string',
+                           'msg-param-gift-months',
+                           'msg-param-threshold',
                            'badge-info',
                            'bits',
                            'room-id',
@@ -152,6 +156,8 @@ class Notice:
         self.msg_param_prior_gifter_display_name = await self.get_value('msg-param-prior-gifter-display-name')
         self.msg_param_prior_gifter_anonymous = await self.get_value('msg-param-prior-gifter-anonymous')
         self.msg_param_fun_string = await self.get_value('msg-param-fun-string')
+        self.msg_param_gift_months = await self.get_value('msg-param-gift-months')
+        self.msg_param_threshold = await self.get_value('msg-param-threshold')
         self.bits = await self.get_value('bits')
         self.room_id = await self.get_value('room-id')
         self.subscriber = await self.get_value('subscriber')

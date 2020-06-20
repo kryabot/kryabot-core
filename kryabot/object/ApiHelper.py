@@ -1,3 +1,4 @@
+from api.boosty import Boosty
 from api.vk import VK
 from api.twitch import Twitch
 from api.guardbot import GuardBot
@@ -16,6 +17,7 @@ class ApiHelper:
         self.twitch = Twitch(redis=redis, cfg=cfg)
         self.guardbot = GuardBot(cfg=cfg)
         self.gc = GoogleCloud(cfg=cfg)
+        self.boosty = Boosty(cfg=cfg)
         self.logger = self.vk.logger
         self.sub_check_false = 'sub_check_false'
         self.reporter = reporter

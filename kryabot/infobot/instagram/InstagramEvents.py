@@ -34,7 +34,13 @@ class InstagramStoryEvent(Event):
 
     async def save(self, db):
         for item in self.items:
-            await db.saveInstagramStoryEvent(self.profile.profile_id, item.media_id, item.date)
+            try:
+                await db.saveInstagramStoryEvent(self.profile.profile_id, item.media_id, item.date)
+            except Exception as ex:
+                self.profile.logger.error(ex)
+
+    def get_link_to_profile(self):
+        return '🖼 <a href="https://instagram.com/{}">Instagram</a>'.format(self.owner)
 
 
 class InstagramStoryItem(Base):
@@ -113,7 +119,10 @@ class InstagramPostEvent(Event):
         return '{}\n\n{}'.format(self.text, footer)
 
     async def save(self, db):
-        await db.saveInstagramPostEvent(self.profile.profile_id, self.media_id, self.date)
+        try:
+            await db.saveInstagramPostEvent(self.profile.profile_id, self.media_id, self.date)
+        except Exception as ex:
+            self.profile.logger.error(ex)
 
 
 class InstagramMedia(Base):

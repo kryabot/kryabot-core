@@ -76,6 +76,7 @@ class TwitchEvent(Event):
         if self.profile.last_stream_start is None:
             return False
 
+        self.profile.logger.info('Checking of recovery for stream of {}, last stream = {}, utcnow = '.format(self.profile.twitch_name, self.profile.last_stream_start.replace(tzinfo=None), datetime.utcnow()))
         if self.is_start() and self.profile.last_stream_start.replace(tzinfo=None) + timedelta(seconds=300) > datetime.utcnow():
             return True
 
@@ -86,7 +87,7 @@ class TwitchEvent(Event):
             return None
 
         custom_url = self.url.format(width=1280, height=720)
-        custom_url += '?id={tmp_id}'.format(tmp_id=self.twitch_event_id)
+        custom_url += '?id={tmp_id}{seed}'.format(tmp_id=self.twitch_event_id, seed=str(datetime.now()))
         return custom_url
 
     def get_formatted_channel_url(self):

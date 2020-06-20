@@ -2,6 +2,7 @@ from typing import List
 from datetime import datetime, timedelta
 from infobot.LinkTable import LinkTable
 from infobot.Profile import Profile
+import utils.redis_key as redis_key
 
 
 class TwitchProfile(Profile):
@@ -35,3 +36,11 @@ class TwitchProfile(Profile):
 
     def subscribed(self)->None:
         self.last_webhook_subscribe = datetime.now()
+
+    async def restore_from_cache(self, redis):
+        cached = await redis.get_parsed_value_by_key(redis_key.get_twitch_stream_cache(self.twitch_id))
+        self.last_stream_start = self.get_attr(cached, 'last_start', None)
+
+    async def store_to_cache(self, redis):
+        cached = {'last_start': self.last_stream_start}
+        await redis.set_parsed_value_by(redis_key.get_twitch_stream_cache(self.twitch_id), cached, redis_key.ttl_week)

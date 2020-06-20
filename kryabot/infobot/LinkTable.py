@@ -9,4 +9,5 @@ class LinkTable(Enum):
     TWITTER = "profile_twitter"
     VK = "profile_vk"
     WASD = "profile_wasd"
+    BOOSTY = "profile_boosty"
     UNKNOWN = "unknown"

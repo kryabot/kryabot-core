@@ -109,3 +109,6 @@ def get_twitch_app_token():
 def get_twitch_game_info(id):
     return 'twitch.gameinfo.{}'.format(id)
 
+
+def get_twitch_stream_cache(id):
+    return 'twitch.stream.cache.{}'.format(id)

@@ -139,4 +139,7 @@ async def getSql(sqlType):
         'save_instagram_event': 'INSERT INTO history_instagram (data_type, profile_instagram_id, media_id, object_date) VALUES (%s, %s, %s, %s)',
         'get_all_twitch_profiles': 'SELECT pt.profile_twitch_id, pt.user_id, u.tw_id, u.name, u.dname FROM profile_twitch pt LEFT JOIN user u on pt.user_id = u.user_id;',
         'get_all_twitch_history': 'SELECT * FROM history_twitch ht WHERE ht.create_ts >  NOW() - INTERVAL 1 WEEK;',
+        'get_boosty_profiles': 'SELECT * FROM profile_boosty',
+        'get_boosty_history': 'SELECT * FROM history_boosty hb ORDER BY hb.created_ts DESC',
+        'save_boosty_event': 'INSERT INTO history_boosty (profile_boosty_id, publish_ts, post_id) VALUES (%s, %s, %s)',
     }.get(sqlType, 'unknown_sql_type')

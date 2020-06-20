@@ -7,6 +7,7 @@ from infobot.KryaInfoBot import KryaInfoBot
 from infobot.Listener import Listener
 from infobot.Target import Target
 from infobot.TargetLink import TargetLink
+from infobot.boosty.BoostyListener import BoostyListener
 from infobot.goodgame.GoodgameListener import GoodgameListener
 from infobot.instagram.InstagramListener import InstagramListener
 from infobot.twitch.TwitchListener import TwitchListener
@@ -43,6 +44,7 @@ class InfoManager:
         self.listeners.append(VkListener(self))
         self.listeners.append(WasdListener(self))
         self.listeners.append(YoutubeListener(self))
+        self.listeners.append(BoostyListener(self))
 
     async def start(self):
         await self.db.redis.connection_init()
@@ -63,6 +65,7 @@ class InfoManager:
 
     async def event(self, event: Event):
         self.logger.debug('Common event received')
+        await event.save(self.db)
 
         targets = []
         for link in self.links:

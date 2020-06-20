@@ -600,6 +600,14 @@ class Database:
     async def getTwitchHistory(self):
         return await self.query('get_all_twitch_history', [])
 
+    async def getBoostyProfiles(self):
+        return await self.query('get_boosty_profiles', [])
+
+    async def getBoostyHistory(self):
+        return await self.query('get_boosty_history', [])
+
+    async def saveBoostEvent(self, event):
+        await self.query('save_boosty_event', [event.profile.profile_id, event.publish_time, event.id])
 
     ### DB METHODS WITH CACHE ###
 
