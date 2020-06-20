@@ -9,7 +9,7 @@ from infobot.boosty.BoostyProfile import BoostyProfile
 class BoostyListener(Listener):
     def __init__(self, manager):
         super().__init__(manager)
-        self.period = 120
+        self.period = 300
         self.profiles: List[BoostyProfile] = []
 
     @Listener.repeatable

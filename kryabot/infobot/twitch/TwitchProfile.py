@@ -43,4 +43,4 @@ class TwitchProfile(Profile):
 
     async def store_to_cache(self, redis):
         cached = {'last_start': self.last_stream_start}
-        await redis.set_parsed_value_by(redis_key.get_twitch_stream_cache(self.twitch_id), cached, redis_key.ttl_week)
+        await redis.set_parsed_value_by_key(redis_key.get_twitch_stream_cache(self.twitch_id), cached, redis_key.ttl_week)
