@@ -87,7 +87,7 @@ class TwitchEvent(Event):
             return None
 
         custom_url = self.url.format(width=1280, height=720)
-        custom_url += '?id={tmp_id}{seed}'.format(tmp_id=self.twitch_event_id, seed=str(datetime.now()))
+        custom_url += '?id={tmp_id}{seed}'.format(tmp_id=self.twitch_event_id, seed=str(int(datetime.now().timestamp())))
         return custom_url
 
     def get_formatted_channel_url(self):
