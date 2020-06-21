@@ -1,4 +1,3 @@
-import asyncio
 from typing import List
 import os
 
@@ -24,7 +23,7 @@ class InstagramListener(Listener):
     async def start(self):
         await super().start()
         #await self.login()
-        self.period = 400
+        self.period = 300
 
     @Listener.repeatable
     async def listen(self):
@@ -33,9 +32,8 @@ class InstagramListener(Listener):
         self.login()
         self.listen_posts()
         self.listen_stories()
-        #await asyncio.wait([self.listen_posts(), self.listen_stories()])
-        # self.loop.create_task()
-        # self.loop.create_task()
+        self.instagram.close()
+        os.remove(self.file_dir + 'instaloader-session-' + self.cfg.getConfig()['INSTAGRAM']['login'])
 
     def recreate_session_from_firefox(self):
         SESSION_FILE = self.file_dir + "cookies.sqlite"
@@ -77,7 +75,7 @@ class InstagramListener(Listener):
                 profile.last_post_id = post.mediaid
                 event = InstagramPostEvent(profile)
                 event.add_post(post)
-                self.logger.debug('Created new instagram post event')
+                self.logger.info('Created new instagram post event')
                 self.loop.create_task(self.manager.event(event))
 
                 if profile.is_first_bot_post():
@@ -91,7 +89,7 @@ class InstagramListener(Listener):
         for profile in self.profiles:
             instagram_profile = self.instagram.check_profile_id(profile.instagram_name)
             for story in self.instagram.get_stories([instagram_profile.userid]):
-                self.logger.debug('Created new instagram story event')
+                self.logger.info('Created new instagram story event')
                 event = InstagramStoryEvent(profile)
                 event.add_story(story)
 
@@ -106,9 +104,6 @@ class InstagramListener(Listener):
         try:
             profiles = await self.db.getInstagramProfiles()
             history = await self.db.getInstagramHistory()
-
-            self.logger.debug('profiles: {}'.format(profiles))
-            self.logger.debug('history: {}'.format(history))
 
             await self.update_profiles(profiles, history)
         except Exception as ex:

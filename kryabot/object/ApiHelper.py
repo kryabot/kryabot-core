@@ -66,8 +66,6 @@ class ApiHelper:
 
     async def is_sub_v2(self, channel, user, db):
         response, error = await sub_check(channel, user, db, self)
-        self.twitch.logger.info(response)
-        self.twitch.logger.info(error)
         if error is None and response is not None:
             return True
 
@@ -88,8 +86,6 @@ class ApiHelper:
 
     async def is_sub_v3(self, channel, user, db):
         response, error = await sub_check(channel, user, db, self)
-        self.twitch.logger.info(response)
-        self.twitch.logger.info(error)
         if error is None and response is not None:
             return True, response, error
 

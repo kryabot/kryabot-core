@@ -8,7 +8,6 @@ from infobot.InfoManager import InfoManager
 
 load_config()
 logger = logging.getLogger('krya.infomanager')
-logger.setLevel(logging.DEBUG)
 
 
 async def main():
