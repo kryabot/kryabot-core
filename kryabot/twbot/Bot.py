@@ -363,10 +363,13 @@ class Bot(commands.Bot):
 
         try:
             self.in_massban = True
-            sarch_text = await self.get_word_list(context.message.content)
+            viewers = await self.bot_api_helper.twitch.get_channel_chatters(db_channel.channel_name)
+            viewers = viewers['chatters']
+            ignore_users = viewers['moderators'] + viewers['staff'] + viewers['admins'] + viewers['global_mods'] + [db_channel.channel_name]
+            search_text = await self.get_word_list(context.message.content)
             ban_time = 600
 
-            if len(sarch_text) < 4:
+            if len(search_text) < 4:
                 await context.send('Search text is too short! Must be longer than 4')
                 return
 
@@ -378,9 +381,9 @@ class Bot(commands.Bot):
             except:
                 pass
 
-            sarch_text = '%{}%'.format(sarch_text)
-            self.logger.info('Searching messages to ban for {} like {}'.format(ban_time, sarch_text))
-            messages = await self.db.searchTwitchMessages(db_channel.channel_id, sarch_text)
+            search_text = '%{}%'.format(search_text)
+            self.logger.info('Searching messages to ban for {} like {}'.format(ban_time, search_text))
+            messages = await self.db.searchTwitchMessages(db_channel.channel_id, search_text)
             self.logger.info('Received {} users to ban'.format(len(messages)))
             if messages is None or len(messages) == 0:
                 await context.send('{} no users found for mass ban!'.format(context.author.name))
@@ -389,7 +392,20 @@ class Bot(commands.Bot):
                 await context.send('{} starting to ban {} users ({})'.format(context.author.name, len(messages), 'perm' if ban_time == 0 else (str(ban_time) + 's')))
 
             ban_count = 0
+            skipped = 0
+
+            def can_skip(name)->bool:
+                for ignored in ignore_users:
+                    if str(name).lower() == str(ignored).lower():
+                        return True
+
+                return False
+
             for message in messages:
+                if can_skip(message['name']):
+                    skipped = skipped + 1
+                    continue
+
                 try:
                     if ban_time > 0:
                         await context.timeout(message['name'], ban_time, 'Mass ban required by {}'.format(db_user['name']))
@@ -402,8 +418,8 @@ class Bot(commands.Bot):
 
                 await asyncio.sleep(0.5)
 
-            await context.send('{} mass ban finished, banned {} users.'.format(context.author.name, ban_count))
-            await self.db.saveTwitchMassBan(db_channel.channel_id, db_user['user_id'], sarch_text, ban_time, ban_count)
+            await context.send('{} mass ban finished, banned {} users, skipped {} users.'.format(context.author.name, ban_count, skipped))
+            await self.db.saveTwitchMassBan(db_channel.channel_id, db_user['user_id'], search_text, ban_time, ban_count)
         except Exception as ex:
             self.logger.error(ex)
         finally:
