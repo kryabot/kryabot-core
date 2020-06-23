@@ -41,6 +41,8 @@ class Bot(commands.Bot):
         self.webhook_queue = queue.Queue()
         self.problems_to_report = []
 
+        self.in_massban = False
+
         self.bot_ep = EventProcessor(self.is_silent, self.logger)
 
         super().__init__(irc_token=self.cfg.getTwitchConfig()['IRC_PASS'],
@@ -355,23 +357,48 @@ class Bot(commands.Bot):
         if self.bot_cp.get_access_level(context) < 7:
             return
 
-        sarch_text = await self.get_word_list(context.message.content)
-        ban_time = 600
-        ban_count = 0
+        if self.in_massban:
+            await context.send('Can not start massban now, try later')
+            return
 
         try:
-            word = context.message.content.split(' ')[0]
-            if word.startswith('!kbmassban'):
-                cnt = word.replace('!kbmassban', '')
-                ban_time = int(cnt)
-        except:
-            pass
+            self.in_massban = True
+            sarch_text = await self.get_word_list(context.message.content)
+            ban_time = 600
 
-        sarch_text = '%{}%'.format(sarch_text)
-        self.logger.info('Searching messages to ban for {} like {}'.format(ban_time, sarch_text))
-        messages = await self.db.searchTwitchMessages(db_channel.channel_id, sarch_text)
-        self.logger.info('Received {} users to ban'.format(len(messages)))
-        await self.db.saveTwitchMassBan(db_channel.channel_id, db_user['user_id'], sarch_text, ban_time, ban_count)
+            try:
+                word = context.message.content.split(' ')[0]
+                if word.startswith('!kbmassban'):
+                    cnt = word.replace('!kbmassban', '')
+                    ban_time = int(cnt)
+            except:
+                pass
+
+            sarch_text = '%{}%'.format(sarch_text)
+            self.logger.info('Searching messages to ban for {} like {}'.format(ban_time, sarch_text))
+            messages = await self.db.searchTwitchMessages(db_channel.channel_id, sarch_text)
+            self.logger.info('Received {} users to ban'.format(len(messages)))
+            if messages is None or len(messages) == 0:
+                await context.send("No users found for mass ban!")
+            else:
+                await context.send('Starting to ban {} users ({})'.format(len(messages), 'perm' if ban_time == 0 else (str(ban_time) + ' mins')))
+
+            ban_count = 0
+            for message in messages:
+                try:
+                    await context.send(content='.timeout {} {} {}'.format(message['name'], ban_time, 'Mass ban required by {}'.format(db_user['name'])))
+                    ban_count = ban_count + 1
+                except Exception as ex:
+                    self.logger.error(ex)
+
+                await asyncio.sleep(0.5)
+
+            await context.send('Mass ban finished, banned {} users.'.format(ban_count))
+            await self.db.saveTwitchMassBan(db_channel.channel_id, db_user['user_id'], sarch_text, ban_time, ban_count)
+        except Exception as ex:
+            self.logger.error(ex)
+        finally:
+            self.in_massban = False
 
 
     @commands.command(name='finishevent', aliases=['roll'])
