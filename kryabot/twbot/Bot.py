@@ -355,7 +355,7 @@ class Bot(commands.Bot):
         if self.bot_cp.get_access_level(context) < 7:
             return
 
-        sarch_text = self.get_word_list(context.message.content)
+        sarch_text = await self.get_word_list(context.message.content)
         ban_time = 600
         ban_count = 0
 
