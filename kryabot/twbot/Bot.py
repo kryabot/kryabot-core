@@ -381,7 +381,7 @@ class Bot(commands.Bot):
             if messages is None or len(messages) == 0:
                 await context.send("No users found for mass ban!")
             else:
-                await context.send('Starting to ban {} users ({})'.format(len(messages), 'perm' if ban_time == 0 else (str(ban_time) + ' mins')))
+                await context.send('Starting to ban {} users ({})'.format(len(messages), 'perm' if ban_time == 0 else (str(ban_time) + 's')))
 
             ban_count = 0
             for message in messages:
