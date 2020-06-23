@@ -383,9 +383,9 @@ class Bot(commands.Bot):
             messages = await self.db.searchTwitchMessages(db_channel.channel_id, sarch_text)
             self.logger.info('Received {} users to ban'.format(len(messages)))
             if messages is None or len(messages) == 0:
-                await context.send("No users found for mass ban!")
+                await context.send('{} no users found for mass ban!'.format(context.author.name))
             else:
-                await context.send('Starting to ban {} users ({})'.format(len(messages), 'perm' if ban_time == 0 else (str(ban_time) + 's')))
+                await context.send('{} starting to ban {} users ({})'.format(context.author.name, len(messages), 'perm' if ban_time == 0 else (str(ban_time) + 's')))
 
             ban_count = 0
             for message in messages:
@@ -401,7 +401,7 @@ class Bot(commands.Bot):
 
                 await asyncio.sleep(0.5)
 
-            await context.send('Mass ban finished, banned {} users.'.format(ban_count))
+            await context.send('{} mass ban finished, banned {} users.'.format(context.author.name, ban_count))
             await self.db.saveTwitchMassBan(db_channel.channel_id, db_user['user_id'], sarch_text, ban_time, ban_count)
         except Exception as ex:
             self.logger.error(ex)
