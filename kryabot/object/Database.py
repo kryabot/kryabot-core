@@ -277,8 +277,17 @@ class Database:
     async def getLinkedUserData(self, tw_login):
         return await self.query('find_tg_user_by_twitch_name', [tw_login])
 
-    async def createMessage(self, channelId, userId, messageText):
-        return await self.query('create_message', [channelId, userId, messageText])
+    async def createMessage(self, channel_id, user_id, message):
+        return await self.query('create_message', [channel_id, user_id, message])
+
+    async def searchTwitchMessages(self, channel_id, text):
+        return await self.query('search_twitch_messages', [channel_id, text])
+
+    async def deleteOldTwitchMessages(self):
+        return await self.query('wipe_twitch_messages', [])
+
+    async def saveTwitchMassBan(self, channel_id, user_id, ban_text, ban_time, ban_count):
+        return await self.query('save_mass_ban', [channel_id, user_id, ban_text, ban_time, ban_count])
 
     async def createNotice(self, channel_id, user_id, notice_type, tier, count1, count2, target_id):
         return await self.query('create_notice', [channel_id, user_id, notice_type, tier, count1, count2, target_id])

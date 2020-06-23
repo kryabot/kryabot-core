@@ -50,9 +50,9 @@ class TwitchEvent(Event):
         return self.started_at is not None
 
     def is_update(self)->bool:
-        updated = self.started_at and self.profile.last_event and self.profile.last_event.started_at == self.started_at
+        updated = self.started_at and self.profile.last_stream_start == self.started_at
 
-        if updated:
+        if updated and self.profile.last_event:
             self.updated_data = []
 
             if self.title != self.profile.last_event.title:

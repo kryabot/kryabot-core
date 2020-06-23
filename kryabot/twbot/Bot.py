@@ -196,6 +196,8 @@ class Bot(commands.Bot):
         if db_user is None or db_channel is None:
             return
 
+        self.loop.create_task(self.db.createMessage(db_channel.channel_id, db_user['user_id'], message.content))
+
         # Custom commands
         if message.content.lower().startswith(db_channel.command_symbol):
             await self.bot_cp.process(irc_user, db_user, db_channel)
@@ -210,6 +212,9 @@ class Bot(commands.Bot):
 
         # Global commands
         await self.handle_commands(message)
+
+        if message.content.lower().startswith('!kbmassban'):
+            await self.global_mass_ban(db_user, db_channel, irc_user)
 
         # Chat Events
         await self.bot_ep.process_message(irc_data=irc_user)
@@ -345,6 +350,29 @@ class Bot(commands.Bot):
             return
 
         self.logger.exception(error)
+
+    async def global_mass_ban(self, db_user, db_channel, context):
+        if self.bot_cp.get_access_level(context) < 7:
+            return
+
+        sarch_text = self.get_word_list(context.message.content)
+        ban_time = 600
+        ban_count = 0
+
+        try:
+            word = context.message.content.split(' ')[0]
+            if word.startswith('!kbmassban'):
+                cnt = word.replace('!kbmassban', '')
+                ban_time = int(cnt)
+        except:
+            pass
+
+        sarch_text = '%{}%'.format(sarch_text)
+        self.logger.info('Searching messages to ban for {} like {}'.format(ban_time, sarch_text))
+        messages = await self.db.searchTwitchMessages(db_channel.channel_id, sarch_text)
+        self.logger.info('Received {} users to ban'.format(len(messages)))
+        await self.db.saveTwitchMassBan(db_channel.channel_id, db_user['user_id'], sarch_text, ban_time, ban_count)
+
 
     @commands.command(name='finishevent', aliases=['roll'])
     async def global_finish_event(self, ctx):

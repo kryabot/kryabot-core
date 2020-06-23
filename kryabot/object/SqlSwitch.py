@@ -142,4 +142,8 @@ async def getSql(sqlType):
         'get_boosty_profiles': 'SELECT * FROM profile_boosty',
         'get_boosty_history': 'SELECT * FROM history_boosty hb ORDER BY hb.created_ts DESC',
         'save_boosty_event': 'INSERT INTO history_boosty (profile_boosty_id, publish_ts, post_id) VALUES (%s, %s, %s)',
+        'create_message': 'INSERT INTO twitch_message (channel_id, user_id, message) VALUES (%s, %s, %s)',
+        'save_mass_ban': 'INSERT INTO twitch_mass_ban (channel_id, by_user_id, ban_text, ban_time, banned_count) VALUES (%s, %s, %s, %s, %s)',
+        'wipe_twitch_messages': 'DELETE FROM twitch_message where twitch_message.created_at < NOW() - INTERVAL 1 DAY;',
+        'search_twitch_messages': 'SELECT user.user_id, user.tw_id FROM twitch_message left join user on user.user_id = twitch_message.user_id where twitch_message.channel_id = %s and twitch_message.message LIKE "%s" group by user.user_id; ',
     }.get(sqlType, 'unknown_sql_type')

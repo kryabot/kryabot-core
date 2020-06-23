@@ -738,11 +738,18 @@ class KryaClient(TelegramClient):
                 except Exception as e:
                     await self.exception_reporter(e, 'User maintenance failed (maintenance_fix_twitch_name)')
 
+        async def maintenance_delete_old_messages():
+            try:
+                await self.db.deleteOldTwitchMessages()
+            except Exception as ex:
+                await self.exception_reporter(ex, 'Maintenance (maintenance_delete_old_messages)')
+
         while True:
             await asyncio.sleep(3600)
             await self.report_to_monitoring('/ping')
             await maintenance_fix_twitch_id()
             await maintenance_fix_twitch_name()
+            await maintenance_delete_old_messages()
 
     @log_exception_ignore(log=global_logger, reporter=reporter)
     async def is_media_banned(self, channel_id, media_id, media_type):

