@@ -406,6 +406,7 @@ class Bot(commands.Bot):
                     skipped = skipped + 1
                     continue
 
+                self.logger.info('Banning user {}'.format(db_user['name']))
                 try:
                     if ban_time > 0:
                         await context.timeout(message['name'], ban_time, 'Mass ban required by {}'.format(db_user['name']))
