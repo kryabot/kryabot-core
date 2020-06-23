@@ -366,6 +366,10 @@ class Bot(commands.Bot):
             sarch_text = await self.get_word_list(context.message.content)
             ban_time = 600
 
+            if len(sarch_text) < 4:
+                await context.send('Search text is too short! Must be longer than 4')
+                return
+
             try:
                 word = context.message.content.split(' ')[0]
                 if word.startswith('!kbmassban'):
