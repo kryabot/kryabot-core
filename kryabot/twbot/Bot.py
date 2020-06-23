@@ -386,7 +386,11 @@ class Bot(commands.Bot):
             ban_count = 0
             for message in messages:
                 try:
-                    await context.send(content='.timeout {} {} {}'.format(message['name'], ban_time, 'Mass ban required by {}'.format(db_user['name'])))
+                    if ban_time > 0:
+                        await context.timeout(message['name'], ban_time, 'Mass ban required by {}'.format(db_user['name']))
+                    else:
+                        await context.ban(message['name'], 'Mass ban required by {}'.format(db_user['name']))
+
                     ban_count = ban_count + 1
                 except Exception as ex:
                     self.logger.error(ex)
