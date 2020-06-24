@@ -354,7 +354,7 @@ class Bot(commands.Bot):
         self.logger.exception(error)
 
     async def global_mass_ban(self, db_user, db_channel, context):
-        if self.bot_cp.get_access_level(context) < 7:
+        if self.bot_cp.get_access_level(context) < 6:
             return
 
         if self.in_massban:
@@ -406,7 +406,7 @@ class Bot(commands.Bot):
                     skipped = skipped + 1
                     continue
 
-                self.logger.info('Banning user {}'.format(db_user['name']))
+                self.logger.info('Banning user {}'.format(message['name']))
                 try:
                     if ban_time > 0:
                         await context.timeout(message['name'], ban_time, 'Mass ban required by {}'.format(db_user['name']))
