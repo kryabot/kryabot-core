@@ -20,6 +20,8 @@ class InstagramListener(Listener):
         if self.file_dir is None:
             self.file_dir = ''
 
+        self.instagram_profile_cache = {}
+
     async def start(self):
         await super().start()
         #await self.login()
@@ -29,11 +31,11 @@ class InstagramListener(Listener):
     async def listen(self):
         self.logger.debug('Checking instagram data')
 
-        self.login()
+        #self.login()
         self.listen_posts()
         self.listen_stories()
-        self.instagram.close()
-        os.remove(self.file_dir + 'instaloader-session-' + self.cfg.getConfig()['INSTAGRAM']['login'])
+        #self.instagram.close()
+        #os.remove(self.file_dir + 'instaloader-session-' + self.cfg.getConfig()['INSTAGRAM']['login'])
 
     def recreate_session_from_firefox(self):
         SESSION_FILE = self.file_dir + "cookies.sqlite"
@@ -68,7 +70,8 @@ class InstagramListener(Listener):
         self.logger.debug('Checking instagram posts')
 
         for profile in self.profiles:
-            for post in self.instagram.check_profile_id(profile.instagram_name).get_posts():
+            instprofile = self.get_cached_profile(profile.instagram_name)
+            for post in instprofile.get_posts():
                 if profile.post_exists(str(post.mediaid)):
                     break
 
@@ -87,8 +90,11 @@ class InstagramListener(Listener):
         self.logger.debug('Checking instagram stories')
 
         for profile in self.profiles:
-            instagram_profile = self.instagram.check_profile_id(profile.instagram_name)
-            for story in self.instagram.get_stories([instagram_profile.userid]):
+            instprofile = self.get_cached_profile(profile.instagram_name)
+            # if not instprofile.has_viewable_story:
+            #     continue
+
+            for story in self.instagram.get_stories([instprofile.userid]):
                 self.logger.info('Created new instagram story event')
                 event = InstagramStoryEvent(profile)
                 event.add_story(story)
@@ -111,3 +117,11 @@ class InstagramListener(Listener):
 
     def get_new_profile_instance(self, *args, **kwargs):
         return InstagramProfile(*args, **kwargs)
+
+    def get_cached_profile(self, instagram_name):
+        if instagram_name in self.instagram_profile_cache:
+            return self.instagram_profile_cache[instagram_name]
+
+        profile = self.instagram.check_profile_id(instagram_name)
+        self.instagram_profile_cache[instagram_name] = profile
+        return profile
