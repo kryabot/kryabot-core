@@ -148,8 +148,8 @@ class AuthBot(TelegramClient):
             if str(ch['channel_id']) == str(params['id']):
                 currentChannel = ch
 
-        if currentChannel == None:
-            await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_NO_SUBCHAT'))
+        if currentChannel is None:
+            await event.reply(self.format_translation('', '', 'AUTH_NO_SUBCHAT'))
             self.logger.info('{}: {}'.format(sender_string, 'channel_no_subchat'))
             return
 

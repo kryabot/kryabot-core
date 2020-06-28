@@ -93,7 +93,8 @@ class InstagramListener(Listener):
             instprofile = self.get_cached_profile(profile.instagram_name)
             # if not instprofile.has_viewable_story:
             #     continue
-
+            if profile.instagram_name == 'vika_karter':
+                self.instagram.download_stories(instprofile)
             for story in self.instagram.get_stories([instprofile.userid]):
                 self.logger.info('Created new instagram story event')
                 event = InstagramStoryEvent(profile)
