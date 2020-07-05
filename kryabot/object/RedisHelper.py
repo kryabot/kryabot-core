@@ -22,7 +22,7 @@ class RedisHelper:
         self.logger.info('Opening redis connection')
         address = (self.host, self.port)
         self.redis_pool = await aioredis.create_redis_pool(address=address,
-                                                     #password=self.password,
+                                                     password=self.password,
                                                      minsize=self.minsize,
                                                      maxsize=self.maxsize,
                                                      loop=self.loop,
