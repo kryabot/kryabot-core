@@ -196,6 +196,7 @@ class KryaInfoBot(TelegramClient):
 
     async def instagram_post_event(self, targets: List[Target], event: InstagramPostEvent):
         files = []
+        self.logger.info('Sending instagram post event')
 
         if event.media_list:
             for media in event.media_list:
@@ -203,6 +204,8 @@ class KryaInfoBot(TelegramClient):
                 file.seek(0)
                 files.append(file)
 
+        self.logger.info('Sending instagram post event after getting files')
+        
         if files:
             message = None
             for target in targets:

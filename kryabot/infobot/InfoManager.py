@@ -74,6 +74,9 @@ class InfoManager:
 
         if targets:
             await self.process_event(targets, event)
+        else:
+            self.logger.error('Received event, but no targets found:')
+            self.logger.error(event.stringify())
 
     async def subscribe(self):
         await self.db.redis.subscribe_event('infobot.update', self.on_update)
