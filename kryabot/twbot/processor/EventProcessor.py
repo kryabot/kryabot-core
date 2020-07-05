@@ -1,5 +1,6 @@
 import time
 from twbot.object.ChatEvent import ChatEvent
+from twbot.object.RateEvent import RateEvent
 from api.twitch import Twitch
 from random import randint
 
@@ -18,21 +19,53 @@ class EventProcessor:
                 if await event.can_remind() == True:
                     await irc_data.send(event.text)
 
-                if irc_data.message.content.lower() == event.keyword.lower():
-                    # Non subs and followers only
-                    if event.type == 1 and not irc_data.author.is_subscriber:
-                        self.logger.info('[1] Adding participant {}'.format(irc_data.author.name))
-                        await event.add(irc_data.author.name)
+                if isinstance(event, ChatEvent):
+                    if irc_data.message.content.lower() == event.keyword.lower():
+                        # Non subs and followers only
+                        if event.type == 1 and not irc_data.author.is_subscriber:
+                            self.logger.info('[1] Adding participant {}'.format(irc_data.author.name))
+                            await event.add(irc_data.author.name)
 
-                    # Subs only
-                    if event.type == 2 and irc_data.author.is_subscriber:
-                        self.logger.info('[1] Adding participant {}'.format(irc_data.author.name))
-                        await event.add(irc_data.author.name)
+                        # Subs only
+                        if event.type == 2 and irc_data.author.is_subscriber:
+                            self.logger.info('[2] Adding participant {}'.format(irc_data.author.name))
+                            await event.add(irc_data.author.name)
 
-                    # Any follower
-                    if event.type == 3:
-                        self.logger.info('[1] Adding participant {}'.format(irc_data.author.name))
-                        await event.add(irc_data.author.name)
+                        # Any follower
+                        if event.type == 3:
+                            self.logger.info('[3] Adding participant {}'.format(irc_data.author.name))
+                            await event.add(irc_data.author.name)
+                elif isinstance(event, RateEvent):
+                    if str(irc_data.message.content).isnumeric():
+                        await event.check_and_add(irc_data.author.name, irc_data.message.content)
+
+    async def start_rate_event(self, irc_data, runtime):
+        i = await self.get_int(runtime)
+        if 0 < i < 30:
+            i = 30
+
+        try:
+            existing_event = await self.find_event(irc_data.channel.name, irc_data.author.name)
+            if not existing_event is None:
+                if await existing_event.is_active():
+                    await irc_data.send('{u} can not start new event - you already have active rate event. Participants: {p}'.format(u=irc_data.author.name, p=len(existing_event.users)))
+                    return
+                else:
+                    self.events.remove(existing_event)
+
+            self.logger.info('RateEvent started on channel {} by {}'.format(irc_data.channel.name, irc_data.author.name))
+
+            event = RateEvent(logger=self.logger)
+            event.channel_name = irc_data.channel.name
+            event.by = irc_data.author.name
+            event.runtime = i
+            event.until = event.started + i
+            event.last_reminder = time.time()
+            event.text = '/me Rate event is ongoing. Send your vote by messaging number between 1-10!'
+            self.events.append(event)
+            await irc_data.send(event.text)
+        except Exception as ex:
+            self.logger.error(ex)
 
     async def start_event(self, irc_data, keyword, runtime, event_type):
         i = await self.get_int(runtime)
@@ -88,11 +121,27 @@ class EventProcessor:
         return None
 
     async def finish_event(self, irc_data, channel_twitch_id):
-        try:
-            existing_event = await self.find_event(irc_data.channel.name, irc_data.author.name)
-            if existing_event is None:
-                return
+        existing_event = await self.find_event(irc_data.channel.name, irc_data.author.name)
+        if existing_event is None:
+            return
 
+        if isinstance(existing_event, ChatEvent):
+            await self.finish_chat_event(existing_event, irc_data, channel_twitch_id)
+        elif isinstance(existing_event, RateEvent):
+            await self.finish_rate_event(existing_event, irc_data, channel_twitch_id)
+
+    async def finish_rate_event(self, existing_event, irc_data, channel_twitch_id):
+        try:
+            existing_event.active = False
+            rate = existing_event.get_avg()
+            info_text = ' [Started by {by}, participants: {total}]'.format(by=existing_event.by, total=(len(existing_event.users.keys()) + 1))
+            await irc_data.send('/me Rating finished. Result is: {} {info}'.format(rate, info=info_text))
+            self.events.remove(existing_event)
+        except Exception as e:
+            self.logger.error(e)
+
+    async def finish_chat_event(self, existing_event, irc_data, channel_twitch_id):
+        try:
             while True:
                 winner = await existing_event.roll_user()
 

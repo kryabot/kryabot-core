@@ -1,4 +1,4 @@
-import asyncio
+import traceback
 import os
 import logging
 from typing import Dict, List
@@ -18,6 +18,7 @@ from infobot.boosty.BoostyEvents import BoostyEvent
 from infobot.instagram.InstagramEvents import InstagramPostEvent, InstagramStoryEvent
 from infobot.twitch.TwitchEvents import TwitchEvent
 from object.Translator import Translator
+from tgbot import constants
 
 
 @events.register(events.NewMessage(pattern='/ping'))
@@ -170,6 +171,17 @@ class KryaInfoBot(TelegramClient):
         if wait:
             await self.run_until_disconnected()
 
+    async def exception_reporter(self, err, info):
+        await self.report_to_monitoring(message='Error: {}: {}\n\n{}\n\n<pre>{}</pre>'.format(type(err).__name__, err, info, ''.join(traceback.format_tb(err.__traceback__))), avoid_err=True)
+
+    async def report_to_monitoring(self, message, avoid_err=False):
+        # avoid_err used to avoid infinitive loop on reporting fail
+        try:
+            await self.send_message(constants.TG_GROUP_MONITORING_ID, message)
+        except Exception as err:
+            if avoid_err is False:
+                raise err
+
     async def info_event(self, targets: List[Target], event: Event):
         if isinstance(event, InstagramPostEvent):
             await self.instagram_post_event(targets, event)
@@ -194,35 +206,46 @@ class KryaInfoBot(TelegramClient):
         if files:
             message = None
             for target in targets:
-                if not message:
-                    await self.send_file(entity=target.target_id, file=files, caption=event.get_formatted_text(), parse_mode='html')
-                else:
-                    await self.send_file(entity=target.target_id, file=message.media, caption=event.get_formatted_text(), parse_mode='html')
+                try:
+                    if not message:
+                        await self.send_file(entity=target.target_id, file=files, caption=event.get_formatted_text(), parse_mode='html')
+                    else:
+                        await self.send_file(entity=target.target_id, file=message.media, caption=event.get_formatted_text(), parse_mode='html')
+                except ChannelPrivateError:
+                    await self.report_to_monitoring('ChannelPrivateError. Target ID: {}, tg ID: {}'.format(target.id, target.target_id), True)
+                except Exception as ex:
+                    await self.exception_reporter(ex, 'instagram_post_event')
 
     async def instagram_story_event(self, targets: List[Target], event: InstagramStoryEvent):
         for item in reversed(event.items):
             media = None
             for target in targets:
                 btn = None
-                caption = event.get_link_to_profile()
-                if item.external_url:
-                    btn = Button.url(self.translator.getLangTranslation(target.lang, 'INSTA_STORY_SWIPE_BUTTON'), url=item.external_url)
-                    btn = [btn]
 
-                if item.is_video:
-                    if not media:
-                        message = await self.send_file(entity=target.target_id, caption=caption, file=item.video_url, buttons=btn)
-                        media = message.media
+                try:
+                    caption = event.get_link_to_profile()
+                    if item.external_url:
+                        btn = Button.url(self.translator.getLangTranslation(target.lang, 'INSTA_STORY_SWIPE_BUTTON'), url=item.external_url)
+                        btn = [btn]
+
+                    if item.is_video:
+                        if not media:
+                            message = await self.send_file(entity=target.target_id, caption=caption, file=item.video_url, buttons=btn)
+                            media = message.media
+                        else:
+                            await self.send_file(entity=target.target_id, file=media, caption=caption, buttons=btn)
                     else:
-                        await self.send_file(entity=target.target_id, file=media, caption=caption, buttons=btn)
-                else:
-                    if not media:
-                        file = await self.manager.api.twitch.download_file_io(item.url)
-                        file.seek(0)
-                        message = await self.send_file(entity=target.target_id, file=file, caption=caption, buttons=btn)
-                        media = message.media
-                    else:
-                        await self.send_file(entity=target.target_id, file=media, caption=caption, buttons=btn)
+                        if not media:
+                            file = await self.manager.api.twitch.download_file_io(item.url)
+                            file.seek(0)
+                            message = await self.send_file(entity=target.target_id, file=file, caption=caption, buttons=btn)
+                            media = message.media
+                        else:
+                            await self.send_file(entity=target.target_id, file=media, caption=caption, buttons=btn)
+                except ChannelPrivateError:
+                    await self.report_to_monitoring('ChannelPrivateError. Target ID: {}, tg ID: {}'.format(target.id, target.target_id), True)
+                except Exception as ex:
+                    await self.exception_reporter(ex, 'instagram_story_event')
 
     async def twitch_stream_event(self, targets: List[Target], event: TwitchEvent):
         url = event.get_formatted_image_url()
@@ -269,11 +292,15 @@ class KryaInfoBot(TelegramClient):
             else:
                 text = base_text
 
-            await self.send_message(target.target_id, message=text, file=file, buttons=button, link_preview=False, parse_mode='html')
+            try:
+                await self.send_message(target.target_id, message=text, file=file, buttons=button, link_preview=False, parse_mode='html')
+            except ChannelPrivateError:
+                await self.report_to_monitoring('ChannelPrivateError. Target ID: {}, TG ID: {}'.format(target.id, target.target_id), True)
+            except Exception as ex:
+                await self.exception_reporter(ex, 'twitch_stream_event')
 
     async def boosty_post_event(self, targets: List[Target], event: BoostyEvent):
         max_length = 1000
-        print(event.stringify())
 
         button = [Button.url('View full post  👀', url=event.get_post_url())]
         text = '<b>New boosty post!</b>'
@@ -290,11 +317,17 @@ class KryaInfoBot(TelegramClient):
             text += '\n\nAccess level: <b>{}</b>'.format(event.access_name)
 
         for target in targets:
-            if event.videos:
-                for video in event.videos:
-                    await self.send_file(target.target_id, file=video, link_preview=False, parse_mode='html')
 
-            if event.images:
-                await self.send_file(target.target_id, caption=text, file=InputMediaPhotoExternal(event.images[0]), buttons=button, link_preview=False, parse_mode='html')
-            else:
-                await self.send_message(target.target_id, message=text, buttons=button, link_preview=False, parse_mode='html')
+            try:
+                if event.videos:
+                    for video in event.videos:
+                        await self.send_file(target.target_id, file=video, link_preview=False, parse_mode='html')
+
+                if event.images:
+                    await self.send_file(target.target_id, caption=text, file=InputMediaPhotoExternal(event.images[0]), buttons=button, link_preview=False, parse_mode='html')
+                else:
+                    await self.send_message(target.target_id, message=text, buttons=button, link_preview=False, parse_mode='html')
+            except ChannelPrivateError:
+                await self.report_to_monitoring('ChannelPrivateError. Target ID: {}, tg ID: {}'.format(target.id, target.target_id), True)
+            except Exception as ex:
+                await self.exception_reporter(ex, 'boosty_post_event')

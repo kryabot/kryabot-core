@@ -143,7 +143,13 @@ class PointProcessor(Processor):
         if not self.valid_input(db_channel, redemption_data):
             return
 
-        nickname = redemption_data['user_input'].replace('@', '')
+        try:
+            nickname = redemption_data['user_input'].split(' ')[0]
+        except Exception as ex:
+            nickname = redemption_data['user_input']
+
+        if nickname.startswith('@'):
+            nickname = nickname[1:]
 
         await self.irc.send_privmsg(db_channel.channel_name, content='.timeout {} {} {}'.format(nickname, int(action['amount']), redemption_data['reward']['title']))
         await self.action_twitch_message(db_channel, db_user, redemption_data, action)

@@ -106,7 +106,6 @@ async def get_active_oauth_data(kb_user_id, db, api, force_refresh=False, sec_di
 
 
 async def get_active_app_token(api, forced=False)->str:
-    print('in get_active_app_token , forced: ' + str(forced))
     if api.redis is None:
         raise Exception("Can not use get_active_app_token if redis is not enabled")
 

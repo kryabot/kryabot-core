@@ -538,30 +538,25 @@ class Bot(commands.Bot):
         if self.is_silent is True:
             return
 
-        db_channel = await self.get_db_channel(ctx.channel)
-        if db_channel is None:
+        if ctx.author.is_mod != True and ctx.author.name.lower() != self.cfg.getInstanceConfig()['OWNER'].lower() and ctx.author.name.lower() != ctx.channel.name.lower():
             return
 
-        rate_event = None
-        for re in self.rate_list:
-            if re['tw_id'] == db_channel.tw_id:
-                rate_event = re
-
-        if rate_event['active'] == 1:
-            await ctx.send('Rate event already active! Finish previous one if you want to start new one.')
-            return
-
-        # TODO
-
-        pass
+        await self.bot_ep.start_rate_event(irc_data=ctx, runtime=0)
 
     @commands.command(name='finishrate', aliases=['frate'])
     async def global_rate_finish(self, ctx):
         if self.is_silent is True:
             return
-        # TODO
 
-        pass
+        if ctx.author.is_mod != True and ctx.author.name.lower() != self.cfg.getInstanceConfig()['OWNER'].lower() and ctx.author.name.lower() != ctx.channel.name.lower():
+            return
+
+        id = 0
+        for ch in self.custom_working_channels:
+            if ch.channel_name == ctx.channel.name:
+                id = ch.tw_id
+
+        await self.bot_ep.finish_event(ctx, id)
 
     @commands.command(name='unlinktelegram')
     async def global_unlink(self, ctx):
