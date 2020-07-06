@@ -134,7 +134,7 @@ class EventProcessor:
         try:
             existing_event.active = False
             rate = existing_event.get_avg()
-            info_text = ' [Started by {by}, participants: {total}]'.format(by=existing_event.by, total=(len(existing_event.users.keys()) + 1))
+            info_text = ' [Started by {by}, participants: {total}]'.format(by=existing_event.by, total=len(existing_event.users.keys()))
             await irc_data.send('/me Rating finished. Result is: {} {info}'.format(rate, info=info_text))
             self.events.remove(existing_event)
         except Exception as e:
