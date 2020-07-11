@@ -558,7 +558,7 @@ class Bot(commands.Bot):
 
         await self.bot_ep.finish_event(ctx, id)
 
-    @commands.command(name='addtgvip')
+    @commands.command(name='tginvite')
     async def global_add_tg_vip(self, ctx):
         if self.bot_cp.get_access_level(ctx) < 6:
             return
