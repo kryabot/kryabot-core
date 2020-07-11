@@ -70,7 +70,7 @@ async def get_user_data(client, channel, user_id, skip_bits=True):
     # Basic info
     user_data = await fill_basic_info(user_data)
     user_data['global_awards'] = await client.db.getGlobalUserAwards(user_data['kb_id'])
-    user_data['invitations'] = await client.db.getTgInvite(user_data['kb_id'])
+    user_data['invitations'] = await client.db.getTgInvite(channel['channel_id'], user_data['kb_id'])
 
     # Chat related info
     user_data = await fill_chat_info(user_data, client, channel)
