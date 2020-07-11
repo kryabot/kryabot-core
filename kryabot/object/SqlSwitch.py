@@ -147,5 +147,5 @@ async def getSql(sqlType):
         'wipe_twitch_messages': 'DELETE FROM twitch_message where twitch_message.created_at < NOW() - INTERVAL 1 DAY;',
         'search_twitch_messages': 'SELECT user.user_id, user.tw_id, user.name FROM twitch_message left join user on user.user_id = twitch_message.user_id where twitch_message.channel_id = %s and twitch_message.message LIKE %s group by user.user_id; ',
         'get_tg_active_invite': 'SELECT * FROM tg_invite ti WHERE ti.channel_id = %s and ti.user_id = %s and ti.used_at is NULL;',
-        'save_tg_active_invite': 'INSERT INFO tg_invite (channel_id, user_id, by_user_id) VALUES (%s, %s, %s)',
+        'save_tg_active_invite': 'INSERT INTO tg_invite (channel_id, user_id, by_user_id) VALUES (%s, %s, %s);',
     }.get(sqlType, 'unknown_sql_type')
