@@ -624,6 +624,9 @@ class Database:
     async def saveTgInvite(self, channel_id, user_id, by_user_id):
         await self.query('save_tg_active_invite', [channel_id, user_id, by_user_id])
 
+    async def markInvitationUsed(self, channel_id, user_id):
+        await self.query('mark_invitation_used', [channel_id, user_id])
+
     ### DB METHODS WITH CACHE ###
 
     # Force means skip cache

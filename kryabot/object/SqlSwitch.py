@@ -146,6 +146,7 @@ async def getSql(sqlType):
         'save_mass_ban': 'INSERT INTO twitch_mass_ban (channel_id, by_user_id, ban_text, ban_time, banned_count) VALUES (%s, %s, %s, %s, %s)',
         'wipe_twitch_messages': 'DELETE FROM twitch_message where twitch_message.created_at < NOW() - INTERVAL 1 DAY;',
         'search_twitch_messages': 'SELECT user.user_id, user.tw_id, user.name FROM twitch_message left join user on user.user_id = twitch_message.user_id where twitch_message.channel_id = %s and twitch_message.message LIKE %s group by user.user_id; ',
-        'get_tg_active_invite': 'SELECT * FROM tg_invite ti WHERE ti.channel_id = %s and ti.user_id = %s and ti.used_at is NULL;',
+        'get_tg_active_invite': 'SELECT ti.tg_invite_id, ti.user_id, ti.by_user_id, u.name, u.dname FROM tg_invite ti left JOIN user u ON u.user_id = ti.by_user_id WHERE ti.channel_id = %s and ti.user_id = %s and ti.used_at is NULL;',
         'save_tg_active_invite': 'INSERT INTO tg_invite (channel_id, user_id, by_user_id) VALUES (%s, %s, %s);',
+        'mark_invitation_used': 'UPDATE tg_invite SET tg_invite.used_at = CURRENT_TIMESTAMP WHERE tg_invite.channel_id = %s and tg_invite.user_id = %s;',
     }.get(sqlType, 'unknown_sql_type')

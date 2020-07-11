@@ -12,6 +12,12 @@ async def user_join_check(client, channel, tg_user_id, message_id=0):
 
         need_kick = await is_kickable(data, channel)
 
+        if data['invitations']:
+            try:
+                await client.db.markInvitationUsed(channel['channel_id'], data['kb_id'])
+            except Exception as ex:
+                client.logger.error(ex)
+
         if need_kick:
             if channel['auto_kick'] == 1:
                 try:
@@ -65,13 +71,17 @@ async def is_kickable(user_data, channel):
     if user_data['is_bot'] is True:
         return False
 
-    # If entrance is closed, no user can join
-    if channel['enabled_join'] == 0:
-        return True
-
     # Add vips without checking other stats
     if user_data['is_vip'] is True:
         return False
+
+    # User was manually invited via twitch command, allow access
+    if user_data['invitations'] and len(user_data['invitations']) > 0:
+        return False
+
+    # If entrance is closed, no user can join
+    if channel['enabled_join'] == 0:
+        return True
 
     # Access is restricted if user is not verified in bot system
     if user_data['is_verified'] is False:
