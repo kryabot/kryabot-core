@@ -558,6 +558,65 @@ class Bot(commands.Bot):
 
         await self.bot_ep.finish_event(ctx, id)
 
+    @commands.command(name='addtgvip')
+    async def global_add_tg_vip(self, ctx):
+        if self.bot_cp.get_access_level(ctx) < 6:
+            return
+
+        db_channel = await self.get_db_channel(ctx.channel)
+        if db_channel is None:
+            self.logger.info('db_channel is none')
+            return
+
+        tg_group = await self.db.getTgChatIdByChannelId(db_channel.channel_id)
+        if tg_group is None or len(tg_group) == 0:
+            await ctx.send('{} this Twitch channel do not have linked Telegram group.'.format(ctx.author.name))
+            return
+
+        try:
+            target_nick = ctx.message.content.split()[1]
+            if target_nick.startswith('@'):
+                target_nick = target_nick[1:]
+        except Exception as ex:
+            await ctx.send('{} missing twitch nickname as input.'.format(ctx.author.name))
+            return
+
+        self.logger.info('User {} adding telegram vip to {}'.format(ctx.author.name, target_nick))
+        mod_db_user = await self.get_db_user(ctx.author)
+        if mod_db_user is None:
+            self.logger.info('Failed to find mod db user')
+            return
+
+        try:
+            twitch_user_by_name = await self.bot_api_helper.twitch.get_user_by_name(target_nick)
+            author_twitch_id = twitch_user_by_name['users'][0]['_id']
+        except Exception as ex:
+            await ctx.send('{} i could not find user by your provided nickname ({})'.format(ctx.author.name, target_nick))
+            return
+
+        target_db_user = await self.get_db_user_inputs(author_twitch_id, target_nick)
+        if target_db_user is None:
+            await ctx.send('{} such user does not exists in my head ({})'.format(ctx.author.name, target_nick))
+            return
+
+        check_invite = await self.db.getTgInvite(db_channel.channel_id, target_db_user['user_id'])
+        if len(check_invite) > 0:
+            await ctx.send('{} user {} already has active invitation!'.format(ctx.author.name, target_nick))
+            return
+
+        check_rights = await self.db.getUserRightsInChannel(db_channel.channel_id, target_db_user['user_id'])
+        if check_rights is not None:
+            for right in check_rights:
+                if right['right_type'] == 'WHITELIST':
+                    await ctx.send('{} user {} can join without invite because already has telegram vip right!'.format(ctx.author.name, target_nick))
+                    return
+                if right['right_type'] == 'BLACKLIST':
+                    await ctx.send('{} user {} cannot be invited because user is banned (ban right in telegram)!'.format(ctx.author.name, target_nick))
+                    return
+
+        await self.db.saveTgInvite(db_channel.channel_id, target_db_user['user_id'], mod_db_user['user_id'])
+        await ctx.send('{} created invitation for user {}! User now can join Telegram group via invite link https://tg.krya.dev/{}'.format(ctx.author.name, target_nick, db_channel.channel_name))
+
     @commands.command(name='unlinktelegram')
     async def global_unlink(self, ctx):
         try:

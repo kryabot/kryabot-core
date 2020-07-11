@@ -172,6 +172,8 @@ class AuthBot(TelegramClient):
         rights = await self.db.getUserRightsInChannel(currentChannel['channel_id'], requestor[0]['user_id'])
         is_banned = False
         is_vip = False
+        has_invitation = False
+        skip_checks = False
 
         if rights:
             for right in rights:
@@ -185,7 +187,19 @@ class AuthBot(TelegramClient):
             self.logger.info('Result: user_blacklisted')
             return
 
-        if (not is_vip) and currentChannel['join_follower_only'] == 1:
+        invites = await self.db.getTgInvite(currentChannel['channel_id'], requestor[0]['user_id'])
+        if invites and len(invites) > 0:
+            has_invitation = True
+
+        if is_vip or has_invitation:
+            skip_checks = True
+
+        if (not skip_checks) and currentChannel['enabled_join'] == 0:
+            await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_GROUP_CLOSED'))
+            self.logger.info('Result: user_blacklisted')
+            return
+
+        if (not skip_checks) and currentChannel['join_follower_only'] == 1:
             try:
                 follower_info = await self.api.twitch.check_channel_following(currentChannel['tw_id'], requestor[0]['tw_id'])
             except Exception as e:
@@ -199,7 +213,7 @@ class AuthBot(TelegramClient):
                     self.logger.info('Result: sys_err, failed to check sub status')
                     return
 
-        if (not is_vip) and currentChannel['join_sub_only'] == 1:
+        if (not skip_checks) and currentChannel['join_sub_only'] == 1:
             currentChannel = await self.refresh_channel(currentChannel)
             sub = await self.api.is_sub_v2(currentChannel, requestor[0], self.db)
 

@@ -618,6 +618,12 @@ class Database:
     async def saveBoostEvent(self, event):
         await self.query('save_boosty_event', [event.profile.profile_id, event.publish_time, event.id])
 
+    async def getTgInvite(self, channel_id, user_id):
+        return await self.query('get_tg_active_invite', [channel_id, user_id])
+
+    async def saveTgInvite(self, channel_id, user_id, by_user_id):
+        await self.query('save_tg_active_invite', [channel_id, user_id, by_user_id])
+
     ### DB METHODS WITH CACHE ###
 
     # Force means skip cache
