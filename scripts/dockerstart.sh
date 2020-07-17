@@ -26,6 +26,7 @@ start_script info_bot.sh
 start_script twitch_bot.sh
 start_script guard_bot.sh
 
+echo "Started."
 while sleep 60; do
 	sleep 60
 	#monitor_script twitch_bot.sh
