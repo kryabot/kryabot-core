@@ -372,6 +372,8 @@ class KryaClient(TelegramClient):
                         if sub is not None:
                             subs = subs + 1
                             sub_type = sub['sub_plan']
+                        else:
+                            sub_type = 'No'
 
                     await self.db.saveTgMember(channel['tg_chat_id'],
                                                user.id,
