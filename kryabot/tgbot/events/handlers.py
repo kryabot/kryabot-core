@@ -16,13 +16,13 @@ owner_id = 766888597
 kryabot_audio = None
 
 @events.register(events.NewMessage(func=lambda e: e.is_private))
-async def event_private_message(event):
+async def event_private_message(event: events.NewMessage.Event):
     # Currently we are ignoring this data
     pass
 
 
 @events.register(events.NewMessage(func=lambda e: e.is_group or e.is_channel))
-async def event_group_message(event):
+async def event_group_message(event: events.NewMessage.Event):
     # IF for TEST only
     # if event.message.to_id.channel_id != 1144972862 and event.from_id != owner_id:
     #     return
@@ -39,7 +39,7 @@ async def event_group_message(event):
 
 
 @events.register(events.MessageEdited(func=lambda e: e.is_group or e.is_channel))
-async def event_group_message_edit(event):
+async def event_group_message_edit(event: events.MessageEdited.Event):
     # IF for TEST only
     # if event.message.to_id.channel_id != 1144972862 and event.from_id != owner_id:
     #     return
@@ -52,7 +52,7 @@ async def event_group_message_edit(event):
 
 
 @events.register(events.NewMessage(pattern='^/', func=lambda e: e.is_group or e.is_channel))
-async def event_group_message_command(event):
+async def event_group_message_command(event: events.NewMessage.Event):
     # if event.message.to_id.channel_id != 1144972862 and event.from_id != owner_id:
     #     return
     await event.mark_read()
@@ -64,7 +64,7 @@ async def event_group_message_command(event):
 
 
 @events.register(events.NewMessage(monitoring_id))
-async def event_monitoring_message(event):
+async def event_monitoring_message(event: events.NewMessage.Event):
     if event.message.text == 'audio':
         try:
             await send_audio_kryabot(event)
@@ -76,7 +76,11 @@ async def event_monitoring_message(event):
 
 
 @events.register(events.ChatAction)
-async def event_chat_action(event):
+async def event_chat_action(event: events.ChatAction.Event):
+    if event.action_message is None:
+        event.client.logger.error('Received chat action without action message: {}'.format(event.stringify()))
+        return
+
     channel = await get_first(await event.client.db.get_auth_subchat(event.action_message.to_id.channel_id))
     if channel is None:
         return
@@ -100,19 +104,19 @@ async def event_chat_action(event):
         pass
 
 
-async def process_event_new_pin(event):
+async def process_event_new_pin(event: events.ChatAction.Event):
     pass
 
 
-async def process_event_new_photo(event):
+async def process_event_new_photo(event: events.ChatAction.Event):
     pass
 
 
-async def process_event_new_user(event):
+async def process_event_new_user(event: events.ChatAction.Event):
     pass
 
 
-async def send_audio_kryabot(event):
+async def send_audio_kryabot(event: events.ChatAction.Event):
     global kryabot_audio
 
     url = 'https://krya.dev/files/kryabot.ogg'

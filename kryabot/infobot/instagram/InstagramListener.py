@@ -71,8 +71,11 @@ class InstagramListener(Listener):
 
         for profile in self.profiles:
             instprofile = self.get_cached_profile(profile.instagram_name)
+            self.logger.info('Checking profile {} for posts'.format(profile.instagram_name))
             for post in instprofile.get_posts():
+                self.instagram.download_post(post, target="{}_".format(profile.instagram_name))
                 if profile.post_exists(str(post.mediaid)):
+                    self.logger.info('Post already exists with ID {}'.format(post.mediaid))
                     break
 
                 profile.last_post_id = post.mediaid
@@ -91,12 +94,8 @@ class InstagramListener(Listener):
 
         for profile in self.profiles:
             instprofile = self.get_cached_profile(profile.instagram_name)
-            # if not instprofile.has_viewable_story:
-            #     continue
-            if profile.instagram_name == 'vika_karter':
-                self.instagram.download_stories(instprofile)
             for story in self.instagram.get_stories([instprofile.userid]):
-                self.logger.info('Created new instagram story event')
+                self.logger.info('Created new instagram story event from {}'.format(profile.instagram_name))
                 event = InstagramStoryEvent(profile)
                 event.add_story(story)
 

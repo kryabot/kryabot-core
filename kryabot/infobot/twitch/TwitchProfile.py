@@ -12,6 +12,7 @@ class TwitchProfile(Profile):
         self.user_id: int = None
         self.stream_history: List = []
         self.last_stream_start = None
+        self.last_stream_finish = None
         self.last_event = None
         self.last_webhook_subscribe: datetime = None
 
@@ -40,7 +41,8 @@ class TwitchProfile(Profile):
     async def restore_from_cache(self, redis):
         cached = await redis.get_parsed_value_by_key(redis_key.get_twitch_stream_cache(self.twitch_id))
         self.last_stream_start = self.get_attr(cached, 'last_start', None)
+        self.last_stream_finish = self.get_attr(cached, 'last_finish', None)
 
     async def store_to_cache(self, redis):
-        cached = {'last_start': self.last_stream_start}
+        cached = {'last_start': self.last_stream_start, 'last_finish': self.last_stream_finish}
         await redis.set_parsed_value_by_key(redis_key.get_twitch_stream_cache(self.twitch_id), cached, redis_key.ttl_week)

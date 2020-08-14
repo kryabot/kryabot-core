@@ -818,7 +818,7 @@ class KryaClient(TelegramClient):
                 'Received unsubscribe event ID {}, but user {} is not participant of chat {}'.format(event_id, target_user['tg_id'], tg_chat['tg_chat_id']))
             return
 
-        participant = await self.get_entity(int(tg_chat['tg_id']))
+        participant = await self.get_entity(int(tg_chat['tg_chat_id']))
         chat = await self.db.get_auth_subchat(tg_chat_id=tg_chat['tg_chat_id'])
         chat_entity = await self.get_entity(PeerChannel(int(tg_chat['tg_chat_id'])))
         formatted_mention = await format_html_user_mention(participant)

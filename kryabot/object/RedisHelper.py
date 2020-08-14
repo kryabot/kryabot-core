@@ -51,6 +51,7 @@ class RedisHelper:
                         await func(json_to_dict(msg))
                     except Exception as ex:
                         self.logger.exception(ex)
+                        self.logger.info('Exception during callback: {}'.format(func))
                 else:
                     self.logger.error('Callable function not found for ' + str(channel.name))
 

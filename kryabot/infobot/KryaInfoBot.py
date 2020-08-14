@@ -251,6 +251,7 @@ class KryaInfoBot(TelegramClient):
                     await self.exception_reporter(ex, 'instagram_story_event')
 
     async def twitch_stream_event(self, targets: List[Target], event: TwitchEvent):
+        self.logger.info('Stream: {}, start={}, update={}, down={}, recovery={}'.format(event.profile.twitch_name, event.start, event.update, event.down, event.recovery))
         url = event.get_formatted_image_url()
         file = None
         button = None

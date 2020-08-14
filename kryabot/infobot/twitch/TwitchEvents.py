@@ -33,10 +33,12 @@ class TwitchEvent(Event):
         self.recovery: bool = self.is_recovery() or False
         self.profile.last_event = self
         self.profile.last_stream_start: datetime = self.started_at
+        if self.is_down():
+            self.profile.last_stream_finish: datetime = datetime.now()
 
     def parse(self, data):
         self.title = self.get_attr(data, 'title', '')
-        self.game_id = int(self.get_attr(data, 'game_id', 0))
+        self.game_id = self.parse_game_id(self.get_attr(data, 'game_id', ''))
         self.started_at = self.get_attr(data, 'started_at')
         self.online = int(self.get_attr(data, 'viewer_count', 0))
         self.url = str(self.get_attr(data, 'thumbnail_url', ''))
@@ -45,6 +47,14 @@ class TwitchEvent(Event):
         self.type = str(self.get_attr(data, 'type'))
         self.twitch_event_id = str(self.get_attr(data, 'id'))
         self.tags = self.get_attr(data, 'tag_ids', [])
+
+    # Separate parser method needed for game_id value because
+    # sometimes Twitch returns empty string and python can not convert it by int(),
+    # exception is thrown.
+    def parse_game_id(self, game_id: str)->int:
+        if game_id == '':
+            return 0
+        return int(game_id)
 
     def is_start(self)->bool:
         return self.started_at is not None
@@ -73,11 +83,11 @@ class TwitchEvent(Event):
         return not self.raw
 
     def is_recovery(self)->bool:
-        if self.profile.last_stream_start is None:
+        if self.profile.last_stream_finish is None:
             return False
 
-        self.profile.logger.info('Checking of recovery for stream of {}, last stream = {}, utcnow = {}'.format(self.profile.twitch_name, self.profile.last_stream_start.replace(tzinfo=None), datetime.utcnow()))
-        if self.is_start() and self.profile.last_stream_start.replace(tzinfo=None) + timedelta(seconds=300) > datetime.utcnow():
+        self.profile.logger.info('Checking of recovery for stream of {}, last stream = {}, utcnow = {}'.format(self.profile.twitch_name, self.profile.last_stream_finish.replace(tzinfo=None), datetime.utcnow()))
+        if self.is_start() and self.profile.last_stream_finish.replace(tzinfo=None) + timedelta(seconds=300) > datetime.utcnow():
             return True
 
         return False
