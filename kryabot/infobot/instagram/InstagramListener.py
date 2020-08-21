@@ -33,7 +33,7 @@ class InstagramListener(Listener):
 
         #self.login()
         self.listen_posts()
-        self.listen_stories()
+        await self.listen_stories()
         #self.instagram.close()
         #os.remove(self.file_dir + 'instaloader-session-' + self.cfg.getConfig()['INSTAGRAM']['login'])
 
@@ -87,14 +87,12 @@ class InstagramListener(Listener):
                 if profile.is_first_bot_post():
                     break
 
-
-    @run_in_executor
-    def listen_stories(self):
+    async def listen_stories(self):
         self.logger.debug('Checking instagram stories')
 
         for profile in self.profiles:
             instprofile = self.get_cached_profile(profile.instagram_name)
-            data = self.manager.api.instagram.get_story_by_id(instprofile.userid)
+            data = await self.manager.api.instagram.get_story_by_id(instprofile.userid)
 
             if not 'reel' in data and not 'items' in data['reel']:
                 continue
