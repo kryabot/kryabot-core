@@ -48,8 +48,8 @@ class InstagramStoryItem(Base):
         self.owner: str = self.get_attr(item['user'], 'username', '')
         self.date: datetime = self.to_datetime(self.get_attr(item, 'taken_at', 0))
         self.media_type: int = self.get_attr(item, 'media_type', 0)
-        self.video_url: str = item['video_versions'][0]['url'] if item['video_versions'] else None
-        self.image_url: str = item['image_versions2']['candidates'][0]['url'] if item['image_versions2']['candidates'] else None
+        self.video_url: str = item['video_versions'][0]['url'] if 'video_versions' in item and item['video_versions'] else None
+        self.image_url: str = item['image_versions2']['candidates'][0]['url'] if 'image_versions2' in item and item['image_versions2']['candidates'] else None
         self.is_video: bool = self.video_url is not None
         self.mentions: List[str] = []
         self.external_urls: List[str] = []
