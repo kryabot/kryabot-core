@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Dict
 
 
@@ -82,3 +83,6 @@ class Base:
             return dict[key]
         except:
             return default
+
+    def to_datetime(self, time: int)->datetime:
+        return datetime.utcfromtimestamp(time)

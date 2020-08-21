@@ -73,15 +73,15 @@ class InstagramListener(Listener):
             instprofile = self.get_cached_profile(profile.instagram_name)
             self.logger.info('Checking profile {} for posts'.format(profile.instagram_name))
             for post in instprofile.get_posts():
-                self.instagram.download_post(post, target="{}_".format(profile.instagram_name))
                 if profile.post_exists(str(post.mediaid)):
                     self.logger.info('Post already exists with ID {}'.format(post.mediaid))
                     break
 
+                self.logger.info('Created new instagram post event for user {}, post id {}'.format(profile.instagram_name, post.mediaid))
                 profile.last_post_id = post.mediaid
                 event = InstagramPostEvent(profile)
                 event.add_post(post)
-                self.logger.info('Created new instagram post event')
+
                 self.loop.create_task(self.manager.event(event))
 
                 if profile.is_first_bot_post():
@@ -94,15 +94,25 @@ class InstagramListener(Listener):
 
         for profile in self.profiles:
             instprofile = self.get_cached_profile(profile.instagram_name)
-            for story in self.instagram.get_stories([instprofile.userid]):
-                self.logger.info('Created new instagram story event from {}'.format(profile.instagram_name))
-                event = InstagramStoryEvent(profile)
-                event.add_story(story)
+            data = self.manager.api.instagram.get_story_by_id(instprofile.userid)
 
-                if event.is_new():
-                    self.loop.create_task(self.manager.event(event))
-                else:
-                    break
+            if not 'reel' in data and not 'items' in data['reel']:
+                continue
+
+            new_items = []
+            items = data['reel']['items']
+            if items:
+                for item in items:
+                    if profile.story_exists(item['pk']):
+                        continue
+                    new_items.append(item)
+
+            if new_items:
+                self.logger.info('Created new instagram story event from {}, contains {} items, {} of them is new'.format(profile.instagram_name, len(items), len(new_items)))
+                event = InstagramStoryEvent(profile)
+                event.add_story(data['reel'], new_items)
+                self.loop.create_task(self.manager.event(event))
+
 
     async def update_data(self, start: bool = False)->None:
         self.logger.info('Updating instagram listener data')

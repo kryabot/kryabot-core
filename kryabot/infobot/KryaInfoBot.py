@@ -222,33 +222,45 @@ class KryaInfoBot(TelegramClient):
     async def instagram_story_event(self, targets: List[Target], event: InstagramStoryEvent):
         for item in reversed(event.items):
             media = None
+
+            caption = ''
+            if item.mentions:
+                for mention in item.mentions:
+                    caption += event.get_mention_link(mention) + '\n'
+                caption += '\n'
+
+            caption += event.get_link_to_profile()
+
             for target in targets:
-                btn = None
+                btns = None
 
                 try:
-                    caption = event.get_link_to_profile()
-                    if item.external_url:
-                        btn = Button.url(self.translator.getLangTranslation(target.lang, 'INSTA_STORY_SWIPE_BUTTON'), url=item.external_url)
-                        btn = [btn]
+                    if item.external_urls:
+                        btns = []
+                        for url in item.external_urls:
+                            btn = Button.url(self.translator.getLangTranslation(target.lang, 'INSTA_STORY_SWIPE_BUTTON'), url=url)
+                            btns.append(btn)
 
                     if item.is_video:
                         if not media:
-                            message = await self.send_file(entity=target.target_id, caption=caption, file=item.video_url, buttons=btn)
+                            message = await self.send_file(entity=target.target_id, caption=caption, file=item.video_url, buttons=btns)
                             media = message.media
                         else:
-                            await self.send_file(entity=target.target_id, file=media, caption=caption, buttons=btn)
+                            await self.send_file(entity=target.target_id, file=media, caption=caption, buttons=btns)
                     else:
                         if not media:
-                            file = await self.manager.api.twitch.download_file_io(item.url)
+                            file = await self.manager.api.twitch.download_file_io(item.image_url)
                             file.seek(0)
-                            message = await self.send_file(entity=target.target_id, file=file, caption=caption, buttons=btn)
+                            message = await self.send_file(entity=target.target_id, file=file, caption=caption, buttons=btns)
                             media = message.media
                         else:
-                            await self.send_file(entity=target.target_id, file=media, caption=caption, buttons=btn)
+                            await self.send_file(entity=target.target_id, file=media, caption=caption, buttons=btns)
                 except ChannelPrivateError:
                     await self.report_to_monitoring('ChannelPrivateError. Target ID: {}, tg ID: {}'.format(target.id, target.target_id), True)
                 except Exception as ex:
                     await self.exception_reporter(ex, 'instagram_story_event')
+
+        self.logger.info(event.stringify())
 
     async def twitch_stream_event(self, targets: List[Target], event: TwitchEvent):
         self.logger.info('Stream: {}, start={}, update={}, down={}, recovery={}'.format(event.profile.twitch_name, event.start, event.update, event.down, event.recovery))
@@ -258,7 +270,8 @@ class KryaInfoBot(TelegramClient):
 
         text_key = 'TWITCH_NOTIFICATION_START'
         if event.recovery:
-            return
+            text_key = 'TWITCH_NOTIFICATION_RECOVERY'
+            button = [Button.url(event.profile.twitch_name, url=event.get_channel_url())]
         elif event.update:
             text_key = 'TWITCH_NOTIFICATION_UPDATE'
             file = InputMediaPhotoExternal(url)
@@ -280,9 +293,9 @@ class KryaInfoBot(TelegramClient):
 
             base_text = self.translator.getLangTranslation(target.lang, text_key)
             text = ''
-            if event.start and not event.update:
-                text = '<b>{}</b>({})\n\n{}'.format(event.title, event.game_name, base_text)
-            if event.update:
+            if event.recovery and event.start:
+                text = base_text.format(event.profile.twitch_name)
+            elif event.update and event.start:
                 for upd in event.updated_data:
                     if 'title' in upd:
                         text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_TITLE'), event.title)
@@ -293,6 +306,8 @@ class KryaInfoBot(TelegramClient):
                     text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_ONLINE'), event.online)
 
                 text = '{}\n{}'.format(base_text, text)
+            elif event.start:
+                text = '<b>{}</b>({})\n\n{}'.format(event.title, event.game_name, base_text)
             else:
                 text = base_text
 

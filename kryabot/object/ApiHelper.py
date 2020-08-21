@@ -1,4 +1,5 @@
 from api.boosty import Boosty
+from api.instagram import Instagram
 from api.vk import VK
 from api.twitch import Twitch
 from api.guardbot import GuardBot
@@ -18,6 +19,7 @@ class ApiHelper:
         self.guardbot = GuardBot(cfg=cfg)
         self.gc = GoogleCloud(cfg=cfg)
         self.boosty = Boosty(cfg=cfg)
+        self.instagram = Instagram(cfg=cfg)
         self.logger = self.vk.logger
         self.sub_check_false = 'sub_check_false'
         self.reporter = reporter

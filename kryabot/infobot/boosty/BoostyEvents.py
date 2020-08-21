@@ -53,9 +53,6 @@ class BoostyEvent(Event):
         self.price = int(self.get_attr(access, 'price', 0))
         self.public = bool(self.get_attr(data, 'hasAccess', False))
 
-    def to_datetime(self, time: int)->datetime:
-        return datetime.utcfromtimestamp(time)
-
     def get_formatted_channel_url(self):
         return '<a href="{url}">{ch}</a>'.format(url=self.get_channel_url(), ch=self.profile.boosty_username)
 

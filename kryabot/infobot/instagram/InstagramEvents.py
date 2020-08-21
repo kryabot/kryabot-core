@@ -16,21 +16,16 @@ class InstagramStoryEvent(Event):
         self.owner: str = None
         self.items: List[InstagramStoryItem] = []
 
-    def add_story(self, story):
-        self.unique_id = story.unique_id
-        self.latest_media_utc = story.latest_media_utc
-        self.itemcount = story.itemcount
-        self.owner = story.owner_username
+    def add_story(self, story, new_items):
+        self.unique_id = story['id']
+        self.latest_media_utc = self.to_datetime(story['latest_reel_media'])
+        self.itemcount = story['media_count']
+        self.owner = story['user']['username']
 
-        for item in story.get_items():
-            if self.profile.story_exists(item.mediaid):
-                continue
-
-            self.items.append(InstagramStoryItem(item))
-            self.profile.add_story_history(item.mediaid, item.date)
-
-    def is_new(self):
-        return len(self.items) > 0
+        for new_item in new_items:
+            item = InstagramStoryItem(new_item)
+            self.items.append(item)
+            self.profile.add_story_history(item.media_id, item.date)
 
     async def save(self, db):
         for item in self.items:
@@ -42,20 +37,34 @@ class InstagramStoryEvent(Event):
     def get_link_to_profile(self):
         return '🖼 <a href="https://instagram.com/{}">Instagram</a>'.format(self.owner)
 
+    def get_mention_link(self, username: str)->str:
+        return '<a href="https://instagram.com/{}">#{}</a>'.format(username, username)
+
 
 class InstagramStoryItem(Base):
     def __init__(self, item):
-        self.media_id: str = str(item.mediaid)
-        self.shortcode: str = item.shortcode
-        self.owner: str = item.owner_username
-        self.date: datetime = item.date_utc
-        self.url: str = item.url
-        self.typename: str = item.typename
-        self.is_video: bool = item.is_video
-        self.video_url: str = item.video_url
-        self.external_url: str = None
-        if 'story_cta_url' in item._node:
-            self.external_url: str = item._node['story_cta_url']
+        self.media_id: str = self.get_attr(item, 'pk', '')
+        self.shortcode: str = self.get_attr(item, 'code', '')
+        self.owner: str = self.get_attr(item['user'], 'username', '')
+        self.date: datetime = self.to_datetime(self.get_attr(item, 'taken_at', 0))
+        self.media_type: int = self.get_attr(item, 'media_type', 0)
+        self.video_url: str = item['video_versions'][0]['url'] if item['video_versions'] else None
+        self.image_url: str = item['image_versions2']['candidates'][0]['url'] if item['image_versions2']['candidates'] else None
+        self.is_video: bool = self.video_url is not None
+        self.mentions: List[str] = []
+        self.external_urls: List[str] = []
+
+        if 'story_cta' in item:
+            for cta in item['story_cta']:
+                if 'links' in cta:
+                    for link in cta['links']:
+                        if 'webUri' in link:
+                            self.external_urls.append(link['webUri'])
+
+        if 'reel_mentions' in item:
+            for mention in item['reel_mentions']:
+                if 'user' in mention and 'username' in mention['user']:
+                    self.mentions.append(mention['user']['username'])
 
 
 class InstagramPostEvent(Event):
