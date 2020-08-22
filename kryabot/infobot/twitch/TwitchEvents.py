@@ -27,14 +27,14 @@ class TwitchEvent(Event):
             self.parse(data[0])
 
         self.updated_data = []
-        self.start: bool = self.is_start() or False
-        self.update: bool = self.is_update() or False
         self.down: bool = self.is_down() or False
-        self.recovery: bool = self.is_recovery() or False
+        self.start: bool = self.is_start() and not self.down or False
+        self.update: bool = self.is_update() and not self.down or False
+        self.recovery: bool = self.is_recovery() and not self.down or False
         self.profile.last_event = self
         self.profile.last_stream_start: datetime = self.started_at
         if self.is_down():
-            self.profile.last_stream_finish: datetime = datetime.now()
+            self.profile.last_stream_finish: datetime = datetime.utcnow()
 
     def parse(self, data):
         self.title = self.get_attr(data, 'title', '')

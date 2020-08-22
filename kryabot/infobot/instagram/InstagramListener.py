@@ -95,22 +95,20 @@ class InstagramListener(Listener):
                 instprofile = self.get_cached_profile(profile.instagram_name)
                 data = await self.manager.api.instagram.get_story_by_id(instprofile.userid)
 
-                if not 'reel' in data and not 'items' in data['reel']:
-                    continue
+                if 'reel' in data and 'items' in data['reel']:
+                    new_items = []
+                    items = data['reel']['items']
+                    if items:
+                        for item in items:
+                            if profile.story_exists(item['pk']):
+                                continue
+                            new_items.append(item)
 
-                new_items = []
-                items = data['reel']['items']
-                if items:
-                    for item in items:
-                        if profile.story_exists(item['pk']):
-                            continue
-                        new_items.append(item)
-
-                if new_items:
-                    self.logger.info('Created new instagram story event from {}, contains {} items, {} of them is new'.format(profile.instagram_name, len(items), len(new_items)))
-                    event = InstagramStoryEvent(profile)
-                    event.add_story(data['reel'], new_items)
-                    self.loop.create_task(self.manager.event(event))
+                    if new_items:
+                        self.logger.info('Created new instagram story event from {}, contains {} items, {} of them is new'.format(profile.instagram_name, len(items), len(new_items)))
+                        event = InstagramStoryEvent(profile)
+                        event.add_story(data['reel'], new_items)
+                        self.loop.create_task(self.manager.event(event))
             except Exception as ex:
                 await self.manager.on_exception(ex, 'Instagram story check for {}'.format(profile.instagram_name))
 

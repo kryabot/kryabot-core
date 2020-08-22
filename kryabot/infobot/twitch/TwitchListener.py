@@ -1,7 +1,6 @@
 import asyncio
 from typing import List
 
-from api.twitch import Twitch
 from infobot.Listener import Listener
 from infobot.twitch.TwitchEvents import TwitchEvent
 from infobot.twitch.TwitchProfile import TwitchProfile
@@ -13,7 +12,6 @@ class TwitchListener(Listener):
         super().__init__(manager)
         self.period = 500000
         self.profiles: List[TwitchProfile] = []
-        self.api: Twitch = Twitch(redis=manager.db.redis, cfg=manager.cfg)
         self.last_subscribe = None
 
     async def start(self):
@@ -34,7 +32,7 @@ class TwitchListener(Listener):
             for prof in self.profiles:
                 if prof.twitch_id == data['twitch_id']:
                     event = TwitchEvent(prof, data['data'])
-                    await event.translate(self.api)
+                    await event.translate(self.manager.api.twitch)
                     await event.profile.store_to_cache(self.manager.db.redis)
                     # Publish event to Info bot
                     self.loop.create_task(self.manager.event(event))
@@ -52,7 +50,7 @@ class TwitchListener(Listener):
 
     async def subscribe_profile(self, profile: TwitchProfile)->None:
         self.logger.info('Refreshing stream webhook for {}'.format(profile.twitch_name))
-        await self.api.webhook_subscribe_stream(profile.twitch_id, profile.twitch_name)
+        await self.manager.api.twitch.webhook_subscribe_stream(profile.twitch_id, profile.twitch_name)
 
     async def update_data(self, start: bool = False):
         try:

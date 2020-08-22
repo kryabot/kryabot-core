@@ -260,8 +260,6 @@ class KryaInfoBot(TelegramClient):
                 except Exception as ex:
                     await self.exception_reporter(ex, 'instagram_story_event')
 
-        self.logger.info(event.stringify())
-
     async def twitch_stream_event(self, targets: List[Target], event: TwitchEvent):
         self.logger.info('Stream: {}, start={}, update={}, down={}, recovery={}'.format(event.profile.twitch_name, event.start, event.update, event.down, event.recovery))
         url = event.get_formatted_image_url()
@@ -269,15 +267,15 @@ class KryaInfoBot(TelegramClient):
         button = None
 
         text_key = 'TWITCH_NOTIFICATION_START'
-        if event.recovery:
+        if event.down:
+            text_key = 'TWITCH_NOTIFICATION_FINISH'
+        elif event.recovery:
             text_key = 'TWITCH_NOTIFICATION_RECOVERY'
             button = [Button.url(event.profile.twitch_name, url=event.get_channel_url())]
         elif event.update:
             text_key = 'TWITCH_NOTIFICATION_UPDATE'
             file = InputMediaPhotoExternal(url)
             button = [Button.url(event.profile.twitch_name, url=event.get_channel_url())]
-        elif event.down:
-            text_key = 'TWITCH_NOTIFICATION_FINISH'
         elif event.start:
             file = InputMediaPhotoExternal(url)
             button = [Button.url(event.profile.twitch_name, url=event.get_channel_url())]

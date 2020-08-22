@@ -101,7 +101,8 @@ class InfoManager:
             await listener.on_update(message)
 
     async def on_exception(self, ex: Exception, info: str=''):
-        self.logger.exception(info, ex)
+        self.logger.error(info)
+        self.logger.exception(ex)
         self.tg_bot.exception_reporter(err=ex, info=info)
 
     async def process_event(self, targets: List[Target], event):
