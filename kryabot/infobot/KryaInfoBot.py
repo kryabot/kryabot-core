@@ -183,16 +183,20 @@ class KryaInfoBot(TelegramClient):
                 raise err
 
     async def info_event(self, targets: List[Target], event: Event):
-        if isinstance(event, InstagramPostEvent):
-            await self.instagram_post_event(targets, event)
-        elif isinstance(event, InstagramStoryEvent):
-            await self.instagram_story_event(targets, event)
-        elif isinstance(event, TwitchEvent):
-            await self.twitch_stream_event(targets, event)
-        elif isinstance(event, BoostyEvent):
-            await self.boosty_post_event(targets, event)
-        else:
-            raise ValueError('Received unsupported event type: ' + str(type(event)))
+        try:
+            if isinstance(event, InstagramPostEvent):
+                await self.instagram_post_event(targets, event)
+            elif isinstance(event, InstagramStoryEvent):
+                await self.instagram_story_event(targets, event)
+            elif isinstance(event, TwitchEvent):
+                await self.twitch_stream_event(targets, event)
+            elif isinstance(event, BoostyEvent):
+                await self.boosty_post_event(targets, event)
+            else:
+                raise ValueError('Received unsupported event type: ' + str(type(event)))
+        except Exception as ex:
+            await self.exception_reporter(ex, 'For event {} in targets {}'.format(type(event), targets))
+
 
     async def instagram_post_event(self, targets: List[Target], event: InstagramPostEvent):
         files = []
@@ -223,6 +227,7 @@ class KryaInfoBot(TelegramClient):
         for item in reversed(event.items):
             media = None
 
+            self.logger.info('Formatting mentions for caption')
             caption = ''
             if item.mentions:
                 for mention in item.mentions:
@@ -230,10 +235,10 @@ class KryaInfoBot(TelegramClient):
                 caption += '\n'
 
             caption += event.get_link_to_profile()
-
+            self.logger.info('Caption formatted')
             for target in targets:
                 btns = None
-
+                self.logger.info('Sending to user {}'.format(target.user_id))
                 try:
                     if item.external_urls:
                         btns = []
@@ -305,7 +310,7 @@ class KryaInfoBot(TelegramClient):
 
                 text = '{}\n{}'.format(base_text, text)
             elif event.start:
-                text = '<b>{}</b>({})\n\n{}'.format(event.title, event.game_name, base_text)
+                text = '<b>{}</b>\n🎮{}\n\n{}'.format(event.title, event.game_name, base_text)
             else:
                 text = base_text
 

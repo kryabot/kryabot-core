@@ -103,7 +103,7 @@ class InfoManager:
     async def on_exception(self, ex: Exception, info: str=''):
         self.logger.error(info)
         self.logger.exception(ex)
-        self.tg_bot.exception_reporter(err=ex, info=info)
+        await self.tg_bot.exception_reporter(err=ex, info=info)
 
     async def process_event(self, targets: List[Target], event):
         tg_targets = [t for t in targets if t.is_target_telegram()]

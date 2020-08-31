@@ -1,7 +1,7 @@
 from typing import List
 import os
 
-from instaloader import Instaloader
+from instaloader import Instaloader, Profile
 from infobot.instagram.InstagramEvents import InstagramPostEvent, InstagramStoryEvent
 from infobot.instagram.InstagramProfile import InstagramProfile
 from infobot.Listener import Listener
@@ -70,7 +70,9 @@ class InstagramListener(Listener):
         self.logger.debug('Checking instagram posts')
 
         for profile in self.profiles:
-            instprofile = self.get_cached_profile(profile.instagram_name)
+            #instprofile = self.get_cached_profile(profile.instagram_name)
+            instprofile = Profile.from_username(self.instagram.context, profile.instagram_name)
+
             self.logger.info('Checking profile {} for posts'.format(profile.instagram_name))
             for post in instprofile.get_posts():
                 if profile.post_exists(str(post.mediaid)):
@@ -95,7 +97,7 @@ class InstagramListener(Listener):
                 instprofile = self.get_cached_profile(profile.instagram_name)
                 data = await self.manager.api.instagram.get_story_by_id(instprofile.userid)
 
-                if 'reel' in data and 'items' in data['reel']:
+                if data is not None and 'reel' in data and 'items' in data['reel']:
                     new_items = []
                     items = data['reel']['items']
                     if items:
