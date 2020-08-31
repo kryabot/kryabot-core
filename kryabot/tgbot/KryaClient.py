@@ -280,131 +280,132 @@ class KryaClient(TelegramClient):
         self.logger.info('Refresh on channel: ' + str(channel))
 
         kick_array = []
-        for user in participants:
-            sanity_check = 0
+        async with self.action(channel['tg_chat_id'], 'game'):
+            for user in participants:
+                sanity_check = 0
 
-            while True:
-                if sanity_check > max_sanity_check:
-                    break
-
-                error_message = ''
-                sanity_check += 1
-
-                self.logger.info(str(user))
-                user_string = await avoid_none(user.first_name) + ' ' + await avoid_none(user.last_name) + ' ' + await avoid_none(user.username)
-                user_string.strip()
-
-                requestor = await self.db.getUserByTgChatId(user.id)
-                if len(requestor) == 0:
-                    check_id = None
-                else:
-                    check_id = requestor[0]['user_id']
-
-                user_whitelisted, user_blacklisted, blacklist_comment = await self.has_special_rights(check_id, user.id, channel)
-
-                if user.bot:
-                    break
-
-                await asyncio.sleep(0.1)
-                total = total + 1
-
-                try:
-                    sub_type = ''
-                    if kickDeleted and user.deleted is True:
-                        kicked_total += 1
-                        kicked_deleted += 1
-                        kick_array.append('{} (Deleted account)'.format(user.id))
-                        self.logger.info(('[Deleted] Kicking: ' + user_string).encode())
-                        await self.kick_user(channel_entity, user, channel['ban_time'])
+                while True:
+                    if sanity_check > max_sanity_check:
                         break
 
-                    if kick and user_blacklisted and not(user in channel_admins):
-                        kicked_total += 1
-                        kicked_blacklist += 1
-                        kick_array.append('{} (Blacklisted account)'.format(user_string))
-                        self.logger.info(('[Blacklisted] Kicking: ' + user_string).encode())
-                        await self.kick_user(channel_entity, user, channel['ban_time'])
+                    error_message = ''
+                    sanity_check += 1
+
+                    self.logger.info(str(user))
+                    user_string = await avoid_none(user.first_name) + ' ' + await avoid_none(user.last_name) + ' ' + await avoid_none(user.username)
+                    user_string.strip()
+
+                    requestor = await self.db.getUserByTgChatId(user.id)
+                    if len(requestor) == 0:
+                        check_id = None
+                    else:
+                        check_id = requestor[0]['user_id']
+
+                    user_whitelisted, user_blacklisted, blacklist_comment = await self.has_special_rights(check_id, user.id, channel)
+
+                    if user.bot:
                         break
 
-                    # Not verified
-                    if len(requestor) == 0 and kickNonVerified and not user_whitelisted and not(user in channel_admins):
-                        kicked_total += 1
-                        kicked_not_verified += 1
-                        kick_array.append('{} (Not verified)'.format(user_string))
-                        self.logger.info(('[Not-verified] Kicking: ' + user_string).encode())
-                        await self.kick_user(channel_entity, user, channel['ban_time'])
-                        break
+                    await asyncio.sleep(0.1)
+                    total = total + 1
 
-                    if len(requestor) > 0:
-                        verified += 1
-
-                        if channel['join_follower_only'] and kickNonFollower and not user_whitelisted and not(user in channel_admins):
-                            try:
-                                follower_info = await self.api.twitch.check_channel_following(channel['tw_id'], requestor[0]['tw_id'])
-                            except Exception as e:
-                                if '404' in str(e):
-                                    kicked_total += 1
-                                    kicked_non_follow += 1
-                                    kick_array.append('{} (Not follower: {})'.format(user_string, requestor[0]['name']))
-                                    self.logger.info(('[Non-follower] Kicking: ' + user_string).encode())
-                                    await self.kick_user(channel_entity, user, channel['ban_time'])
-                                else:
-                                    await self.report_to_monitoring('Failed to check followage on user join for {uname}: {err}'.format(uname=requestor[0]['name'], err=str(e)))
-                                break
-
-                        sub, sub_err = await sub_check(channel, requestor[0], self.db, self.api)
-
-                        # Update token and repeat
-                        if sub_err is not None and 'unauthorized' in sub_err.lower():
-                            channel = await refresh_channel_token(self, channel, True)
-                            verified -= 1
-                            continue
-
-                        # Not a sub
-                        if channel['join_sub_only'] and sub is None and kickNonSub and not user_whitelisted and not(user in channel_admins):
+                    try:
+                        sub_type = ''
+                        if kickDeleted and user.deleted is True:
                             kicked_total += 1
-                            kicked_non_sub += 1
-                            kick_array.append('{} (Not subscriber: {})'.format(user_string, requestor[0]['name']))
-                            self.logger.info(('[Non-sub] Kicking: ' + user_string).encode())
+                            kicked_deleted += 1
+                            kick_array.append('{} (Deleted account)'.format(user.id))
+                            self.logger.info(('[Deleted] Kicking: ' + user_string).encode())
                             await self.kick_user(channel_entity, user, channel['ban_time'])
                             break
 
-                        if sub is not None:
-                            subs = subs + 1
-                            sub_type = sub['sub_plan']
-                        else:
-                            sub_type = 'No'
-
-                    await self.db.saveTgMember(channel['tg_chat_id'],
-                                               user.id,
-                                               await avoid_none(user.first_name),
-                                               await avoid_none(user.last_name),
-                                               await avoid_none(user.username),
-                                               sub_type)
-                except Exception as e:
-                    await self.report_exception(exception=e, info='User: {}'.format(user_string))
-
-                    error_message = str(e)
-                    self.logger.error(error_message)
-                    if 'EditBannedRequest' in error_message:
-                        if 'A wait of' in error_message:
-                            try:
-                                wlist = error_message.split(' ')
-                                wait_time = int(wlist[3])
-                                wait_time += 10
-                            except:
-                                wait_time = 600
-                            await self.send_message(channel['tg_chat_id'], self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_PAUSE').format(wt=wait_time))
-                            await asyncio.sleep(wait_time)
-                            await self.send_message(channel['tg_chat_id'], self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_RESUME'))
-                        if 'not an admin' in error_message:
+                        if kick and user_blacklisted and not(user in channel_admins):
+                            kicked_total += 1
+                            kicked_blacklist += 1
+                            kick_array.append('{} (Blacklisted account)'.format(user_string))
+                            self.logger.info(('[Blacklisted] Kicking: ' + user_string).encode())
+                            await self.kick_user(channel_entity, user, channel['ban_time'])
                             break
-                    continue
-                break
 
-            if sanity_check > max_sanity_check:
-                await self.send_message(channel['tg_chat_id'], self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_SANITY_STOP'))
-                break
+                        # Not verified
+                        if len(requestor) == 0 and kickNonVerified and not user_whitelisted and not(user in channel_admins):
+                            kicked_total += 1
+                            kicked_not_verified += 1
+                            kick_array.append('{} (Not verified)'.format(user_string))
+                            self.logger.info(('[Not-verified] Kicking: ' + user_string).encode())
+                            await self.kick_user(channel_entity, user, channel['ban_time'])
+                            break
+
+                        if len(requestor) > 0:
+                            verified += 1
+
+                            if channel['join_follower_only'] and kickNonFollower and not user_whitelisted and not(user in channel_admins):
+                                try:
+                                    follower_info = await self.api.twitch.check_channel_following(channel['tw_id'], requestor[0]['tw_id'])
+                                except Exception as e:
+                                    if '404' in str(e):
+                                        kicked_total += 1
+                                        kicked_non_follow += 1
+                                        kick_array.append('{} (Not follower: {})'.format(user_string, requestor[0]['name']))
+                                        self.logger.info(('[Non-follower] Kicking: ' + user_string).encode())
+                                        await self.kick_user(channel_entity, user, channel['ban_time'])
+                                    else:
+                                        await self.report_to_monitoring('Failed to check followage on user join for {uname}: {err}'.format(uname=requestor[0]['name'], err=str(e)))
+                                    break
+
+                            sub, sub_err = await sub_check(channel, requestor[0], self.db, self.api)
+
+                            # Update token and repeat
+                            if sub_err is not None and 'unauthorized' in sub_err.lower():
+                                channel = await refresh_channel_token(self, channel, True)
+                                verified -= 1
+                                continue
+
+                            # Not a sub
+                            if channel['join_sub_only'] and sub is None and kickNonSub and not user_whitelisted and not(user in channel_admins):
+                                kicked_total += 1
+                                kicked_non_sub += 1
+                                kick_array.append('{} (Not subscriber: {})'.format(user_string, requestor[0]['name']))
+                                self.logger.info(('[Non-sub] Kicking: ' + user_string).encode())
+                                await self.kick_user(channel_entity, user, channel['ban_time'])
+                                break
+
+                            if sub is not None:
+                                subs = subs + 1
+                                sub_type = sub['sub_plan']
+                            else:
+                                sub_type = 'No'
+
+                        await self.db.saveTgMember(channel['tg_chat_id'],
+                                                   user.id,
+                                                   await avoid_none(user.first_name),
+                                                   await avoid_none(user.last_name),
+                                                   await avoid_none(user.username),
+                                                   sub_type)
+                    except Exception as e:
+                        await self.report_exception(exception=e, info='User: {}'.format(user_string))
+
+                        error_message = str(e)
+                        self.logger.error(error_message)
+                        if 'EditBannedRequest' in error_message:
+                            if 'A wait of' in error_message:
+                                try:
+                                    wlist = error_message.split(' ')
+                                    wait_time = int(wlist[3])
+                                    wait_time += 10
+                                except:
+                                    wait_time = 600
+                                await self.send_message(channel['tg_chat_id'], self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_PAUSE').format(wt=wait_time))
+                                await asyncio.sleep(wait_time)
+                                await self.send_message(channel['tg_chat_id'], self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_RESUME'))
+                            if 'not an admin' in error_message:
+                                break
+                        continue
+                    break
+
+                if sanity_check > max_sanity_check:
+                    await self.send_message(channel['tg_chat_id'], self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_SANITY_STOP'))
+                    break
 
         self.logger.info('Mass kick loop finished')
         await self.db.finishTgMemberRefresh(channel['tg_chat_id'], error_message)
@@ -517,34 +518,35 @@ class KryaClient(TelegramClient):
         lang = channel['bot_lang']
 
         if manual is True or channel['show_report'] == 1:
-            report = self.translator.getLangTranslation(lang, 'UR_TITLE')
-            report += '\n\n{label}: {val}'.format(val=data['total'], label=self.translator.getLangTranslation(lang, 'UR_TOTAL'))
-            report += '\n{label}: {val}'.format(val=data['subs'], label=self.translator.getLangTranslation(lang, 'UR_SUBS'))
-            report += '\n{label}: {val}'.format(val=(data['non_subs']), label=self.translator.getLangTranslation(lang, 'UR_NON_SUBS'))
-            if data['non_verified'] > 0:
-                report += '\n{label}: {val}'.format(val=data['non_verified'], label=self.translator.getLangTranslation(lang, 'UR_NON_VERIFIED'))
-            if data['deleted'] > 0:
-                report += '\n{label}: {val}'.format(val=data['deleted'], label=self.translator.getLangTranslation(lang, 'UR_TG_DELETED'))
-            if data['bots'] > 0:
-                report += '\n{label}: {val}'.format(val=data['bots'], label=self.translator.getLangTranslation(lang, 'UR_BOTS'))
-            if data['kicked'] > 0:
-                report += '\n{label}: {val}'.format(val=data['kicked'], label=self.translator.getLangTranslation(lang, 'UR_KICKED'))
+            async with self.action(channel['tg_chat_id'], 'document'):
+                report = self.translator.getLangTranslation(lang, 'UR_TITLE')
+                report += '\n\n{label}: {val}'.format(val=data['total'], label=self.translator.getLangTranslation(lang, 'UR_TOTAL'))
+                report += '\n{label}: {val}'.format(val=data['subs'], label=self.translator.getLangTranslation(lang, 'UR_SUBS'))
+                report += '\n{label}: {val}'.format(val=(data['non_subs']), label=self.translator.getLangTranslation(lang, 'UR_NON_SUBS'))
+                if data['non_verified'] > 0:
+                    report += '\n{label}: {val}'.format(val=data['non_verified'], label=self.translator.getLangTranslation(lang, 'UR_NON_VERIFIED'))
+                if data['deleted'] > 0:
+                    report += '\n{label}: {val}'.format(val=data['deleted'], label=self.translator.getLangTranslation(lang, 'UR_TG_DELETED'))
+                if data['bots'] > 0:
+                    report += '\n{label}: {val}'.format(val=data['bots'], label=self.translator.getLangTranslation(lang, 'UR_BOTS'))
+                if data['kicked'] > 0:
+                    report += '\n{label}: {val}'.format(val=data['kicked'], label=self.translator.getLangTranslation(lang, 'UR_KICKED'))
 
-            if data['whitelists'] > 0:
-                report += '\n{label}: {val}'.format(val=data['whitelists'], label=self.translator.getLangTranslation(lang, 'UR_VIP'))
-            if data['blacklists'] > 0:
-                report += '\n{label}: {val}'.format(val=data['blacklists'], label=self.translator.getLangTranslation(lang, 'UR_BANNED'))
+                if data['whitelists'] > 0:
+                    report += '\n{label}: {val}'.format(val=data['whitelists'], label=self.translator.getLangTranslation(lang, 'UR_VIP'))
+                if data['blacklists'] > 0:
+                    report += '\n{label}: {val}'.format(val=data['blacklists'], label=self.translator.getLangTranslation(lang, 'UR_BANNED'))
 
-            if data['is_authorised'] == 0:
-                report += '\n\n<b>{}</b>'.format(self.translator.getLangTranslation(lang, 'UR_SUB_CHECK_FAILED'))
+                if data['is_authorised'] == 0:
+                    report += '\n\n<b>{}</b>'.format(self.translator.getLangTranslation(lang, 'UR_SUB_CHECK_FAILED'))
 
-            if data['next_mk'] and data['next_mk'] > datetime.now():
-                formatted = await get_datetime_diff_text(data['next_mk'], datetime.now())
-                report += '\n\n{} {}!'.format(self.translator.getLangTranslation(lang, 'CMD_NEXT_IN'), formatted)
+                if data['next_mk'] and data['next_mk'] > datetime.now():
+                    formatted = await get_datetime_diff_text(data['next_mk'], datetime.now())
+                    report += '\n\n{} {}!'.format(self.translator.getLangTranslation(lang, 'CMD_NEXT_IN'), formatted)
 
-            report += '\n\n'
-            report += self.translator.getLangTranslation(lang, 'UR_FOOTER')
-            await self.send_message(channel['tg_chat_id'], report, parse_mode='html')
+                report += '\n\n'
+                report += self.translator.getLangTranslation(lang, 'UR_FOOTER')
+                await self.send_message(channel['tg_chat_id'], report, parse_mode='html')
 
         if manual is False:
             when_now = date.today()
