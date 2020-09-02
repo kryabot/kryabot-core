@@ -57,6 +57,7 @@ class RedisHelper:
 
     async def subscribe_event(self, topic, func):
         if self.listener is None:
+            self.logger.info('Can not subscribe if listener not started! (topic={})'.format(topic))
             raise Exception(f'Can not subscribe if listener not started!')
 
         self.logger.info('Redis topic subscribe: ' + topic)

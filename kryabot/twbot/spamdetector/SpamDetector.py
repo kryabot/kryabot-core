@@ -63,22 +63,25 @@ class SpamDetector:
             ch.bttv_global = bttv_global
             ch.bttv_channel = await api.betterttv.get_channel_emotes(ch.channel_name)
             ch.fz_channel = parse_fz_emotes(await api.frankerfacez.get_channel_emotes(ch.channel_name))
-
             self.channels.append(ch)
 
         logger.info('Starting topic listener')
         loop.create_task(db.redis.start_listener(self.redis_subscribe))
+        logger.info('Init completed')
 
     async def redis_subscribe(self):
-        await db.redis.subscribe_event(redis_key.get_twitch_spam_detector_request_topic(), self.on_message)
+        logger.info('redis_subscribe before')
+        await db.redis.subscribe_event(redis_key.get_twitch_spam_detector_request_topic(), self.on_twitch_message)
+        logger.info('redis_subscribe after')
 
-    async def on_message(self, body):
+    async def on_twitch_message(self, body):
         await self.push(body['channel'], body['sender'], body['message'], body['ts'], body['twitch_emotes'])
 
     async def run(self):
         while True:
-            asyncio.sleep(15)
+            await asyncio.sleep(20)
             try:
+                logger.info('Checking...')
                 for channel in self.channels:
                     logger.info('Channel info {}: detections {}, messages {}'.format(channel.channel_name, len(channel.detections), len(channel.messages)))
                     for detection in channel.detections:
