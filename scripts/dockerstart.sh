@@ -23,6 +23,7 @@ monitor_script(){
 }
 
 start_script info_bot.sh
+start_script spam_detector.sh
 start_script twitch_bot.sh
 start_script guard_bot.sh
 

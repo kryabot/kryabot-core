@@ -17,6 +17,7 @@ LOG_INFO_MANAGER_PATH = log_dir + 'infomanager.log'
 LOG_TG_PATH = log_dir + 'tg.log'
 LOG_SANIC_PATH = log_dir + 'sanic.log'
 LOG_TIO_PATH = log_dir + 'twitchio.log'
+LOG_SPAM_DETECTOR_PATH = log_dir + 'spamdetector.log'
 
 KRYA_LOGGING_CONFIG = dict(
     version=1,
@@ -91,6 +92,12 @@ KRYA_LOGGING_CONFIG = dict(
             "handlers": ["file.infomanager"],
             "propagate": True,
             "qualname": "krya.infomanager",
+        },
+        "krya.spam": {
+            "level": GLOBAL_LOG_LEVEL,
+            "handlers": ["file.spam"],
+            "propagate": True,
+            "qualname": "krya.spam",
         },
         "twitchio.websocket": {
             "level": GLOBAL_LOG_LEVEL,
@@ -187,6 +194,12 @@ KRYA_LOGGING_CONFIG = dict(
         'file.twitchio': {
             'class': 'logging.FileHandler',
             'filename': LOG_TIO_PATH,
+            'formatter': 'default',
+            'encoding': GLOBAL_ENCODING,
+        },
+        'file.spam': {
+            'class': 'logging.FileHandler',
+            'filename': LOG_SPAM_DETECTOR_PATH,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
         },

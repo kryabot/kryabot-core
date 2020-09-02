@@ -52,6 +52,7 @@ class Notice:
         self.msg_param_fun_string = None  # spotted when subgift from anonymous
         self.msg_param_gift_months = None
         self.msg_param_threshold = None
+        self.msg_param_was_gifted = None
 
         self.bits = None
         self.room_id = None
@@ -102,6 +103,7 @@ class Notice:
                            'msg-param-fun-string',
                            'msg-param-gift-months',
                            'msg-param-threshold',
+                           'msg-param-was-gifted',
                            'badge-info',
                            'bits',
                            'room-id',
@@ -158,6 +160,7 @@ class Notice:
         self.msg_param_fun_string = await self.get_value('msg-param-fun-string')
         self.msg_param_gift_months = await self.get_value('msg-param-gift-months')
         self.msg_param_threshold = await self.get_value('msg-param-threshold')
+        self.msg_param_was_gifted = await self.get_value('msg-param-was-gifted')
         self.bits = await self.get_value('bits')
         self.room_id = await self.get_value('room-id')
         self.subscriber = await self.get_value('subscriber')

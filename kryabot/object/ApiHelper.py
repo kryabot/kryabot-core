@@ -1,4 +1,6 @@
+from api.betterttv import Betterttv
 from api.boosty import Boosty
+from api.frankerfacez import Frankerfacez
 from api.instagram import Instagram
 from api.vk import VK
 from api.twitch import Twitch
@@ -20,6 +22,8 @@ class ApiHelper:
         self.gc = GoogleCloud(cfg=cfg)
         self.boosty = Boosty(cfg=cfg)
         self.instagram = Instagram(cfg=cfg)
+        self.betterttv = Betterttv(cfg=cfg)
+        self.frankerfacez = Frankerfacez(cfg=cfg)
         self.logger = self.vk.logger
         self.sub_check_false = 'sub_check_false'
         self.reporter = reporter

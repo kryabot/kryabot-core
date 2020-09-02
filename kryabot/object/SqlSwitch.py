@@ -149,4 +149,6 @@ async def getSql(sqlType):
         'get_tg_active_invite': 'SELECT ti.tg_invite_id, ti.user_id, ti.by_user_id, u.name, u.dname FROM tg_invite ti left JOIN user u ON u.user_id = ti.by_user_id WHERE ti.channel_id = %s and ti.user_id = %s and ti.used_at is NULL;',
         'save_tg_active_invite': 'INSERT INTO tg_invite (channel_id, user_id, by_user_id) VALUES (%s, %s, %s);',
         'mark_invitation_used': 'UPDATE tg_invite SET tg_invite.used_at = CURRENT_TIMESTAMP WHERE tg_invite.channel_id = %s and tg_invite.user_id = %s;',
+        'get_twitch_messages': "SELECT * FROM twitch_message where created_at between '2020/09/02 19:30:00' and '2020/09/02 20:00:00' ORDER BY created_at DESC",
+
     }.get(sqlType, 'unknown_sql_type')

@@ -112,3 +112,11 @@ def get_twitch_game_info(id):
 
 def get_twitch_stream_cache(id):
     return 'twitch.stream.cache.{}'.format(id)
+
+
+def get_twitch_spam_detector_request_topic():
+    return 'spam.detector.request'
+
+
+def get_twitch_spam_detector_response_topic():
+    return 'spam.detector.response'

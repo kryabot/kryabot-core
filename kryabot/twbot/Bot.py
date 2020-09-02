@@ -3,6 +3,7 @@ from typing import List
 from twbot.processor.EventProcessor import EventProcessor
 from twbot.processor.CommandProcessor import CommandProcessor
 from twbot.processor.PointProcessor import PointProcessor
+from twitchio import Context
 from twitchio.ext import commands
 from object.Database import Database
 from twbot.object.Channel import Channel
@@ -159,6 +160,8 @@ class Bot(commands.Bot):
         await self.db.redis.subscribe_event(redis_key.get_token_update_topic(), self.main_token_update)
         await self.db.redis.subscribe_event(redis_key.get_sync_topic(), self.sync_event)
         await self.db.redis.subscribe_event(redis_key.get_streams_forward_data(), self.on_stream_change)
+        await self.db.redis.subscribe_event(redis_key.get_twitch_spam_detector_response_topic(), self.on_spam_action)
+
 
     # Events don't need decorators when subclassed
     async def event_ready(self):
@@ -190,7 +193,8 @@ class Bot(commands.Bot):
         # Do not react to own messages
         if irc_user.author.name.lower() != self.cfg.getTwitchConfig()['IRC_NICK'].lower():
             await self.update_channel_chat_activity_time(irc_user.channel.name)
-			
+
+        self.loop.create_task(self.send_to_spam_detector(irc_user))
         db_user = await self.get_db_user(irc_user.author)
         db_channel = await self.get_db_channel(irc_user.channel)
 
@@ -765,3 +769,28 @@ class Bot(commands.Bot):
                         await self._ws.send_privmsg(ch.channel_name, answer)
                 except Exception as e:
                     self.logger.error(e)
+
+    async def send_to_spam_detector(self, context: Context):
+        # Skip such users
+        if context.author.is_mod or context.author.is_subscriber or context.author.is_turbo:
+            return
+
+        body={
+            "channel": context.channel.name,
+            "sender": context.author.name,
+            "twitch_emotes": None,
+            "message": context.message.content,
+            "ts": datetime.now()
+        }
+        await self.db.redis.publish_event(redis_key.get_twitch_spam_detector_request_topic(), body)
+
+    async def on_spam_action(self, body):
+        self.logger.info(body)
+        action = body['action']
+
+        if action == 'message':
+            await self._ws.send_privmsg(body['channel'], body['message'])
+        elif action == 'ban':
+            pass
+        elif action == 'detection':
+            pass
