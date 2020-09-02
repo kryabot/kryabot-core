@@ -7,6 +7,7 @@ import asyncio
 load_config()
 logger = logging.getLogger('krya.spam')
 
+
 async def main():
     try:
         logger.info('Starting main')

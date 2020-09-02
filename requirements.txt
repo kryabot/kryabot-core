@@ -17,3 +17,7 @@ mutagen
 hachoir
 sanic
 instaloader
+scikit-learn
+scipy
+matplotlib
+Unidecode

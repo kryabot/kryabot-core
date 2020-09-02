@@ -181,12 +181,10 @@ class Detection:
             partly = self.messages[-5:]
             max_ts = partly[-1].received_ts
             min_ts = partly[0].received_ts
-            #print('max_ts={}, min_ts={}'.format(max_ts, min_ts))
             diff = (max_ts - min_ts).total_seconds()
             if diff == 0:
                 diff = 1
             ratio = (len(self.messages) / diff)
-            #print('Checking if triggered, ratio: {}, diff={}, messages={}'.format(ratio, diff, len(self.messages)))
             if len(self.messages) >= 3 and ratio > 1:
                 self.triggered = True
                 self.triggered_now = True
@@ -284,6 +282,7 @@ class ChannelMessages:
         if detection is None:
             self.messages.append(msg)
         elif detection.triggered_now:
+            logger.info('New detection triggered in channel {}. Message: {}'.format(self.channel_name, msg.original_message))
             await self.action_message('Spam detected! I take no actions for now BloodTrail')
             users = []
             for detected_message in detection.messages:
@@ -293,6 +292,7 @@ class ChannelMessages:
             if users:
                 await self.action_ban(users)
         elif detection.triggered:
+            logger.info('Additionam message for existing detection in channel {}. Message: {}'.format(self.channel_name, msg.original_message))
             await self.action_ban([msg.sender])
 
     async def update_detection(self, new_message: ChannelMessage, prev_message: ChannelMessage)->Detection:
