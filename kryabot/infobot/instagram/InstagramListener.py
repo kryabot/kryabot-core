@@ -97,7 +97,7 @@ class InstagramListener(Listener):
                 instprofile = self.get_cached_profile(profile.instagram_name)
                 data = await self.manager.api.instagram.get_story_by_id(instprofile.userid)
 
-                if data is not None and 'reel' in data and 'items' in data['reel']:
+                if data is not None and 'reel' in data and data['reel'] is not None and 'items' in data['reel']:
                     new_items = []
                     items = data['reel']['items']
                     if items:

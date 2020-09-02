@@ -77,9 +77,10 @@ class SpamDetector:
 
     async def run(self):
         while True:
-            asyncio.sleep(10)
+            asyncio.sleep(15)
             try:
                 for channel in self.channels:
+                    logger.info('Channel info {}: detections {}, messages {}'.format(channel.channel_name, len(channel.detections), len(channel.messages)))
                     for detection in channel.detections:
                         if detection.is_trigger_expired():
                             await channel.action_disable_detection()
