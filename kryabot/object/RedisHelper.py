@@ -33,6 +33,9 @@ class RedisHelper:
         if self.listener is not None:
             return
 
+        if self.redis_pool is None:
+            await self.connection_init()
+
         self.receiver = aioredis.pubsub.Receiver(loop=self.loop)
         with await self.redis_pool as conn:
             self.listener = conn

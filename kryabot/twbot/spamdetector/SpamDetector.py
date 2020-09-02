@@ -43,8 +43,6 @@ def parse_fz_emotes(response):
 
     if 'emoticons' not in response['sets'][str(id)]:
         return None
-
-
     return response['sets'][str(id)]['emoticons']
 
 
