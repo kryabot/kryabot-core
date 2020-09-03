@@ -96,6 +96,7 @@ class SpamDetector:
                 channel = ch
 
         if channel is None:
+            logger.error('Not found channel for {}'.format(channel_name))
             raise ValueError('Received unknown channel name {}'.format(channel_name))
 
         await channel.process(sender, message, ts, twitch_emotes)
@@ -270,7 +271,7 @@ class ChannelMessages:
 
         if self.fz_channel is not None:
             for emote in self.fz_channel:
-                text = text.replace(emote['code'], '')
+                text = text.replace(emote['name'], '')
 
         return " ".join(text.strip().split())
 
