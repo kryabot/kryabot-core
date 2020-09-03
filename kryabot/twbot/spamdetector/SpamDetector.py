@@ -92,7 +92,7 @@ class SpamDetector:
     async def push(self, channel_name, sender, message, ts, twitch_emotes):
         channel: ChannelMessages = None
         for ch in self.channels:
-            if ch.channel_name == channel_name:
+            if ch.channel_name.lower() == channel_name.lower():
                 channel = ch
 
         if channel is None:
