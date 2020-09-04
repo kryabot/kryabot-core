@@ -775,10 +775,14 @@ class Bot(commands.Bot):
         if context.author.is_mod or context.author.is_subscriber or context.author.is_turbo:
             return
 
+        # If user has any badge, skip
+        if context.author.badges != {}:
+            return
+
         body={
             "channel": context.channel.name,
             "sender": context.author.name,
-            "twitch_emotes": None,
+            "twitch_emotes": context.author.tags.get('emotes', None),
             "message": context.message.content,
             "ts": datetime.now()
         }

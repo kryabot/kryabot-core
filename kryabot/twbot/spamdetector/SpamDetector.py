@@ -170,6 +170,7 @@ class Detection:
     async def add_message(self, message: ChannelMessage):
         self.last_activity: datetime = datetime.now()
         self.messages.append(message)
+        self.check_triggers()
 
     def too_old(self)->bool:
         if not self.triggered and self.last_activity + timedelta(seconds=INTERVAL_CHECK) < datetime.now():
@@ -197,7 +198,6 @@ class Detection:
                 diff = 1
             ratio = (len(self.messages) / diff)
             self.last_ratio = ratio
-            logger.info('Detection ratio: {}'.format(ratio))
             if len(self.messages) >= 3 and ratio > 1:
                 self.triggered = True
                 self.triggered_now = True
