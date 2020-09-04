@@ -255,8 +255,9 @@ class ChannelMessages:
 
     def clear_emotes(self, text: str, twitch_emotes=None)->str:
         if twitch_emotes:
+            emote_list = twitch_emotes.split('/')
             tmp_list = []
-            for emote in twitch_emotes:
+            for emote in emote_list:
                 if ':' not in emote:
                     continue
 
