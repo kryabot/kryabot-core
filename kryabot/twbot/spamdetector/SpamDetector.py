@@ -285,8 +285,9 @@ class ChannelMessages:
     async def process(self, sender: str, message: str, ts: datetime = None, twitch_emotes: str = None):
         message = self.clear_emotes(message, twitch_emotes)
         if not ChannelMessage.is_acceptable(message):
+            logger.info('Not accepted')
             return
-
+        logger.info('Message after clear_emotes: {}'.format(message))
         msg = ChannelMessage(sender, message, ts=ts)
         detection = await self.find_detection(msg)
         if detection is None:
