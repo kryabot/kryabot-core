@@ -81,8 +81,14 @@ class SpamDetector:
             try:
                 logger.info('Checking...')
                 for channel in self.channels:
+                    if len(channel.messages) == 0 and len(channel.detections) == 0:
+                        continue
+
                     logger.info('Channel info {}: detections {}, messages {}'.format(channel.channel_name, len(channel.detections), len(channel.messages)))
                     for detection in channel.detections:
+                        logger.info('Detection {} last activity {}, triggered: {}'.format(detection, detection.last_activity, detection.triggered))
+                        for msg in detection.messages:
+                            logger.info('From: {}, Message: {}'.format(msg.sender, msg.original_message))
                         if detection.is_trigger_expired():
                             await channel.action_disable_detection()
                     channel.detections = [x for x in channel.detections if not x.expired]
