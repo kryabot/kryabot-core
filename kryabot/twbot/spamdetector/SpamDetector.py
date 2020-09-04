@@ -273,19 +273,19 @@ class ChannelMessages:
 
             if tmp_list:
                 for emote in tmp_list:
-                    text = str(text).replace(emote, '')
+                    text = str(text).replace(' ' + emote, '')
 
         if self.bttv_global is not None:
             for emote in self.bttv_global:
-                text = str(text).replace(emote['code'], '')
+                text = str(text).replace(' ' + emote['code'], '')
 
         if self.bttv_channel is not None and 'emotes' in self.bttv_channel:
             for emote in self.bttv_channel['emotes']:
-                text = str(text).replace(emote['code'], '')
+                text = str(text).replace(' ' + emote['code'], '')
 
         if self.fz_channel is not None:
             for emote in self.fz_channel:
-                text = str(text).replace(emote['name'], '')
+                text = str(text).replace(' ' + emote['name'], '')
 
         return " ".join(text.strip().split())
 
