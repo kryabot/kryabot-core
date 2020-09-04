@@ -26,7 +26,7 @@ def get_cosine_sim(*strs):
 
 def get_vectors(*strs):
     text = [t for t in strs]
-    vectorizer = CountVectorizer(text)
+    vectorizer = CountVectorizer(input=text)
     vectorizer.fit(text)
     return vectorizer.transform(text).toarray()
 
@@ -121,7 +121,7 @@ class SpamDetector:
 class ChannelMessage:
     def __init__(self, sender: str, text: str, ts=None):
         self.sender: str = sender
-        self.original_message: str = unidecode(text)
+        self.original_message: str = unidecode(str(text))
         self.clear_message: str = self.clean(text)
         self.received_ts: datetime = ts or datetime.now()
         self.detection: Detection = None
@@ -259,19 +259,19 @@ class ChannelMessages:
 
             if tmp_list:
                 for emote in tmp_list:
-                    text = text.replace(emote, '')
+                    text = str(text).replace(emote, '')
 
         if self.bttv_global is not None:
             for emote in self.bttv_global:
-                text = text.replace(emote['code'], '')
+                text = str(text).replace(emote['code'], '')
 
         if self.bttv_channel is not None and 'emotes' in self.bttv_channel:
             for emote in self.bttv_channel['emotes']:
-                text = text.replace(emote['code'], '')
+                text = str(text).replace(emote['code'], '')
 
         if self.fz_channel is not None:
             for emote in self.fz_channel:
-                text = text.replace(emote['name'], '')
+                text = str(text).replace(emote['name'], '')
 
         return " ".join(text.strip().split())
 
