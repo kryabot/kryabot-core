@@ -793,7 +793,7 @@ class Bot(commands.Bot):
         action = body['action']
 
         if action == 'message':
-            await self._ws.send_privmsg(body['channel'], body['message'])
+            await self._ws.send_privmsg(body['channel'], body['text'])
         elif action == 'ban':
             pass
         elif action == 'detection':

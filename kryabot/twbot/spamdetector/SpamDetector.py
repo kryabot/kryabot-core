@@ -220,7 +220,10 @@ class ChannelMessages:
         #print('Total size: {}'.format(len(self.messages)))
 
     def get_result(self, first_text, second_text) -> float:
-        return get_cosine_sim(first_text, second_text)[0][1]
+        try:
+            return get_cosine_sim(first_text, second_text)[0][1]
+        except ValueError:
+            return 0
 
     async def find_detection(self, message: ChannelMessage)->[Detection, None]:
         detected = False
