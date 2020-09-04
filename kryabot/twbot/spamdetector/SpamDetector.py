@@ -87,9 +87,9 @@ class SpamDetector:
 
                     logger.info('Channel info {}: detections {}, messages {}'.format(channel.channel_name, len(channel.detections), len(channel.messages)))
                     for detection in channel.detections:
-                        logger.info('Detection {} last activity {}, triggered: {}'.format(detection, detection.last_activity, detection.triggered))
+                        logger.info('Detection {} last activity {}, triggered: {}, last ratio: {}'.format(detection, detection.last_activity, detection.triggered, detection.last_ratio))
                         for msg in detection.messages:
-                            logger.info('From: {}, Message: {}'.format(msg.sender, msg.original_message))
+                            logger.info('From: {}, at {} Message: {} '.format(msg.sender, msg.received_ts, msg.original_message))
                         if detection.is_trigger_expired():
                             await channel.action_disable_detection()
                     channel.detections = [x for x in channel.detections if not x.expired]
@@ -165,6 +165,7 @@ class Detection:
         self.triggered: bool = False
         self.triggered_now: bool = False
         self.expired: bool = False
+        self.last_ratio = 0
 
     async def add_message(self, message: ChannelMessage):
         self.last_activity: datetime = datetime.now()
@@ -195,6 +196,8 @@ class Detection:
             if diff == 0:
                 diff = 1
             ratio = (len(self.messages) / diff)
+            self.last_ratio = ratio
+            logger.info('Detection ratio: {}'.format(ratio))
             if len(self.messages) >= 3 and ratio > 1:
                 self.triggered = True
                 self.triggered_now = True
