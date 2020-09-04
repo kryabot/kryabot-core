@@ -63,29 +63,29 @@ class SpamDetector:
             ch.fz_channel = parse_fz_emotes(await api.frankerfacez.get_channel_emotes(ch.channel_name))
             self.channels.append(ch)
 
-        logger.info('Starting topic listener')
+        logger.debug('Starting topic listener')
         loop.create_task(db.redis.start_listener(self.redis_subscribe))
         logger.info('Init completed')
 
     async def redis_subscribe(self):
-        logger.info('redis_subscribe before')
+        logger.debug('redis_subscribe before')
         await db.redis.subscribe_event(redis_key.get_twitch_spam_detector_request_topic(), self.on_twitch_message)
-        logger.info('redis_subscribe after')
+        logger.debug('redis_subscribe after')
 
     async def on_twitch_message(self, body):
-        logger.info(body)
+        logger.debug(body)
         await self.push(body['channel'], body['sender'], body['message'], body['ts'], body['twitch_emotes'])
 
     async def run(self):
         while True:
             await asyncio.sleep(20)
             try:
-                logger.info('Checking...')
+                logger.debug('Checking...')
                 for channel in self.channels:
                     if len(channel.messages) == 0 and len(channel.detections) == 0:
                         continue
 
-                    logger.info('Channel info {}: detections {}, messages {}'.format(channel.channel_name, len(channel.detections), len(channel.messages)))
+                    logger.debug('Channel info {}: detections {}, messages {}'.format(channel.channel_name, len(channel.detections), len(channel.messages)))
                     for detection in channel.detections:
                         logger.info('Detection {} last activity {}, triggered: {}, last ratio: {}'.format(detection, detection.last_activity, detection.triggered, detection.last_ratio))
                         for msg in detection.messages:
@@ -231,11 +231,9 @@ class ChannelMessages:
         for detection in self.detections:
             for active in detection.messages:
                 result = self.get_result(message.original_message, active.original_message)
-                #print('[A] {} <> {} => {}'.format(message.original_message, active.original_message, result))
                 if result < MATCH_THRESHHOLD:
                     continue
 
-                #print('Found matching by active detections: {} <> {}, result {}'.format(message.original_message, active.original_message, result))
                 await detection.add_message(message)
                 return detection
 
@@ -247,11 +245,9 @@ class ChannelMessages:
                 result = 1.0
             else:
                 result = self.get_result(message.original_message, old_message.original_message)
-            #print('[N] {} <> {} => {}'.format(message.original_message, old_message.original_message, result))
             if result < MATCH_THRESHHOLD:
                 continue
 
-            #print('Found matching by new detections: {} <> {}, result {}'.format(message.original_message, old_message.original_message, result))
             return await self.update_detection(message, old_message)
 
         return None
@@ -296,9 +292,9 @@ class ChannelMessages:
     async def process(self, sender: str, message: str, ts: datetime = None, twitch_emotes: str = None):
         message = self.clear_emotes(message, twitch_emotes)
         if not ChannelMessage.is_acceptable(message):
-            logger.info('Not accepted')
             return
-        logger.info('Message after clear_emotes: {}'.format(message))
+
+        logger.debug('Message after clear_emotes: {}'.format(message))
         msg = ChannelMessage(sender, message, ts=ts)
         detection = await self.find_detection(msg)
         if detection is None:
@@ -318,7 +314,6 @@ class ChannelMessages:
             await self.action_ban([msg.sender])
 
     async def update_detection(self, new_message: ChannelMessage, prev_message: ChannelMessage)->Detection:
-        logger.info('Creating new detection')
         detection = Detection()
         await detection.add_message(new_message)
         await detection.add_message(prev_message)
