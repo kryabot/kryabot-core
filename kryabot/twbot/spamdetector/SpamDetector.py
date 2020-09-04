@@ -257,6 +257,8 @@ class ChannelMessages:
         return None
 
     def clear_emotes(self, text: str, twitch_emotes=None)->str:
+        #  58765:0-10,12-22,24-34,36-46,48-58,60-70
+        # 81249:0-11,13-24,26-37,39-50,52-63,65-76,78-89
         if twitch_emotes:
             emote_list = twitch_emotes.split('/')
             tmp_list = []
@@ -268,8 +270,10 @@ class ChannelMessages:
                 if len(parts) < 1 or '-' not in parts[1]:
                     continue
 
-                interval = parts[1].split('-')
-                tmp_list.append(text[interval[0]:(interval[1] + 1)])
+                intervals = parts[1].split(',')
+                for interval in intervals:
+                    cut_values = interval.split('-')
+                    tmp_list.append(text[cut_values[0]:(cut_values[1] + 1)])
 
             if tmp_list:
                 for emote in tmp_list:
