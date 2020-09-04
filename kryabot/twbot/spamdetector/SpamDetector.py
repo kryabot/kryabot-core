@@ -73,6 +73,7 @@ class SpamDetector:
         logger.info('redis_subscribe after')
 
     async def on_twitch_message(self, body):
+        logger.info(body)
         await self.push(body['channel'], body['sender'], body['message'], body['ts'], body['twitch_emotes'])
 
     async def run(self):
