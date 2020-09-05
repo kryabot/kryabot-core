@@ -109,22 +109,6 @@ class SpamDetector:
         await channel.process(sender, message, ts, twitch_emotes)
         channel.clear_old_messages()
 
-    # async def test(self):
-    #     rows = await db.query('get_twitch_messages', [])
-    #     channel = ChannelMessages('test')
-    #     self.channels.append(channel)
-    #
-    #     rows = rows[::-1]
-    #     for row in rows[:5000]:
-    #         await self.push('test', str(row['user_id']), row['message'], row['created_at'])
-    #         channel.clear_old_messages()
-    #
-    #     print('Detections: {}'.format(len(channel.detections)))
-    #     for detection in channel.detections:
-    #         print('Detection got {} messages, triggered: {}'.format(len(detection.messages), detection.triggered))
-    #         for message in detection.messages:
-    #             print(message.original_message, message.received_ts)
-
 class ChannelMessage:
     def __init__(self, sender: str, text: str, ts=None):
         self.sender: str = sender
@@ -269,7 +253,7 @@ class ChannelMessages:
                 intervals = parts[1].split(',')
                 for interval in intervals:
                     cut_values = interval.split('-')
-                    tmp_list.append(text[cut_values[0]:(cut_values[1] + 1)])
+                    tmp_list.append(text[int(cut_values[0]):(int(cut_values[1]) + 1)])
 
             if tmp_list:
                 for emote in tmp_list:
