@@ -110,15 +110,15 @@ class SpamDetector:
         channel.clear_old_messages()
 
 class ChannelMessage:
-    def __init__(self, sender: str, text: str, ts=None):
+    def __init__(self, sender: str, text: str, ts: datetime):
         self.sender: str = sender
         self.original_message: str = unidecode(str(text))
         self.clear_message: str = self.clean(text)
-        self.received_ts: datetime = ts or datetime.now()
+        self.received_ts: datetime = ts
         self.detection: Detection = None
 
     def too_old(self)->bool:
-        return self.received_ts + timedelta(seconds=INTERVAL_CHECK) < datetime.now()
+        return self.received_ts + timedelta(seconds=INTERVAL_CHECK) < datetime.utcnow()
 
     @staticmethod
     def clean(text: str)->str:

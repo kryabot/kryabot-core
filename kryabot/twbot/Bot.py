@@ -784,7 +784,7 @@ class Bot(commands.Bot):
             "sender": context.author.name,
             "twitch_emotes": context.author.tags.get('emotes', None),
             "message": context.message.content,
-            "ts": datetime.now()
+            "ts": datetime.utcnow()
         }
         await self.db.redis.publish_event(redis_key.get_twitch_spam_detector_request_topic(), body)
 
