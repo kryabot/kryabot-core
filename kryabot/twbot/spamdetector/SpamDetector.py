@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Dict
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from unidecode import unidecode
@@ -305,13 +305,13 @@ class ChannelMessages:
             users = []
             for detected_message in detection.messages:
                 if detected_message.sender not in users:
-                    users.append(detected_message.sender)
+                    users.append({'sender': detected_message.sender, 'message': detected_message.original_message, 'ts': detected_message.received_ts})
 
             if users:
                 await self.action_ban(users)
         elif detection.triggered:
             logger.info('Additionam message for existing detection in channel {}. Message: {}'.format(self.channel_name, msg.original_message))
-            await self.action_ban([msg.sender])
+            await self.action_ban([{'sender': msg.sender, 'message': msg.original_message, 'ts': msg.received_ts}])
 
     async def update_detection(self, new_message: ChannelMessage, prev_message: ChannelMessage)->Detection:
         detection = Detection()
@@ -323,7 +323,7 @@ class ChannelMessages:
     async def send_response(self, body):
         await db.redis.publish_event(redis_key.get_twitch_spam_detector_response_topic(), body)
 
-    async def action_ban(self, users: List[str]):
+    async def action_ban(self, users: List[Dict]):
         body={
             "action": "ban",
             "users": users,

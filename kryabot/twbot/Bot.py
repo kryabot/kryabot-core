@@ -193,8 +193,8 @@ class Bot(commands.Bot):
         # Do not react to own messages
         if irc_user.author.name.lower() != self.cfg.getTwitchConfig()['IRC_NICK'].lower():
             await self.update_channel_chat_activity_time(irc_user.channel.name)
+            self.loop.create_task(self.send_to_spam_detector(irc_user))
 
-        self.loop.create_task(self.send_to_spam_detector(irc_user))
         db_user = await self.get_db_user(irc_user.author)
         db_channel = await self.get_db_channel(irc_user.channel)
 
@@ -795,6 +795,9 @@ class Bot(commands.Bot):
         if action == 'message':
             await self._ws.send_privmsg(body['channel'], body['text'])
         elif action == 'ban':
-            pass
+            if body['users']:
+                for event in body['users']:
+                    await self.db.saveSpamLog(body['channel'], event['sender'], event['message'], event['ts'])
+                    # TODO: irc ban
         elif action == 'detection':
             pass

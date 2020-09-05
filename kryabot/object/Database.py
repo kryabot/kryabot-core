@@ -627,6 +627,9 @@ class Database:
     async def markInvitationUsed(self, channel_id, user_id):
         await self.query('mark_invitation_used', [channel_id, user_id])
 
+    async def saveSpamLog(self, channel_name, sender, message, ts):
+        await self.query('save_spam_log', [channel_name, sender, message, ts])
+
     ### DB METHODS WITH CACHE ###
 
     # Force means skip cache
