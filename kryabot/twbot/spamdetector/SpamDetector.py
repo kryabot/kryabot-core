@@ -13,6 +13,7 @@ import utils.redis_key as redis_key
 MIN_WORDS = 5
 INTERVAL_CHECK = 30
 MATCH_THRESHHOLD = 0.4
+MPS_RATIO = 4
 
 loop = asyncio.get_event_loop()
 db = Database(loop, 1)
@@ -109,6 +110,7 @@ class SpamDetector:
         await channel.process(sender, message, ts, twitch_emotes)
         channel.clear_old_messages()
 
+
 class ChannelMessage:
     def __init__(self, sender: str, text: str, ts: datetime):
         self.sender: str = sender
@@ -182,7 +184,7 @@ class Detection:
                 diff = 1
             ratio = (len(self.messages) / diff)
             self.last_ratio = ratio
-            if len(self.messages) >= 3 and ratio > 1:
+            if len(self.messages) >= 3 and ratio > MPS_RATIO:
                 self.triggered = True
                 self.triggered_now = True
 
