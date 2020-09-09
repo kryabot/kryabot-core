@@ -798,7 +798,8 @@ class Bot(commands.Bot):
             if body['users']:
                 for event in body['users']:
                     await self.db.saveSpamLog(body['channel'], event['sender'], event['message'], event['ts'])
-                    await self._ws.send_privmsg('olyashaa', ".ban {} Spambot, detected in channel {}".format(body['sender'], body['channel']))
+                    # TODO: ban queue, currently ban in onlyashaa channel
+                    await self._ws.send_privmsg('olyashaa', ".ban {} Spambot, detected in channel {}".format(event['sender'], body['channel']))
         elif action == 'detection':
             if body['channel'] != 'olyashaa':
                 return
