@@ -181,10 +181,10 @@ class Detection:
             min_ts = partly[0].received_ts
             diff = (max_ts - min_ts).total_seconds()
             if diff == 0:
-                diff = 1
-            ratio = (len(self.messages) / diff)
+                diff = 0.01
+            ratio = (len(partly) / diff)
             self.last_ratio = ratio
-            if len(self.messages) >= 3 and ratio > MPS_RATIO:
+            if len(self.messages) >= 3 and ratio >= MPS_RATIO:
                 self.triggered = True
                 self.triggered_now = True
 
