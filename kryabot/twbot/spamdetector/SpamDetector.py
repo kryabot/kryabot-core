@@ -91,8 +91,8 @@ class SpamDetector:
                         logger.info('Detection {} last activity {}, triggered: {}, last ratio: {}'.format(detection, detection.last_activity, detection.triggered, detection.last_ratio))
                         for msg in detection.messages:
                             logger.info('From: {}, at {} Message: {} '.format(msg.sender, msg.received_ts, msg.original_message))
-                        if detection.is_trigger_expired():
-                            await channel.action_disable_detection()
+
+                    channel.disabled_expired_triggers()
                     channel.detections = [x for x in channel.detections if not x.expired]
             except Exception as ex:
                 logger.exception(ex)
@@ -165,7 +165,7 @@ class Detection:
         return False
 
     def is_trigger_expired(self)->bool:
-        if self.triggered and self.last_activity + timedelta(seconds=INTERVAL_CHECK * 10) < datetime.now():
+        if self.triggered and self.last_activity + timedelta(seconds=INTERVAL_CHECK * 2) < datetime.now():
             self.expired = True
             return True
 
@@ -199,6 +199,16 @@ class ChannelMessages:
         self.bttv_global = None
         self.bttv_channel = None
         self.fz_channel = None
+        self.spam_detected = False
+
+    async def disabled_expired_triggers(self):
+        has_expired = False
+        for detection in self.detections:
+            if (not detection.expired) and detection.is_trigger_expired():
+                has_expired = True
+
+        if has_expired:
+            await self.action_disable_detection()
 
     def clear_old_messages(self):
         self.messages = [message for message in self.messages if not message.too_old()]
@@ -212,8 +222,6 @@ class ChannelMessages:
             return 0
 
     async def find_detection(self, message: ChannelMessage)->[Detection, None]:
-        detected = False
-
         for detection in self.detections:
             for active in detection.messages:
                 result = self.get_result(message.original_message, active.original_message)
@@ -287,7 +295,8 @@ class ChannelMessages:
             self.messages.append(msg)
         elif detection.triggered_now:
             logger.info('New detection triggered in channel {}. Message: {}'.format(self.channel_name, msg.original_message))
-            await self.action_message('Spam detected! I take no actions for now BloodTrail')
+            await self.action_enable_detection()
+
             users = []
             for detected_message in detection.messages:
                 if detected_message.sender not in users:
@@ -296,6 +305,7 @@ class ChannelMessages:
             if users:
                 await self.action_ban(users)
         elif detection.triggered:
+            await self.action_enable_detection()
             logger.info('Additionam message for existing detection in channel {}. Message: {}'.format(self.channel_name, msg.original_message))
             await self.action_ban([{'sender': msg.sender, 'message': msg.original_message, 'ts': msg.received_ts}])
 
@@ -319,6 +329,11 @@ class ChannelMessages:
         await self.send_response(body)
 
     async def action_enable_detection(self):
+        if self.spam_detected:
+            return
+
+        self.spam_detected = True
+
         body = {
             "action": "detection",
             "status": 1,
@@ -328,6 +343,11 @@ class ChannelMessages:
         await self.send_response(body)
 
     async def action_disable_detection(self):
+        if not self.spam_detected:
+            return
+
+        self.spam_detected = False
+
         body = {
             "action": "detection",
             "status": 0,

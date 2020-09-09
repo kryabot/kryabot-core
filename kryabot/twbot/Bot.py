@@ -798,6 +798,14 @@ class Bot(commands.Bot):
             if body['users']:
                 for event in body['users']:
                     await self.db.saveSpamLog(body['channel'], event['sender'], event['message'], event['ts'])
-                    # TODO: irc ban
+                    await self._ws.send_privmsg('olyashaa', ".ban {} Spambot, detected in channel {}".format(body['sender'], body['channel']))
         elif action == 'detection':
-            pass
+            if body['channel'] != 'olyashaa':
+                return
+
+            if body['status'] == 1:
+                await self._ws.send_privmsg(body['channel'], ".subscribers")
+                await self._ws.send_privmsg(body['channel'], "Enabling subonly chat to avoid spam!")
+            elif body['status'] == 0:
+                await self._ws.send_privmsg(body['channel'], ".subscribersoff")
+                await self._ws.send_privmsg(body['channel'], "Disabling subonly chat!")
