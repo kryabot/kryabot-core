@@ -12,7 +12,7 @@ import utils.redis_key as redis_key
 
 MIN_WORDS = 5
 INTERVAL_CHECK = 30
-MATCH_THRESHHOLD = 0.4
+MATCH_THRESHOLD = 0.6
 MPS_RATIO = 4
 
 loop = asyncio.get_event_loop()
@@ -92,7 +92,7 @@ class SpamDetector:
                         for msg in detection.messages:
                             logger.info('From: {}, at {} Message: {} '.format(msg.sender, msg.received_ts, msg.original_message))
 
-                    channel.disabled_expired_triggers()
+                    await channel.disabled_expired_triggers()
                     channel.detections = [x for x in channel.detections if not x.expired]
             except Exception as ex:
                 logger.exception(ex)
@@ -225,7 +225,7 @@ class ChannelMessages:
         for detection in self.detections:
             for active in detection.messages:
                 result = self.get_result(message.original_message, active.original_message)
-                if result < MATCH_THRESHHOLD:
+                if result < MATCH_THRESHOLD:
                     continue
 
                 await detection.add_message(message)
@@ -239,7 +239,7 @@ class ChannelMessages:
                 result = 1.0
             else:
                 result = self.get_result(message.original_message, old_message.original_message)
-            if result < MATCH_THRESHHOLD:
+            if result < MATCH_THRESHOLD:
                 continue
 
             return await self.update_detection(message, old_message)
