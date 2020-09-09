@@ -339,7 +339,7 @@ class ChannelMessages:
             "status": 1,
             "channel": self.channel_name
         }
-
+        logger.info('Enabling detection in channel {}'.format(self.channel_name))
         await self.send_response(body)
 
     async def action_disable_detection(self):
@@ -353,7 +353,7 @@ class ChannelMessages:
             "status": 0,
             "channel": self.channel_name
         }
-
+        logger.info('Disabling detection in channel {}'.format(self.channel_name))
         await self.send_response(body)
 
     async def action_message(self, message):
