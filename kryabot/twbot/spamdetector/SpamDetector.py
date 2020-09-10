@@ -13,7 +13,7 @@ import utils.redis_key as redis_key
 MIN_WORDS = 5
 INTERVAL_CHECK = 30
 MATCH_THRESHOLD = 0.6
-MPS_RATIO = 4
+MPS_RATIO = 8
 
 loop = asyncio.get_event_loop()
 db = Database(loop, 1)
