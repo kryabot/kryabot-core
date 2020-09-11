@@ -1,4 +1,6 @@
 import asyncio
+from typing import List
+
 import aiomysql
 from object.BotConfig import BotConfig
 from object.SqlSwitch import getSql
@@ -629,6 +631,31 @@ class Database:
 
     async def saveSpamLog(self, channel_name, sender, message, ts):
         await self.query('save_spam_log', [channel_name, sender, message, ts])
+
+    async def get_list_values_full(self, list_name):
+        return await self.query('get_active_list_values', [list_name])
+
+    async def get_list_value_custom(self, list_name, field)->List:
+        list = await self.get_list_values_full(list_name)
+        output = []
+
+        for list_value in list:
+            if list_value[field] is not None:
+                output.append(list_value[field])
+
+        return output
+
+    async def get_list_values_str(self, list_name)->List[str]:
+        return await self.get_list_value_custom(list_name, 'value_str')
+
+    async def get_list_values_int(self, list_name) -> List[int]:
+        return await self.get_list_value_custom(list_name, 'value_int')
+
+    async def get_list_values_dec(self, list_name) -> List[float]:
+        return await self.get_list_value_custom(list_name, 'value_dec')
+
+    async def add_to_list(self, list_name, val_str, val_int, val_dec):
+        await self.query('save_to_list', [list_name, val_str, val_int, val_dec])
 
     ### DB METHODS WITH CACHE ###
 

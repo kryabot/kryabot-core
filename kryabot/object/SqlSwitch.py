@@ -150,5 +150,7 @@ async def getSql(sqlType):
         'save_tg_active_invite': 'INSERT INTO tg_invite (channel_id, user_id, by_user_id) VALUES (%s, %s, %s);',
         'mark_invitation_used': 'UPDATE tg_invite SET tg_invite.used_at = CURRENT_TIMESTAMP WHERE tg_invite.channel_id = %s and tg_invite.user_id = %s;',
         'save_spam_log': "INSERT INTO twitch_spam_log (channel_name, sender, message, ts) VALUES(%s, %s, %s, %s)",
+        'get_active_list_values': 'SELECT * FROM list_value where list_value.list_id = (select list.list_id FROM list WHERE list.list_name = %s and list.active = 1) and list_value.active = 1;',
+        'save_to_list': 'CALL addToList(%s, %s, %s, %s);',
 
     }.get(sqlType, 'unknown_sql_type')

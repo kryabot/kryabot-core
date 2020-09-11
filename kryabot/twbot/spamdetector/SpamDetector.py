@@ -12,8 +12,12 @@ import utils.redis_key as redis_key
 
 MIN_WORDS = 5
 INTERVAL_CHECK = 30
-MATCH_THRESHOLD = 0.6
-MPS_RATIO = 8
+MATCH_THRESHOLD = 0.4
+MPS_RATIO = 5
+
+SKIP_LIST = ['jesusavgn']
+LIST_NAME_BANNED_WORDS = 'spambot_banned_words'
+BANNED_WORDS = []
 
 loop = asyncio.get_event_loop()
 db = Database(loop, 1)
@@ -52,6 +56,10 @@ class SpamDetector:
         self.channels: List[ChannelMessages] = []
 
     async def init(self):
+        global BANNED_WORDS
+
+        BANNED_WORDS = await db.get_list_values_str(LIST_NAME_BANNED_WORDS)
+        logger.info('Banned words: {}'.format(BANNED_WORDS))
         logger.info('Receiving bttv global emotes')
         bttv_global = await api.betterttv.get_global_emotes()
 
@@ -75,6 +83,10 @@ class SpamDetector:
 
     async def on_twitch_message(self, body):
         logger.debug(body)
+
+        if body['channel'].lower() in SKIP_LIST:
+            return
+
         await self.push(body['channel'], body['sender'], body['message'], body['ts'], body['twitch_emotes'])
 
     async def run(self):
@@ -157,6 +169,12 @@ class Detection:
         self.last_activity: datetime = datetime.now()
         self.messages.append(message)
         self.check_triggers()
+
+        if self.triggered:
+            last_word = str(message.original_message.split(' ')[-1:])
+            if last_word.startswith('@') and last_word not in BANNED_WORDS:
+                BANNED_WORDS.append(last_word)
+                await db.add_to_list(LIST_NAME_BANNED_WORDS, last_word, None, None)
 
     def too_old(self)->bool:
         if not self.triggered and self.last_activity + timedelta(seconds=INTERVAL_CHECK) < datetime.now():
@@ -243,6 +261,12 @@ class ChannelMessages:
                 continue
 
             return await self.update_detection(message, old_message)
+
+        last_word = str(message.original_message.split(' ')[-1:])
+        if last_word.startswith('@') and last_word in BANNED_WORDS:
+            logger.info('Banning user {} for banned word {} in message: {}'.format(message.sender, last_word, message.original_message))
+            await self.action_ban([{'sender': message.sender, 'message': message.original_message, 'ts': message.received_ts}])
+            return None
 
         return None
 
