@@ -173,8 +173,11 @@ class Detection:
         if self.triggered:
             last_word = str(message.original_message.split(' ')[-1:])
             if last_word.startswith('@') and last_word not in BANNED_WORDS:
+                logger.info('Appending {} to blacklist'.format(last_word))
                 BANNED_WORDS.append(last_word)
                 await db.add_to_list(LIST_NAME_BANNED_WORDS, last_word, None, None)
+            else:
+                logger.info('NOT appending {} to blacklist'.format(last_word))
 
     def too_old(self)->bool:
         if not self.triggered and self.last_activity + timedelta(seconds=INTERVAL_CHECK) < datetime.now():
