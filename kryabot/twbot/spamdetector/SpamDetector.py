@@ -171,7 +171,7 @@ class Detection:
         self.check_triggers()
 
         if self.triggered:
-            last_word = str(message.original_message.split(' ')[-1:])
+            last_word = str(message.original_message.split(' ')[-1:][0])
             if last_word.startswith('@') and last_word not in BANNED_WORDS:
                 logger.info('Appending {} to blacklist'.format(last_word))
                 BANNED_WORDS.append(last_word)
@@ -280,24 +280,27 @@ class ChannelMessages:
         #  58765:0-10,12-22,24-34,36-46,48-58,60-70
         # 81249:0-11,13-24,26-37,39-50,52-63,65-76,78-89
         if twitch_emotes:
-            emote_list = twitch_emotes.split('/')
-            tmp_list = []
-            for emote in emote_list:
-                if ':' not in emote:
-                    continue
+            if isinstance(twitch_emotes, datetime):
+                logger.error('Somehow received datetime into twitch_emotes: {}'.format(twitch_emotes))
+            else:
+                emote_list = twitch_emotes.split('/')
+                tmp_list = []
+                for emote in emote_list:
+                    if ':' not in emote:
+                        continue
 
-                parts = emote.split(':')
-                if len(parts) < 1 or '-' not in parts[1]:
-                    continue
+                    parts = emote.split(':')
+                    if len(parts) < 1 or '-' not in parts[1]:
+                        continue
 
-                intervals = parts[1].split(',')
-                for interval in intervals:
-                    cut_values = interval.split('-')
-                    tmp_list.append(text[int(cut_values[0]):(int(cut_values[1]) + 1)])
+                    intervals = parts[1].split(',')
+                    for interval in intervals:
+                        cut_values = interval.split('-')
+                        tmp_list.append(text[int(cut_values[0]):(int(cut_values[1]) + 1)])
 
-            if tmp_list:
-                for emote in tmp_list:
-                    text = str(text).replace(' ' + emote, '')
+                if tmp_list:
+                    for emote in tmp_list:
+                        text = str(text).replace(' ' + emote, '')
 
         if self.bttv_global is not None:
             for emote in self.bttv_global:
