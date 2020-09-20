@@ -81,8 +81,6 @@ class CommandProcessor(Processor):
 
         try:
             command = word_list[0].lower()
-            # TODO: temporary removal of first symbol
-            command = command[1:]
         except Exception as e:
             return
 

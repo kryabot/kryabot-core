@@ -25,7 +25,7 @@ def schedule_task_periodically(wait_time, func, logger=None, reporter=None, *arg
         while True:
             try:
                 if logger:
-                    logger.info.debug("Periodic run of function: {}".format(func))
+                    logger.debug("Periodic run of function: {}".format(func))
 
                 await func(*args)
             except Exception as ex:
