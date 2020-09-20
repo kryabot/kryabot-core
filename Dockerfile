@@ -28,7 +28,11 @@ EXPOSE 5050
 EXPOSE 5000
 
 # Start up script
-COPY scripts/dockerstart.sh /
-RUN chmod +x /dockerstart.sh
+COPY scripts/dockerstart_irc.sh /
+COPY scripts/dockerstart_spam.sh /
+COPY scripts/dockerstart_telegram.sh /
+COPY scripts/dockerstart_twitch.sh /
+
+RUN chmod +x /dockerstart_irc.sh && chmod +x /dockerstart_spam.sh && chmod +x /dockerstart_telegram.sh && chmod +x /dockerstart_twitch.sh
 
 CMD /dockerstart.sh
