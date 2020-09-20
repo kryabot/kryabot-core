@@ -52,7 +52,7 @@ class MessageContext(Base):
         self.is_mod = self.get_mod_status()
         self.is_subscriber = self.get_sub_status()
         self.is_turbo = self.get_turbo_status()
-        self.is_owner = self.channel.channel_name.lower() == self.user.name.lower()
+        self.is_owner = str(data["channel"]).lower() == str(data["sender"]).lower()
 
     def get_bits(self)->int:
         try:
