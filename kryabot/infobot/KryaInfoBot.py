@@ -224,7 +224,7 @@ class KryaInfoBot(TelegramClient):
                     await self.exception_reporter(ex, 'instagram_post_event')
 
     async def instagram_story_event(self, targets: List[Target], event: InstagramStoryEvent):
-        for item in reversed(event.items):
+        for item in event.items:
             media = None
 
             self.logger.info('Formatting mentions for caption')

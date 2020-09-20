@@ -1,9 +1,10 @@
 import time
-import random
 from random import randint
 
+from object.Base import Base
 
-class ChatEvent:
+
+class ChatEvent(Base):
     def __init__(self, logger=None):
         self.active = None
         self.channel_name = None

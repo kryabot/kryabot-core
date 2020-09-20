@@ -1,5 +1,8 @@
 import json
+import re
 from datetime import date, datetime
+from enum import Enum
+
 import dateutil.parser
 
 
@@ -20,6 +23,8 @@ def dict_to_json(object):
 def default_parser(obj):
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
+    if isinstance(obj, Enum):
+        return obj.name
     raise TypeError("Type %s not serializable" % type(obj))
 
 
@@ -29,7 +34,9 @@ def datetime_parser(json_dict):
             continue
 
         try:
-            json_dict[key] = dateutil.parser.parse(value)
+            match = re.search(r'(^\d+-\d+-\d+)', value)
+            if match.groups():
+                json_dict[key] = dateutil.parser.parse(value)
         except (ValueError, AttributeError, TypeError, OverflowError):
             pass
 

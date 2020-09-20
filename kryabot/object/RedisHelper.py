@@ -5,7 +5,7 @@ from utils.json_parser import json_to_dict, dict_to_json
 
 
 class RedisHelper:
-    def __init__(self, host, port, password, loop=None, minsize=1, maxsize=10):
+    def __init__(self, host, port, password, loop=None, minsize=2, maxsize=40):
         self.host = host
         self.port = port
         self.password = password

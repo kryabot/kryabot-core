@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from twbot.object.Channel import Channel
+from twbot.object.MessageContext import MessageContext
 from twbot.object.Notice import Notice
 from twbot.processor.Processor import Processor
 from utils.value_check import avoid_none
@@ -25,16 +25,16 @@ class NoticeProcessor(Processor):
         self.logger.debug('Notice data: {}'.format(self.notices))
         self.ready = True
 
-    async def process_bits(self, irc_data, db_channel, db_user, count):
+    async def process_bits(self, context: MessageContext):
         nt = Notice(None)
-        nt.msg_param_months = count
-        nt.display_name = irc_data.author.display_name
-        nt.login = irc_data.author.name
+        nt.msg_param_months = context.get_bits()
+        nt.display_name = context.user.display_name
+        nt.login = context.user.name
         nt.msg_id = 'bits'
 
-        await self.process(irc_data, db_channel, db_user, nt)
+        await self.process(context, nt)
 
-    async def process(self, irc_data, channel: Channel, db_user, notice: Notice):
+    async def process(self, context: MessageContext, notice: Notice):
         try:
             if notice.msg_id in ('sub', 'resub'):
                 nt = notice.msg_param_sub_plan
@@ -44,10 +44,10 @@ class NoticeProcessor(Processor):
             notice_type = self.get_notice_type(str(nt))
             resp = None
             if notice_type is not None:
-                resp = await self.get_base_response(channel.channel_id, notice_type['notice_type_id'], await notice.get_notice_count_int())
+                resp = await self.get_base_response(context.channel.channel_id, notice_type['notice_type_id'], await notice.get_notice_count_int())
 
             if resp is None or len(resp) == 0:
-                resp = channel.default_notice_text
+                resp = context.channel.default_notice_text
 
             if resp is None or len(resp) == 0:
                 return
@@ -55,7 +55,7 @@ class NoticeProcessor(Processor):
             resp = await self.replace_keywords(resp, notice)
 
             if len(resp) > 0:
-                await irc_data.send(resp)
+                await context.reply(resp)
         except Exception as ex:
             self.logger.exception(ex)
 

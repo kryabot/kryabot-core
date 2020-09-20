@@ -279,7 +279,8 @@ class WebsocketConnection:
         try:
             await asyncio.wait_for(fut, timeout=10)
         except asyncio.TimeoutError:
-            self._pending_joins.pop(channel)
+            if channel in self._pending_joins:
+                self._pending_joins.pop(channel)
 
             raise asyncio.TimeoutError(
                 f'Request to join the "{channel}" channel has timed out. Make sure the channel exists.')
@@ -336,8 +337,19 @@ class WebsocketConnection:
 
             await self._dispatch('raw_data', data)
 
-            _task = self.loop.create_task(self.process_data(data))
-            _task.add_done_callback(functools.partial(self._task_callback, data))
+            if '\r\n' in data:
+                for part in data.split('\r\n'):
+                    if str(part).strip() != '':
+                        _task = self.loop.create_task(self.process_data(part))
+                        _task.add_done_callback(functools.partial(self._task_callback, part))
+            elif '\n' in data:
+                for part in data.split('\n'):
+                    if str(part).strip() != '':
+                        _task = self.loop.create_task(self.process_data(part))
+                        _task.add_done_callback(functools.partial(self._task_callback, part))
+            else:
+                _task = self.loop.create_task(self.process_data(data))
+                _task.add_done_callback(functools.partial(self._task_callback, data))
 
     def _task_callback(self, data, task):
         exc = task.exception()
@@ -445,8 +457,8 @@ class WebsocketConnection:
 
         if not action and badges:
             action = badges['action']
-        elif not action:
-            action = 'PING'
+        # elif not action:
+        #     action = 'PING'
 
         try:
             author = self.regex["author"].match(data).group("author")
@@ -458,6 +470,9 @@ class WebsocketConnection:
                 channel = self._channel_cache[channel]['channel']
             except KeyError:
                 channel = Channel(name=channel, ws=self, http=self._http)
+
+            if channel.name.lower() == 'kryabot':
+                print(raw)
 
         try:
             user = User(author=author, channel=channel or None, tags=tags, ws=self._websocket)
@@ -485,6 +500,10 @@ class WebsocketConnection:
 
         elif action == 'PRIVMSG':
             await self._dispatch('message', message)
+
+            if user.name.lower == self.nick.lower():
+                user._mod = tags.get('mod', 0)
+                self._channel_cache[channel.name]['bot'] = user
         elif action == 'PRIVMSG(ECHO-MESSAGE)':
             message.echo = True
             message._channel = copy.copy(message.channel)
@@ -492,6 +511,10 @@ class WebsocketConnection:
 
             await self._dispatch('raw_data', raw)
             await self._dispatch('message', message)
+
+            if user.name.lower == self.nick.lower():
+                user._mod = tags.get('mod', 0)
+                self._channel_cache[channel.name]['bot'] = user
 
         elif action == 'USERNOTICE':
             user = User(author=tags['login'], channel=channel, tags=tags, ws=self._websocket)
@@ -509,12 +532,12 @@ class WebsocketConnection:
             log.debug('ACTION:: USERSTATE')
 
             if not user or not user.name:
-                if badges:
-                    user = User(author=badges['name'],
-                                channel=Channel(name=badges['channel'], ws=self, http=self._http) or None,
+                if tags:
+                    user = User(author=tags['display-name'],
+                                channel=channel or None,
                                 tags=tags,
                                 ws=self._websocket,
-                                mod=badges['mod'])
+                                mod=tags['mod'])
                 else:
                     return
 
@@ -542,17 +565,60 @@ class WebsocketConnection:
                     self._channel_cache[channel.name] = {'channel': channel, 'bot': user}
 
             await self._dispatch('mode', channel, user, mstatus)
+        elif action == 'NOTICE':
+            print(raw)
+            await self._dispatch('channel_notice', channel, tags)
+
+            notice_type = tags.get('msg-id', None)
+            if not notice_type:
+                return
+
+            if notice_type == 'room_mods' and 'The moderators of this channel are' in message.content:
+                mods = (message.content.split(':')[1]).split(',')
+                mods = [str(mod).strip() for mod in mods]
+                for mod in mods:
+                    if mod.lower() == self.nick.lower():
+                        try:
+                            me: User = self._channel_cache[channel.name]['bot']
+                        except (TypeError, KeyError):
+                            me = User(author=mod, channel=channel or None, tags=tags, ws=self._websocket)
+
+                        me._mod = 1
+
+                        try:
+                            self._channel_cache[channel.name]['bot'] = me
+                        except KeyError:
+                            self._channel_cache[channel.name] = {'channel': channel, 'bot': me}
+        elif action == 'ROOMSTATE':
+            await self._dispatch('roomstate', channel, tags)
+        elif action == 'HOSTTARGET':
+            # info about hostings
+            pass
+        elif action == 'CLEARCHAT':
+            # info when mod deletes user message (timeout or ban)
+            pass
+        elif action == 'CLEARMSG':
+            # info when mod deletes user meessage (only delete)
+            pass
+        elif action is None:
+            pass
+        else:
+            log.info('Unknown {} action: {}'.format(action, raw))
 
     async def join_action(self, channel: str, author: str, tags):
         log.debug('ACTION:: JOIN: %s', channel)
 
-        if author == self.nick:
+        if author.lower() == self.nick.lower():
             chan_ = Channel(name=channel, ws=self, http=self._http)
-            user = User(author=author, channel=chan_, tags=tags, ws=self._websocket)
+
+            try:
+                user = self._channel_cache[channel]['bot']
+            except KeyError:
+                user = User(author=author, channel=chan_, tags=tags, ws=self._websocket)
 
             self._channel_cache[channel] = {'channel': chan_, 'bot': user}
 
-            if self._pending_joins:
+            if self._pending_joins and channel in self._pending_joins:
                 self._pending_joins[channel].set_result(None)
                 self._pending_joins.pop(channel)
 

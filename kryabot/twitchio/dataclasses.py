@@ -157,6 +157,8 @@ class User:
 
     def __init__(self, ws, **attrs):
         self._name = attrs.pop('author', None)
+        if self._name:
+            self._name = self._name.replace('\r', '')
         self._channel = attrs.pop('channel', self._name)
         self._tags = attrs.pop('tags', None)
         self._ws = ws

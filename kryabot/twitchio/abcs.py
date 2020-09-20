@@ -96,7 +96,7 @@ class Messageable(metaclass=abc.ABCMeta):
         bucket.update()
 
         if bucket.limited:
-            raise TwitchIOBException(f'IRC Message rate limit reached for channel <{channel}>.'
+            raise TwitchIOBException(f'IRC Message rate limit reached for channel <{channel}> [{bucket.method}].'
                                      f' Please try again in {bucket._reset - now:.2f}s')
 
     @staticmethod
@@ -134,9 +134,9 @@ class Messageable(metaclass=abc.ABCMeta):
 
         self.check_content(channel, content)
 
-        if content.startswith(('.', '/')):
-            if content.lstrip('./').startswith(self.__invalid__):
-                raise InvalidContent('UnAuthorised chat command for send. Use built in method(s).')
+        # if content.startswith(('.', '/')):
+        #     if content.lstrip('./').startswith(self.__invalid__):
+        #         raise InvalidContent('UnAuthorised chat command for send. Use built in method(s).')
 
         ws = self._get_socket
         self.check_bucket(channel)

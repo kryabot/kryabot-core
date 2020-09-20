@@ -120,3 +120,31 @@ def get_twitch_spam_detector_request_topic():
 
 def get_twitch_spam_detector_response_topic():
     return 'spam.detector.response'
+
+
+# All twitch received messages gets published here
+def get_irc_topic_notice():
+    return 'irc.request.notice'
+
+
+def get_irc_topic_message():
+    return 'irc.request.message'
+
+
+def get_irc_topic_part():
+    return 'irc.request.part'
+
+
+# All responses (send message, mod acions, join, leave)
+# def get_irc_response_topic():
+#     return 'irc.request'
+
+def get_pubsub_topic():
+    return 'twitch.pubsub.incoming'
+
+def get_error_queue():
+    return 'report.error.queue'
+
+
+def get_irc_response_queue():
+    return 'irc.response.queue'

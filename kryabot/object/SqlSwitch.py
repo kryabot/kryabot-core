@@ -14,7 +14,7 @@ async def getSql(sqlType):
         'update_user_twitch_id': 'UPDATE user SET tw_id = %s WHERE user_id = %s',
         'find_user_right': 'SELECT admin, blacklisted FROM user_right WHERE channel_id = %s AND user_id = %s',
         'find_channel_notices': 'SELECT * FROM channel_notice',
-        'find_auto_join': 'SELECT c.channel_id, c.channel_name, c.channel_name, c.command_symbol, c.default_notification, c.auto_join, c.trigger_period, u.user_id, u.name, u.dname, u.tw_id, u.is_admin FROM channel c JOIN user u on c.user_id = u.user_id WHERE auto_join = TRUE',
+        'find_auto_join': 'SELECT c.channel_id, c.channel_name, c.channel_name, c.command_symbol, c.default_notification, c.auto_join, c.trigger_period, c.scan_messages, c.on_spam_detect, c.priority, u.user_id, u.name, u.dname, u.tw_id, u.is_admin FROM channel c JOIN user u on c.user_id = u.user_id WHERE auto_join = TRUE ORDER BY c.priority DESC',
         'find_channel_commands': 'SELECT * FROM channel_command ORDER BY level DESC',
         'find_channel_commands_by_id': 'SELECT * FROM channel_command where channel_command.channel_id = %s ORDER BY level DESC',
         'find_notice_types': 'SELECT * FROM notice_type WHERE active = TRUE',

@@ -3,8 +3,10 @@ import random
 from datetime import datetime
 from typing import List, Dict, Union
 
+from twbot import commandbuilder
 from twbot.object.Command import Command
 from twbot.object.Channel import Channel
+from twbot.object.MessageContext import MessageContext
 from twbot.processor.Processor import Processor
 
 
@@ -69,24 +71,38 @@ class CommandProcessor(Processor):
         self.logger.debug('Command data: {}'.format(self.commands))
         self.ready = True
 
-    async def process(self, irc_data, db_user, channel: Channel)->None:
-        word_list = irc_data.message.content.split()
+    async def process(self, context: MessageContext)->None:
+        if context.message is None:
+            self.logger.error("Received empty message: {}".format(context.stringify()))
+            return
+
+        context.message = str(context.message)
+        word_list = context.message.split()
 
         try:
             command = word_list[0].lower()
-            command = command[len(channel.command_symbol):]
+            # TODO: temporary removal of first symbol
+            command = command[1:]
         except Exception as e:
             return
 
-        user_level = self.get_access_level(irc_data)
-        self.logger.debug('Searching for command {} in channel {}, access {}'.format(command, channel.channel_name, user_level))
-        cmd = self.find_command(channel.channel_id, command, user_level)
+        user_level = self.get_access_level(context)
+        # Global commands
+        global_cmd = commandbuilder.build(command_name=command, context=context)
+        if global_cmd is not None:
+            self.logger.debug('Processing global command {} in channel {} by {}'.format(command, context.channel.channel_name, context.user.name))
+            await global_cmd.process()
+            return
+
+        # Custom commands
+        self.logger.debug('Searching for command {} in channel {}, access {}'.format(command, context.channel.channel_name, user_level))
+        cmd = self.find_command(context.channel.channel_id, command, user_level)
         if cmd is None:
             self.logger.debug('Command {} not found'.format(command))
             return
 
         try:
-            await self.process_command(channel, irc_data, cmd)
+            await self.process_command(context, cmd)
         except Exception as e:
             self.logger.exception(e)
 
@@ -141,26 +157,20 @@ class CommandProcessor(Processor):
 
         return {}
 
-    async def process_command(self, channel: Channel, irc_data, command: Command)-> None:
-        if irc_data is None:
+    async def process_command(self, context: MessageContext, command: Command)-> None:
+        if context.user is None:
             name = ''
             content = ''
         else:
-            name = irc_data.author.name
-            content = irc_data.message.content
+            name = context.user.name
+            content = context.message
 
-        reply_text = await self.replace_keywords(channel, command, name, content)
-        self.logger.debug('Processing command {} in channel {}: {}'.format(command.command_name, channel.channel_name, reply_text))
+        reply_text = await self.replace_keywords(context.channel, command, name, content)
+        self.logger.debug('Processing command {} in channel {}: {}'.format(command.command_name, context.channel.channel_name, reply_text))
         if reply_text is None or len(reply_text) == 0:
             return
 
-        if irc_data is None:
-            # Auto trigger
-            await self.irc.send_privmsg(channel.channel_name, reply_text)
-        else:
-            # Manual use
-            await irc_data.send(reply_text)
-
+        await context.reply(reply_text)
         await self.db.updateCommandUsage(command.command_id)
 
     async def process_trigger(self, channel: Channel)->None:
@@ -169,30 +179,33 @@ class CommandProcessor(Processor):
             # self.logger.debug('Failed to find command to trigger in channel {}'.format(channel.channel_name))
             return
 
+        context = MessageContext(None)
+        context.channel = channel
+
         self.logger.debug('Found command {} to trigger in channel {}'.format(cmd.command_name, channel.channel_name))
         try:
-            await self.process_command(channel, None, cmd)
+            await self.process_command(context, cmd)
             channel.triggered()
         except Exception as e:
             self.logger.exception(e)
 
-    def get_access_level(self, irc_data)->int:
-        if irc_data.author.name.lower() == 'kuroskas':
+    def get_access_level(self, context: MessageContext)->int:
+        if context.user.name.lower() == 'kuroskas':
             return 9
 
         # if await self.is_admin(irc_data.author.name) is True:
         #     return 8
 
-        if irc_data.author.name == irc_data.channel.name:
+        if context.user.name == context.channel.channel_name:
             return 7
 
-        if irc_data.author.is_mod is True:
+        if context.is_mod is True:
             return 6
 
         # if irc_data.author.is_vip is True:
         #     return 5
 
-        if irc_data.author.is_subscriber is True:
+        if context.is_subscriber is True:
             return 2
 
         return 0

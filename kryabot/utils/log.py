@@ -18,6 +18,7 @@ LOG_TG_PATH = log_dir + 'tg.log'
 LOG_SANIC_PATH = log_dir + 'sanic.log'
 LOG_TIO_PATH = log_dir + 'twitchio.log'
 LOG_SPAM_DETECTOR_PATH = log_dir + 'spamdetector.log'
+LOG_IRC = log_dir + 'irc.log'
 
 KRYA_LOGGING_CONFIG = dict(
     version=1,
@@ -98,6 +99,12 @@ KRYA_LOGGING_CONFIG = dict(
             "handlers": ["file.spam"],
             "propagate": True,
             "qualname": "krya.spam",
+        },
+        "krya.irc": {
+            "level": GLOBAL_LOG_LEVEL,
+            "handlers": ["file.irc"],
+            "propagate": True,
+            "qualname": "krya.irc",
         },
         "twitchio.websocket": {
             "level": GLOBAL_LOG_LEVEL,
@@ -200,6 +207,12 @@ KRYA_LOGGING_CONFIG = dict(
         'file.spam': {
             'class': 'logging.FileHandler',
             'filename': LOG_SPAM_DETECTOR_PATH,
+            'formatter': 'default',
+            'encoding': GLOBAL_ENCODING,
+        },
+        'file.irc': {
+            'class': 'logging.FileHandler',
+            'filename': LOG_IRC,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
         },

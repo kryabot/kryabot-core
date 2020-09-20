@@ -3,11 +3,13 @@ from logging import Logger
 from object.ApiHelper import ApiHelper
 from object.BotConfig import BotConfig
 from object.Database import Database
+from twbot import ResponseAction
 from twitchio.websocket import WebsocketConnection
 
 
 class Processor:
     cfg: BotConfig = None
+    instance = None
 
     def __init__(self):
         if Processor.cfg is None:
@@ -15,7 +17,6 @@ class Processor:
 
         self.silent: bool = False
         self.db: Database = None
-        self.irc: WebsocketConnection = None
         self.api: ApiHelper = None
         self.logger: Logger = None
         self.cfg: BotConfig = Processor.cfg
@@ -24,11 +25,10 @@ class Processor:
     async def update(self, channel_id: int = None)->None:
         raise Exception('Update method must be implemented')
 
-    def set_tools(self, logger: Logger, db: Database, api: ApiHelper, irc: WebsocketConnection)->None:
+    def set_tools(self, logger: Logger, db: Database, api: ApiHelper)->None:
         self.logger = logger
         self.db = db
         self.api = api
-        self.irc = irc
 
     async def process(self, *args):
         raise Exception('Process method must be implemented')
@@ -56,3 +56,10 @@ class Processor:
             list[id].append(row)
 
         return list
+
+    @classmethod
+    def get_instance(cls):
+        if cls.instance:
+            return cls.instance
+
+        return cls()

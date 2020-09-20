@@ -1,93 +1,97 @@
 import time
+
+from twbot.object.Channel import Channel
 from twbot.object.ChatEvent import ChatEvent
+from twbot.object.MessageContext import MessageContext
 from twbot.object.RateEvent import RateEvent
-from api.twitch import Twitch
 from random import randint
 
+from twbot.processor.Processor import Processor
 
-class EventProcessor:
 
-    def __init__(self, silent, logger):
+class EventProcessor(Processor):
+    def __init__(self):
+        super().__init__()
         self.events = []
-        self.is_silent = silent
-        self.logger = logger
-        self.twitch_api = Twitch(None)
 
-    async def process_message(self, irc_data):
+    async def update(self, channel_id: int = None) -> None:
+        pass
+
+    async def process_message(self, context: MessageContext):
         for event in self.events:
-            if event.channel_name == irc_data.channel.name and await event.is_active():
-                if await event.can_remind() == True:
-                    await irc_data.send(event.text)
+            if event.channel_name == context.channel.channel_name and await event.is_active():
+                if await event.can_remind() is True:
+                    await context.reply(event.text)
 
                 if isinstance(event, ChatEvent):
-                    if irc_data.message.content.lower() == event.keyword.lower():
+                    if context.message.lower() == event.keyword.lower():
                         # Non subs and followers only
-                        if event.type == 1 and not irc_data.author.is_subscriber:
-                            self.logger.info('[1] Adding participant {}'.format(irc_data.author.name))
-                            await event.add(irc_data.author.name)
+                        if event.type == 1 and not context.is_subscriber:
+                            self.logger.info('[1] Adding participant {}'.format(context.user.name))
+                            await event.add(context.user.name)
 
                         # Subs only
-                        if event.type == 2 and irc_data.author.is_subscriber:
-                            self.logger.info('[2] Adding participant {}'.format(irc_data.author.name))
-                            await event.add(irc_data.author.name)
+                        if event.type == 2 and context.is_subscriber:
+                            self.logger.info('[2] Adding participant {}'.format(context.user.name))
+                            await event.add(context.user.name)
 
                         # Any follower
                         if event.type == 3:
-                            self.logger.info('[3] Adding participant {}'.format(irc_data.author.name))
-                            await event.add(irc_data.author.name)
+                            self.logger.info('[3] Adding participant {}'.format(context.user.name))
+                            await event.add(context.user.name)
                 elif isinstance(event, RateEvent):
-                    if str(irc_data.message.content).isnumeric():
-                        await event.check_and_add(irc_data.author.name, irc_data.message.content)
+                    if str(context.message).isnumeric():
+                        await event.check_and_add(context.user.name, context.message)
 
-    async def start_rate_event(self, irc_data, runtime):
-        i = await self.get_int(runtime)
+    async def start_rate_event(self, context: MessageContext, runtime):
+        i = self.get_int(runtime)
         if 0 < i < 30:
             i = 30
 
         try:
-            existing_event = await self.find_event(irc_data.channel.name, irc_data.author.name)
+            existing_event = await self.find_event(context.channel.name, context.user.name)
             if not existing_event is None:
                 if await existing_event.is_active():
-                    await irc_data.send('{u} can not start new event - you already have active rate event. Participants: {p}'.format(u=irc_data.author.name, p=len(existing_event.users)))
+                    await context.reply('{u} can not start new event - you already have active rate event. Participants: {p}'.format(u=context.user.name, p=len(existing_event.users)))
                     return
                 else:
                     self.events.remove(existing_event)
 
-            self.logger.info('RateEvent started on channel {} by {}'.format(irc_data.channel.name, irc_data.author.name))
+            self.logger.info('RateEvent started on channel {} by {}'.format(context.channel.name, context.user.name))
 
             event = RateEvent(logger=self.logger)
-            event.channel_name = irc_data.channel.name
-            event.by = irc_data.author.name
+            event.channel_name = context.channel.name
+            event.by = context.user.name
             event.runtime = i
             event.until = event.started + i
             event.last_reminder = time.time()
             event.text = '/me Rate event is ongoing. Send your vote by messaging number between 1-10!'
             self.events.append(event)
-            await irc_data.send(event.text)
+            await context.reply(event.text)
         except Exception as ex:
             self.logger.error(ex)
 
-    async def start_event(self, irc_data, keyword, runtime, event_type):
-        i = await self.get_int(runtime)
+    async def start_event(self, context: MessageContext, keyword, runtime, event_type):
+        i = self.get_int(runtime)
         if 0 < i < 30:
             i = 30
 
         try:
-            existing_event = await self.find_event(irc_data.channel.name, irc_data.author.name)
+            existing_event = await self.find_event(context.channel.name, context.user.name)
             if not existing_event is None:
                 if await existing_event.is_active():
-                    await irc_data.send('{u} can not start new event - you already have active event. Participants: {p}, keyword: {k}'.format(u=irc_data.author.name, k=existing_event.keyword, p=len(existing_event.users)))
+                    await context.reply('{u} can not start new event - you already have active event. Participants: {p}, keyword: {k}'.format(u=irc_data.author.name, k=existing_event.keyword, p=len(existing_event.users)))
                     return
                 else:
                     self.events.remove(existing_event)
 
-            self.logger.info('Event started on channel {ch} by {u} with keyword {key}'.format(ch=irc_data.channel.name,
-                                                                                              u=irc_data.author.name,
+            self.logger.info('Event started on channel {ch} by {u} with keyword {key}'.format(ch=context.channel.name,
+                                                                                              u=context.user.name,
                                                                                               key=keyword))
             event = ChatEvent(logger=self.logger)
-            event.channel_name = irc_data.channel.name
+            event.channel_name = context.channel.name
             event.keyword = keyword
-            event.by = irc_data.author.name
+            event.by = context.user.name
             event.users = []
             event.started = time.time()
             event.runtime = i
@@ -99,7 +103,7 @@ class EventProcessor:
             event.text = event.text.format(key=keyword)
             self.events.append(event)
 
-            await irc_data.send(event.text)
+            await context.reply(event.text)
         except Exception as e:
             self.logger.error("{err}".format(err=str(e)))
 
@@ -120,37 +124,38 @@ class EventProcessor:
 
         return None
 
-    async def finish_event(self, irc_data, channel_twitch_id):
-        existing_event = await self.find_event(irc_data.channel.name, irc_data.author.name)
+    async def finish_event(self, context: MessageContext):
+        existing_event = await self.find_event(context.channel.name, context.user.name)
         if existing_event is None:
             return
 
         if isinstance(existing_event, ChatEvent):
-            await self.finish_chat_event(existing_event, irc_data, channel_twitch_id)
+            await self.finish_chat_event(existing_event, context.channel)
         elif isinstance(existing_event, RateEvent):
-            await self.finish_rate_event(existing_event, irc_data, channel_twitch_id)
+            await self.finish_rate_event(existing_event, context.channel)
 
-    async def finish_rate_event(self, existing_event, irc_data, channel_twitch_id):
+    async def finish_rate_event(self, existing_event, channel: Channel):
         try:
             existing_event.active = False
             rate = existing_event.get_avg()
             info_text = ' [Started by {by}, participants: {total}]'.format(by=existing_event.by, total=len(existing_event.users.keys()))
-            await irc_data.send('/me HSWP Rating finished. Result is: {} {info}'.format(rate, info=info_text))
+            await channel.reply('/me HSWP Rating finished. Result is: {} {info}'.format(rate, info=info_text))
             self.events.remove(existing_event)
         except Exception as e:
-            self.logger.error(e)
+            self.logger.info(existing_event.stringify())
+            self.logger.exception(e)
 
-    async def finish_chat_event(self, existing_event, irc_data, channel_twitch_id):
+    async def finish_chat_event(self, existing_event, channel: Channel):
         try:
             while True:
                 winner = await existing_event.roll_user()
 
                 if winner is None:
-                    await irc_data.send('No participants...  SMOrc')
+                    await channel.reply('No participants...  SMOrc')
                     return
 
                 # Follower check, if false reroll
-                if existing_event.type in [1,3] and not await self.is_follower(channel_twitch_id, winner):
+                if existing_event.type in [1, 3] and not await self.is_follower(channel.tw_id, winner):
                     self.logger.info('Event by: {by}, channel: {ch}. Rolled {winner}, but not a follower. Rerolling.'.format(winner=winner, by=existing_event.by, ch=existing_event.channel_name))
                     continue
 
@@ -159,10 +164,10 @@ class EventProcessor:
             text = await self.random_event_text(existing_event.type)
             info_text = ' [Started by {by}, participants: {total}]'.format(by=existing_event.by, total=(len(existing_event.users) + 1))
             self.logger.info('Event by {by} on channel {ch} finished. winner is {win}. Total participants: {total}'.format(by=existing_event.by, ch=existing_event.channel_name, win=winner, total=(len(existing_event.users) + 1)))
-            await irc_data.send('{winner} {text} {info}'.format(winner=winner, text=text, info=info_text))
-
+            await channel.reply('{winner} {text} {info}'.format(winner=winner, text=text, info=info_text))
         except Exception as e:
-            self.logger.error("{err}".format(err=str(e)))
+            self.logger.info(channel.stringify())
+            self.logger.exception(e)
 
     async def random_event_text(self, event_type):
         list = []
@@ -183,32 +188,21 @@ class EventProcessor:
 
     async def is_follower(self, channel_id, username)-> bool:
         try:
-            user_data = await self.twitch_api.get_user_by_name(username)
-            follower_check = await self.twitch_api.check_channel_following(channel_id, user_data['users'][0]['_id'])
+            user_data = await self.api.twitch.get_user_by_name(username)
+            follower_check = await self.api.twitch.check_channel_following(channel_id, user_data['users'][0]['_id'])
             return True
         except Exception as e:
             # 404 is returned if not follower
             return False
 
-    async def cancel_event(self, irc_data):
+    async def cancel_event(self, context: MessageContext):
         try:
-            existing_event = await self.find_event(irc_data.channel.name, irc_data.author.name)
+            existing_event = await self.find_event(context.channel.name, context.user.name)
             if existing_event is None:
                 return
 
             self.events.remove(existing_event)
         except Exception as e:
-            self.logger.error("{err}".format(err=str(e)))
+            self.logger.info(context.stringify())
+            self.logger.exception(e)
 
-    async def delete_user_events(self, channel_name, by):
-
-        pass
-
-    async def delete_channel_events(self, channel_name):
-        pass
-
-    async def get_int(self, val)-> int:
-        try:
-            return int(val)
-        except:
-            return 0

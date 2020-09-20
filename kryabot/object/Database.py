@@ -10,6 +10,7 @@ import logging
 from object.RedisHelper import RedisHelper
 import utils.redis_key as redis_key
 
+
 class Database:
     def __init__(self, loop, size=-1, cfg=None):
         if loop is None:
@@ -155,7 +156,7 @@ class Database:
     async def updateUserAdmin(self, user_id, is_admin):
         return await self.query('update_user_admin', [is_admin, user_id])
 
-    async def getAdmins(self):
+    async def get_admins(self):
         return await self.query('find_admins', [])
 
     async def getChannelAdmins(self, channel_id):
@@ -219,7 +220,7 @@ class Database:
 
         return await self.query('find_subchat_link', [channel[0]['channel_id']])
 
-    async def getSettings(self):
+    async def get_settings(self):
         return await self.query('get_settings', [])
 
     async def saveBotAuth(self, kb_user_id, token, refresh_token, expires_in):

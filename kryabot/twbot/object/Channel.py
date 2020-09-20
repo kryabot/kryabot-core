@@ -4,25 +4,26 @@ from typing import Union
 
 from dateutil.parser import parse
 
-from object.ApiHelper import ApiHelper
+from object.Base import Base
+from twbot import ResponseAction
 from utils.formatting import td_format
 
 
-class Channel:
+class Channel(Base):
 
     def __init__(self, db_channel, log, cfg=None, ah=None):
         self.cfg = cfg
         self.ah = ah
         self.raw_data = db_channel
-        self.channel_id = self.get_attr('channel_id')
-        self.channel_name = self.get_attr('channel_name')
-        self.command_symbol = self.get_attr('command_symbol')
-        self.auto_join = self.get_attr('auto_join')
-        self.user_id = self.get_attr('user_id')
-        self.name = self.get_attr('name')
-        self.tw_id = self.get_attr('tw_id')
-        self.is_admin = self.get_attr('is_admin')
-        self.default_notice_text = self.get_attr('default_notification')
+        self.channel_id = self.get_value('channel_id')
+        self.channel_name = self.get_value('channel_name')
+        self.command_symbol = self.get_value('command_symbol')
+        self.auto_join = self.get_value('auto_join')
+        self.user_id = self.get_value('user_id')
+        self.name = self.get_value('name')
+        self.tw_id = self.get_value('tw_id')
+        self.is_admin = self.get_value('is_admin')
+        self.default_notice_text = self.get_value('default_notification')
         self.trigger_period = 30
 
         self.is_live = False
@@ -37,15 +38,8 @@ class Channel:
 
         self.logger = log
 
-    def get_attr(self, atr_name, data=None):
-        try:
-            if data is None:
-                return self.raw_data[atr_name]
-
-            return data[atr_name]
-        except Exception as e:
-            self.logger.error('failed to get attribute: ' + atr_name)
-            return None
+    def get_value(self, atr_name):
+        return self.get_attr(self.raw_data, atr_name)
 
     def update_activity(self):
         self.last_chat_activity = datetime.now()
@@ -157,3 +151,12 @@ class Channel:
     def matches(self, name: str)->bool:
         name = str(name)
         return self.channel_name.lower() == name.lower()
+
+    async def reply(self, message: str):
+        await ResponseAction.ResponseMessage.send(self.channel_name, message)
+
+    async def timeout(self, user: str, duration: int, reason: str):
+        await ResponseAction.ResponseTimeout.send(channel_name=self.channel_name, user=user, duration=duration, reason=reason)
+
+    async def ban(self, user: str, reason: str):
+        await ResponseAction.ResponseBan.send(channel_name=self.channel_name, user=user, reason=reason)

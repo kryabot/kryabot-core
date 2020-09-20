@@ -30,7 +30,6 @@ class Twitch(Core):
         self.token_url = 'https://id.twitch.tv/oauth2/token'
         self.base_url = 'https://api.twitch.tv/kraken/'
         self.helix_url = 'https://api.twitch.tv/helix/'
-        self.callback_url = self.cfg.getInstanceConfig()['LOCALHOST'] + ':5050/twitch_callback'
         self.webhooks_url = 'https://api.twitch.tv/helix/webhooks/hub'
         self.remote_url = self.cfg.getKbApiConfig()['URL']
         self.remote_sub_endpoint = self.remote_url + self.cfg.getKbApiConfig()['CALLBACK_ENDPOINT_SUB']
@@ -177,7 +176,7 @@ class Twitch(Core):
         }
         return await self.make_post_request(url=self.token_url, body=body, headers=headers)
 
-    async def get_streams(self, first=20, channel_name=None, after=None, before=None):
+    async def get_streams(self, first=20, channel_name=None, after=None, before=None, language=None):
         url = '{base}streams?first={id}'.format(base=self.helix_url, id=first)
 
         if channel_name is not None:
@@ -188,6 +187,9 @@ class Twitch(Core):
 
         if before is not None:
             url = '{eurl}&before={valbefore}'.format(eurl=url,valbefore=before)
+
+        if language is not None:
+            url = '{eurl}&language={lang}'.format(eurl=url, lang=language)
 
         return await self.make_get_request(url)
 
