@@ -238,6 +238,7 @@ class ChatAdapter(Base, commands.Bot):
         await self.db.redis.publish_event(redis_key.get_twitch_spam_detector_request_topic(), body)
 
     async def auto_join_channels(self)->None:
+        self.logger.info('Auto join check...')
         api = Twitch(self.db.redis, cfg=self.cfg)
 
         streams = await api.get_streams(first=100, language='ru')

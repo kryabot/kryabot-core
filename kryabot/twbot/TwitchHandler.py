@@ -121,7 +121,7 @@ class TwitchHandler(Base):
             return
 
         listener = self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
-        triggers = schedule.schedule_task_periodically(5, self.timed_task_processor)
+        triggers = schedule.schedule_task_periodically(5, self.timed_task_processor, logger=self.logger)
 
         self.tasks.append(triggers)
         self.tasks.append(listener)

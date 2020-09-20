@@ -1,5 +1,6 @@
 import asyncio
 
+
 def schedule_task_periodically(wait_time, func, logger=None, reporter=None, *args):
     """
     Schedule a function to run periodically as an asyncio.Task
