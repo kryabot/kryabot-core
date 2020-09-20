@@ -76,7 +76,6 @@ class CommandProcessor(Processor):
             self.logger.error("Received empty message: {}".format(context.stringify()))
             return
 
-        context.message = str(context.message)
         word_list = context.message.split()
 
         try:

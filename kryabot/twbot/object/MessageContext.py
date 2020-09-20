@@ -46,7 +46,7 @@ class MessageContext(Base):
         self.channel = ChannelCache.get(data["channel"])
         self.user = User(data["sender"], data["sender_id"], data["display_name"])
         self.tags = data["tags"]
-        self.message = data["message"]
+        self.message = str(data["message"])
         self.ts = data["ts"]
         self.badge_info = self.tags.get("badge-info", None)
         self.is_mod = self.get_mod_status()

@@ -23,7 +23,7 @@ loop = asyncio.get_event_loop()
 db = Database(loop, 1)
 api = ApiHelper(redis=db.redis)
 logger = logging.getLogger('krya.spam')
-
+bttv_global = None
 
 def get_cosine_sim(*strs):
     vectors = [t for t in get_vectors(*strs)]
@@ -57,6 +57,7 @@ class SpamDetector:
 
     async def init(self):
         global BANNED_WORDS
+        global bttv_global
 
         BANNED_WORDS = await db.get_list_values_str(LIST_NAME_BANNED_WORDS)
         logger.info('Banned words: {}'.format(BANNED_WORDS))
@@ -65,16 +66,20 @@ class SpamDetector:
 
         channels = await db.getAutojoinChannels()
         for channel in channels:
-            ch = ChannelMessages(channel['channel_name'])
-            logger.info('Receiving emotes for channel {}'.format(ch.channel_name))
-            ch.bttv_global = bttv_global
-            ch.bttv_channel = await api.betterttv.get_channel_emotes(ch.channel_name)
-            ch.fz_channel = parse_fz_emotes(await api.frankerfacez.get_channel_emotes(ch.channel_name))
+            ch = await self.create_channel(channel['channel_name'])
             self.channels.append(ch)
 
         logger.debug('Starting topic listener')
         loop.create_task(db.redis.start_listener(self.redis_subscribe))
         logger.info('Init completed')
+
+    async def create_channel(self, channel_name: str):
+        ch = ChannelMessages(str(channel_name).lower())
+        logger.info('Receiving emotes for channel {}'.format(ch.channel_name))
+        ch.bttv_global = bttv_global
+        ch.bttv_channel = await api.betterttv.get_channel_emotes(ch.channel_name)
+        ch.fz_channel = parse_fz_emotes(await api.frankerfacez.get_channel_emotes(ch.channel_name))
+        return ch
 
     async def redis_subscribe(self):
         logger.debug('redis_subscribe before')
@@ -100,7 +105,7 @@ class SpamDetector:
 
                     logger.debug('Channel info {}: detections {}, messages {}'.format(channel.channel_name, len(channel.detections), len(channel.messages)))
                     for detection in channel.detections:
-                        logger.info('Detection {} last activity {}, triggered: {}, last ratio: {}'.format(detection, detection.last_activity, detection.triggered, detection.last_ratio))
+                        logger.info('Detection {} in {} last activity {}, triggered: {}, last ratio: {}'.format(detection, channel.channel_name, detection.last_activity, detection.triggered, detection.last_ratio))
                         for msg in detection.messages:
                             logger.info('From: {}, at {} Message: {} '.format(msg.sender, msg.received_ts, msg.original_message))
 
@@ -116,8 +121,9 @@ class SpamDetector:
                 channel = ch
 
         if channel is None:
-            logger.error('Not found channel for {}'.format(channel_name))
-            raise ValueError('Received unknown channel name {}'.format(channel_name))
+            logger.info('Creating custom channel for {}'.format(channel_name))
+            channel = await self.create_channel(channel_name)
+            self.channels.append(channel)
 
         await channel.process(sender, message, ts, twitch_emotes)
         channel.clear_old_messages()
