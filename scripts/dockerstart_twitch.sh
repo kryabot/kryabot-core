@@ -2,4 +2,4 @@
 
 cd $WORK_DIR
 
-./scripts/twitch_bot.sh start
+./scripts/twitch_bot.sh startdirect

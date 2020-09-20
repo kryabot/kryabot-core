@@ -12,6 +12,10 @@ process_start() {
 	echo "" > $!$STOP_FILE
 }
 
+process_start_direct(){
+	python $BOTHOME/$MODULE >> $MODULE.txt 2>> $MODULE.err
+}
+
 process_status(){
 	echo 'Running processes:'
 	
@@ -83,6 +87,11 @@ fi
 
 if [ $1 == "start" ]; then
 	process_start
+	exit
+fi
+
+if [ $1 == "startdirect" ]; then
+	process_start_direct
 	exit
 fi
 

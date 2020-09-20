@@ -2,4 +2,4 @@
 
 cd $WORK_DIR
 
-./scripts/spam_detector.sh start
+./scripts/spam_detector.sh startdirect
