@@ -154,9 +154,8 @@ class TwitchHandler(Base):
     async def on_message(self, body):
         self.logger.debug(body)
         context = MessageContext(body)
-
-        if isinstance(context.user.name, datetime):
-            self.logger.warning('Received user name as datetime: {}'.format(context.user.name))
+        if context is None or context.channel is None:
+            return
 
         db_info = await self.get_db_user(context.user.twitch_id, context.user.name, context.user.name)
         if db_info is None:
@@ -189,9 +188,8 @@ class TwitchHandler(Base):
     async def on_usernotice(self, body):
         self.logger.debug(body)
         context = MessageContext(body)
-
-        if isinstance(context.user.name, datetime):
-            self.logger.warning('Received user name as datetime: {}'.format(context.user.name))
+        if context is None or context.channel is None:
+            return
 
         db_info = await self.get_db_user(context.user.twitch_id, context.user.name, context.user.name)
         if db_info is None:
