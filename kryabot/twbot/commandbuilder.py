@@ -21,7 +21,7 @@ command_list.append(TelegramInvite)
 
 
 def build(command_name: str, context: MessageContext)->Union[CommandBase, None]:
-    cmd = next((cmd for cmd in command_list if command_name in cmd.names and list(set(context.rights).intersection(cmd.access))), None)
+    cmd = next((cmd for cmd in command_list if str(command_name).lower() in cmd.names and list(set(context.rights).intersection(cmd.access))), None)
     if cmd is None:
         return None
 
