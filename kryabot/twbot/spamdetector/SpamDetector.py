@@ -359,13 +359,16 @@ class ChannelMessages:
         await db.redis.publish_event(redis_key.get_twitch_spam_detector_response_topic(), body)
 
     async def action_ban(self, users: List[Dict]):
-        body={
+        body = {
             "action": "ban",
             "users": users,
             "channel": self.channel_name
         }
 
         await self.send_response(body)
+
+        for user in users:
+            await db.saveSpamLog(self.channel_name, user['sender'], user['message'], user['ts'])
 
     async def action_enable_detection(self):
         if self.spam_detected:
