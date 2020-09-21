@@ -114,7 +114,9 @@ class ChatAdapter(Base, commands.Bot):
         elif action == 'ban':
             if body['users']:
                 for event in body['users']:
-                    #await self.db.saveSpamLog(body['channel'], event['sender'], event['message'], event['ts'])
+                    if jc.on_detection_ban_self:
+                        await channel.ban(event['sender'], reason="Spambot")
+
                     # TODO: ban queue, currently ban in onlyashaa channel.
                     await self._ws.send_privmsg('olyashaa', ".ban {} Spambot, detected in channel {}".format(event['sender'], body['channel']))
         elif action == 'unban':
