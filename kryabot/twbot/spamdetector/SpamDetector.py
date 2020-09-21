@@ -11,11 +11,11 @@ from object.Database import Database
 import utils.redis_key as redis_key
 
 MIN_WORDS = 5
-INTERVAL_CHECK = 30
-MATCH_THRESHOLD = 0.4
+INTERVAL_CHECK = 15
+MATCH_THRESHOLD = 0.5
 MPS_RATIO = 5
 
-SKIP_LIST = ['jesusavgn']
+SKIP_LIST = ['jesusavgn', 'ahrinyan', 'silvername']
 LIST_NAME_BANNED_WORDS = 'spambot_banned_words'
 BANNED_WORDS = []
 
@@ -240,7 +240,6 @@ class ChannelMessages:
     def clear_old_messages(self):
         self.messages = [message for message in self.messages if not message.too_old()]
         self.detections = [detection for detection in self.detections if not detection.too_old()]
-        #print('Total size: {}'.format(len(self.messages)))
 
     def get_result(self, first_text, second_text) -> float:
         try:
@@ -252,11 +251,11 @@ class ChannelMessages:
         for detection in self.detections:
             for active in detection.messages:
                 if message.sender == active.sender:
-                    continue
+                    break
 
                 result = self.get_result(message.original_message, active.original_message)
                 if result < MATCH_THRESHOLD:
-                    continue
+                    break
 
                 await detection.add_message(message)
                 return detection
