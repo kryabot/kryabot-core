@@ -248,6 +248,12 @@ class ChannelMessages:
             return 0
 
     async def find_detection(self, message: ChannelMessage)->[Detection, None]:
+        last_word = str(message.original_message.split(' ')[-1:][0])
+        if last_word.startswith('@') and last_word in BANNED_WORDS:
+            logger.info('Banning user {} for banned word {} in message: {}'.format(message.sender, last_word, message.original_message))
+            await self.action_ban([{'sender': message.sender, 'message': message.original_message, 'ts': message.received_ts}])
+            return None
+        
         for detection in self.detections:
             for active in detection.messages:
                 if message.sender == active.sender:
@@ -272,12 +278,6 @@ class ChannelMessages:
                 continue
 
             return await self.update_detection(message, old_message)
-
-        last_word = str(message.original_message.split(' ')[-1:][0])
-        if last_word.startswith('@') and last_word in BANNED_WORDS:
-            logger.info('Banning user {} for banned word {} in message: {}'.format(message.sender, last_word, message.original_message))
-            await self.action_ban([{'sender': message.sender, 'message': message.original_message, 'ts': message.received_ts}])
-            return None
 
         return None
 
