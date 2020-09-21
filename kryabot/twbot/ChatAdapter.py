@@ -94,7 +94,7 @@ class ChatAdapter(Base, commands.Bot):
         await self.on_update()
         await self.schedule_tasks()
         self.logger.info(f'Adapter is ready now, {self.nick}')
-        await self._ws.send_privmsg(self.nick, '/w {owner} IRC adapter started'.format(owner=self.cfg.getInstanceConfig()['OWNER']))
+        #await self._ws.send_privmsg(self.nick, '/w {owner} IRC adapter started'.format(owner=self.cfg.getInstanceConfig()['OWNER']))
         self.in_update = False
 
     async def on_spam_detector_response(self, body: Dict)->None:
