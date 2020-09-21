@@ -12,10 +12,10 @@ import utils.redis_key as redis_key
 
 MIN_WORDS = 5
 INTERVAL_CHECK = 15
-MATCH_THRESHOLD = 0.5
+MATCH_THRESHOLD = 0.6
 MPS_RATIO = 5
 
-SKIP_LIST = ['jesusavgn', 'ahrinyan', 'silvername']
+SKIP_LIST = ['jesusavgn', 'ahrinyan', 'silvername', 'buster']
 LIST_NAME_BANNED_WORDS = 'spambot_banned_words'
 BANNED_WORDS = []
 

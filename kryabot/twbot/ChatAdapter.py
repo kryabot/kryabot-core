@@ -102,19 +102,23 @@ class ChatAdapter(Base, commands.Bot):
 
         channel: Channel = self._ws._channel_cache[body['channel']]['channel']
         bot: User = self._ws._channel_cache[body['channel']]['bot']
-        if not bot.is_mod:
-            self.logger.info('Ignoring response to channel {} because I not mod!'.format(channel.name))
-            return
+        # if not bot.is_mod:
+        #     self.logger.info('Ignoring response to channel {} because I not mod!'.format(channel.name))
+        #     return
 
         jc = self.channels.get_by_name(channel.name)
+        if jc is None:
+            self.logger.info('JoinedChannel not found for channel {}'.format(channel.name))
+            return
+
         action = body['action']
 
-        if action == 'message':
+        if action == 'message' and bot.is_mod:
             await channel.send(body['text'])
         elif action == 'ban':
             if body['users']:
                 for event in body['users']:
-                    if jc.on_detection_ban_self:
+                    if jc.on_detection_ban_self and bot.is_mod:
                         await channel.ban(event['sender'], reason="Spambot")
 
                     # TODO: ban queue, currently ban in onlyashaa channel.
@@ -122,9 +126,10 @@ class ChatAdapter(Base, commands.Bot):
         elif action == 'unban':
             if body['users']:
                 for event in body['users']:
-                    await channel.unban(event['sender'])
+                    if bot.is_mod:
+                        await channel.unban(event['sender'])
         elif action == 'detection':
-            if jc.on_detection_enable_sub_only_chat:
+            if jc.on_detection_enable_sub_only_chat and bot.is_mod:
                 if body['status'] == 1:
                     await channel.send(".subscribers")
                     await channel.send("Enabling subonly chat to avoid spam!")
