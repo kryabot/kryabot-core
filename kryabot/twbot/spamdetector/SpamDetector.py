@@ -15,8 +15,9 @@ INTERVAL_CHECK = 15
 MATCH_THRESHOLD = 0.7
 MPS_RATIO = 8
 
-SKIP_LIST = ['jesusavgn', 'ahrinyan', 'silvername', 'buster', 'jojohf', 'lasqa']
+SKIP_LIST = []
 LIST_NAME_BANNED_WORDS = 'spambot_banned_words'
+LIST_NAME_IGNORED_CHANNELS = 'spambot_ignored_channels'
 BANNED_WORDS = []
 
 loop = asyncio.get_event_loop()
@@ -57,10 +58,14 @@ class SpamDetector:
 
     async def init(self):
         global BANNED_WORDS
+        global SKIP_LIST
         global bttv_global
 
         BANNED_WORDS = await db.get_list_values_str(LIST_NAME_BANNED_WORDS)
+        SKIP_LIST = await db.get_list_values_str(LIST_NAME_IGNORED_CHANNELS)
+
         logger.info('Banned words: {}'.format(BANNED_WORDS))
+        logger.info('Skip list: {}'.format(SKIP_LIST))
         logger.info('Receiving bttv global emotes')
         bttv_global = await api.betterttv.get_global_emotes()
 
