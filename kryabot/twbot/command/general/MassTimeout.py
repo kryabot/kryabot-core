@@ -26,6 +26,7 @@ class MassTimeout(CommandBase):
             try:
                 if search_text[0].isnumeric():
                     ban_time = int(search_text[0])
+                    search_text = search_text[1:]
             except:
                 ban_time = 600
 
@@ -66,7 +67,7 @@ class MassTimeout(CommandBase):
                 except Exception as ex:
                     self.logger.error(ex)
 
-                await asyncio.sleep(0.3)
+                await asyncio.sleep(0.7)
 
             await self.context.reply('{} mass ban finished, banned {} users, skipped {} users.'.format(self.context.user.name, ban_count, skipped))
             await self.db.saveTwitchMassBan(self.context.channel.channel_id, self.context.user.db_info['user_id'], search_text, ban_time, ban_count)
