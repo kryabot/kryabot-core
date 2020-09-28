@@ -18,6 +18,7 @@ command_list.append(Spam)
 command_list.append(MassBan)
 command_list.append(UnlinkTelegram)
 command_list.append(TelegramInvite)
+command_list.append(MassTimeout)
 
 
 def build(command_name: str, context: MessageContext)->Union[CommandBase, None]:

@@ -4,7 +4,7 @@ from twbot.command.AccessType import AccessType
 from twbot.command.CommandBase import CommandBase
 
 
-class MassBan(CommandBase):
+class MassTimeout(CommandBase):
     names = ['mtimeout']
     access = AccessType.mod_package()
 

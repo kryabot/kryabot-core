@@ -22,14 +22,6 @@ class MassBan(CommandBase):
             viewers = viewers['chatters']
             ignore_users = viewers['moderators'] + viewers['staff'] + viewers['admins'] + viewers['global_mods'] + [self.context.channel.channel_name]
 
-            try:
-                word = self.context.message.split(' ')[0]
-                if word.startswith('!kbmassban'):
-                    cnt = word.replace('!kbmassban', '')
-                    ban_time = int(cnt)
-            except:
-                pass
-
             search_text = '%{}%'.format(search_text)
             self.logger.info('Searching messages to ban like {}'.format(search_text))
             messages = await self.db.searchTwitchMessages(self.context.channel.channel_id, search_text)
@@ -62,7 +54,7 @@ class MassBan(CommandBase):
                 except Exception as ex:
                     self.logger.error(ex)
 
-                await asyncio.sleep(0.3)
+                await asyncio.sleep(0.6)
 
             await self.context.reply('{} mass ban finished, banned {} users, skipped {} users. SirUwU'.format(self.context.user.name, ban_count, skipped))
             await self.db.saveTwitchMassBan(self.context.channel.channel_id, self.context.user.db_info['user_id'], search_text, 0, ban_count)

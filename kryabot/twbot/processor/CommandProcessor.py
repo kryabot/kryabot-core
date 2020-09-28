@@ -85,11 +85,13 @@ class CommandProcessor(Processor):
 
         user_level = self.get_access_level(context)
         # Global commands
-        global_cmd = commandbuilder.build(command_name="!" + command, context=context)
-        if global_cmd is not None:
-            self.logger.debug('Processing global command {} in channel {} by {}'.format(command, context.channel.channel_name, context.user.name))
-            await global_cmd.process()
-            return
+        if command.startswith('!'):
+            self.logger.info('{} got rights: {}'.format(context.user.name, context.rights))
+            global_cmd = commandbuilder.build(command_name=command, context=context)
+            if global_cmd is not None:
+                self.logger.debug('Processing global command {} in channel {} by {}'.format(command, context.channel.channel_name, context.user.name))
+                await global_cmd.process()
+                return
 
         # Custom commands
         self.logger.debug('Searching for command {} in channel {}, access {}'.format(command, context.channel.channel_name, user_level))
