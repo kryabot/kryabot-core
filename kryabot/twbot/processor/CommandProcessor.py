@@ -92,6 +92,8 @@ class CommandProcessor(Processor):
                 self.logger.debug('Processing global command {} in channel {} by {}'.format(command, context.channel.channel_name, context.user.name))
                 await global_cmd.process()
                 return
+            else:
+                self.logger.info('Global command not found for text {}'.format(command))
 
         # Custom commands
         self.logger.debug('Searching for command {} in channel {}, access {}'.format(command, context.channel.channel_name, user_level))
