@@ -18,17 +18,18 @@ class MassTimeout(CommandBase):
                 await self.context.reply('Search text is too short! Must be longer than 4')
                 return
 
+            ban_time = 600
+            try:
+                words_list = self.context.message.split(' ')
+                if words_list[0].isnumeric():
+                    ban_time = int(words_list[0])
+                    search_text = words_list[1:]
+            except:
+                ban_time = 600
+
             viewers = await self.api.twitch.get_channel_chatters(self.context.channel.channel_name)
             viewers = viewers['chatters']
             ignore_users = viewers['moderators'] + viewers['staff'] + viewers['admins'] + viewers['global_mods'] + [self.context.channel.channel_name]
-
-            ban_time = 600
-            try:
-                if search_text[0].isnumeric():
-                    ban_time = int(search_text[0])
-                    search_text = search_text[1:]
-            except:
-                ban_time = 600
 
             search_text = '%{}%'.format(search_text)
             self.logger.info('Searching messages to ban for {} like {}'.format(ban_time, search_text))
