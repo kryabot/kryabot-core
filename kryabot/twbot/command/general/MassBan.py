@@ -5,7 +5,7 @@ from twbot.command.CommandBase import CommandBase
 
 
 class MassBan(CommandBase):
-    names = ['kbmassban0', 'mban']
+    names = ['mban']
     access = AccessType.mod_package()
 
     def __init__(self, context):
