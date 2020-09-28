@@ -22,21 +22,8 @@ command_list.append(MassTimeout)
 
 
 def build(command_name: str, context: MessageContext)->Union[CommandBase, None]:
-    print('Searching for command {}'.format(command_name))
-    for cmd in command_list:
-        if str(command_name).lower() in cmd.names:
-            print('Found matching command by name {}'.format(command_name))
-            if list(set(context.rights).intersection(cmd.access)):
-                print('Access to command {} is granted!'.format(command_name))
-                return cmd(context)
-            else:
-                print('No access to command {}'.format(command_name))
-                continue
+    cmd = next((cmd for cmd in command_list if str(command_name).lower() in cmd.names and list(set(context.rights).intersection(cmd.access))), None)
+    if cmd is None:
+        return None
 
-    return None
-    #cmd = next((cmd for cmd in command_list if str(command_name).lower() in cmd.names and list(set(context.rights).intersection(cmd.access))), None)
-    # if cmd is None:
-    #     print('Failed to find command {}, user rights: {}'.format(command_name, context.rights))
-    #     return None
-    #
-    # return cmd(context)
+    return cmd(context)
