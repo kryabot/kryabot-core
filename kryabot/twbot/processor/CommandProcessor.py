@@ -87,7 +87,7 @@ class CommandProcessor(Processor):
         # Global commands
         if command.startswith('!'):
             self.logger.info('{} got rights: {}'.format(context.user.name, context.rights))
-            global_cmd = commandbuilder.build(command_name=command, context=context)
+            global_cmd = commandbuilder.build(command_name=command[1:], context=context)
             if global_cmd is not None:
                 self.logger.info('Processing global command {} in channel {} by {}'.format(command, context.channel.channel_name, context.user.name))
                 await global_cmd.process()
