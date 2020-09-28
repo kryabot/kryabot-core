@@ -22,6 +22,7 @@ command_list.append(MassTimeout)
 
 
 def build(command_name: str, context: MessageContext)->Union[CommandBase, None]:
+    print('Searching for command {}'.format(command_name))
     for cmd in command_list:
         if str(command_name).lower() in cmd.names:
             print('Found matching command by name {}'.format(command_name))
