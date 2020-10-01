@@ -151,6 +151,8 @@ async def getSql(sqlType):
         'mark_invitation_used': 'UPDATE tg_invite SET tg_invite.used_at = CURRENT_TIMESTAMP WHERE tg_invite.channel_id = %s and tg_invite.user_id = %s;',
         'save_spam_log': "INSERT INTO twitch_spam_log (channel_name, sender, message, ts) VALUES(%s, %s, %s, %s)",
         'get_active_list_values': 'SELECT * FROM list_value where list_value.list_id = (select list.list_id FROM list WHERE list.list_name = %s and list.active = 1) and list_value.active = 1;',
+        'add_currency_to_user': 'addCurrencyToUser(%s, %s, %s)',
+        'get_user_currency': 'SELECT uc.user_id, uc.amount, ct.currency_key, ct.currency_type_id FROM user_currency uc LEFT JOIN currency_type ct ON uc.currency_type_id = ct.currency_type_id WHERE ct.currency_key = %s and uc.user_id = %s',
         'save_to_list': 'CALL addToList(%s, %s, %s, %s);',
 
     }.get(sqlType, 'unknown_sql_type')

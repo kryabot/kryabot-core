@@ -636,6 +636,12 @@ class Database:
     async def get_list_values_full(self, list_name):
         return await self.query('get_active_list_values', [list_name])
 
+    async def add_currency_to_user(self, currency_key: str, user_id: int, amount: int):
+        return await self.query('add_currency_to_user', [currency_key, user_id, amount])
+
+    async def get_user_currency_amount(self, currency_key: str, user_id: int):
+        return await self.query('get_user_currency', [currency_key, user_id])
+
     async def get_list_value_custom(self, list_name, field)->List:
         list = await self.get_list_values_full(list_name)
         output = []
