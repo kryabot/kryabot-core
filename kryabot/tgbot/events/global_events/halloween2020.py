@@ -22,7 +22,7 @@ async def process_halloween_2020(event_data, event, channel):
     if not is_event_message(target_message.text):
         return
 
-    if target_message.peer_id != client.me.id:
+    if target_message.from_id != client.me.id:
         client.logger.info('Skipping because pumpkin not sent by bot')
         return
 
@@ -38,9 +38,9 @@ async def process_halloween_2020(event_data, event, channel):
     except:
         pass
 
-    sender = await get_first(await client.db.getUserByTgChatId(event.message.peer_id))
+    sender = await get_first(await client.db.getUserByTgChatId(event.message.from_id))
     if sender is None:
-        client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.peer_id))
+        client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.from_id))
         return
 
     try:
@@ -52,7 +52,7 @@ async def process_halloween_2020(event_data, event, channel):
     await client.db.add_currency_to_user(currency_key, sender['user_id'], 1)
 
     currency_data = await get_first(await client.db.get_user_currency_amount(currency_key, sender['user_id']))
-    sender_entity = await client.get_entity(event.message.peer_id)
+    sender_entity = await client.get_entity(event.message.from_id)
     sender_label = await format_html_user_mention(sender_entity)
 
     text = client.translator.getLangTranslation(channel['bot_lang'], 'GLOBAL_HALLOWEEN_PUMKIN_DESTROY')
