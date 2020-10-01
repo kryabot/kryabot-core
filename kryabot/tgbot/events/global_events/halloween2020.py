@@ -10,8 +10,7 @@ from tgbot.constants import TG_TEST_GROUP_ID
 currency_key = 'pumpkin'
 pumpkin_message: str = "🎃"
 punch_message: str = "👊"
-expired_list: Dict = {}
-channels: Dict(int, HalloweenChannel) = {}
+channels: Dict = {}
 
 
 async def halloween_pumpkin_spawner(client)->None:
@@ -76,7 +75,7 @@ async def process_halloween_2020(event_data, event, channel)->None:
             except:
                 pass
 
-            client.logger.info('Skipping because found message ID in expired_list')
+            client.logger.info('Skipping because found message ID in channels')
             return
     except:
         pass
