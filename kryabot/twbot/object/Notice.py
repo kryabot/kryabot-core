@@ -53,6 +53,8 @@ class Notice:
         self.msg_param_gift_months = None
         self.msg_param_threshold = None
         self.msg_param_was_gifted = None
+        self.msg_param_multimonth_tenure = None
+        self.msg_param_multimonth_duration = None
 
         self.bits = None
         self.room_id = None
@@ -104,6 +106,8 @@ class Notice:
                            'msg-param-gift-months',
                            'msg-param-threshold',
                            'msg-param-was-gifted',
+                           'msg-param-multimonth-tenure',
+                           'msg-param-multimonth-duration',
                            'badge-info',
                            'bits',
                            'room-id',
@@ -161,6 +165,8 @@ class Notice:
         self.msg_param_gift_months = await self.get_value('msg-param-gift-months')
         self.msg_param_threshold = await self.get_value('msg-param-threshold')
         self.msg_param_was_gifted = await self.get_value('msg-param-was-gifted')
+        self.msg_param_multimonth_tenure = await self.get_value('msg-param-multimonth-tenure')
+        self.msg_param_multimonth_duration = await self.get_value('msg-param-multimonth-duration')
         self.bits = await self.get_value('bits')
         self.room_id = await self.get_value('room-id')
         self.subscriber = await self.get_value('subscriber')

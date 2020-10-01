@@ -69,7 +69,7 @@ class BoostyEvent(Event):
             if teaser['type'] == 'text':
                 if text_result != '':
                     text_result += '\n'
-                text_result += self.get_parsed_text(teaser)
+                text_result += self.get_attr(teaser, 'content', '')
             if teaser['type'] == 'link':
                 if text_result != '':
                     text_result += '\n'
