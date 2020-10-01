@@ -1,15 +1,58 @@
-from typing import Dict
+import asyncio
+from datetime import datetime
+from typing import Dict, List
 
 from utils.array import get_first
 from utils.formatting import format_html_user_mention
+from tgbot.events.global_events.HalloweenType import HalloweenChannel
+from tgbot.constants import TG_TEST_GROUP_ID
 
 currency_key = 'pumpkin'
 pumpkin_message: str = "🎃"
 punch_message: str = "👊"
 expired_list: Dict = {}
+channels: Dict(int, HalloweenChannel) = {}
 
 
-async def process_halloween_2020(event_data, event, channel):
+async def halloween_pumpkin_spawner(client)->None:
+    client.logger.info('Starting halloween_pumpkin_spawner')
+    global_events = await client.db.get_global_events()
+
+    halloween_event = None
+    for event in global_events:
+        if event['event_key'] == 'halloween2020':
+            halloween_event = event
+
+    if halloween_event is None:
+        return
+
+    if halloween_event['active_to'] is not None and halloween_event['active_to'] < datetime.now():
+        return
+
+    if halloween_event['active_from'] is not None and halloween_event['active_from'] > datetime.now():
+        return
+
+    tg_channels = await client.db.get_auth_subchats()
+    for tg_channel in tg_channels:
+        if TG_TEST_GROUP_ID != tg_channel['tg_chat_id']:
+            continue
+
+        client.logger.info("Created HalloweenChannel for {}".format(tg_channel['tg_chat_id']))
+        channels[tg_channel['tg_chat_id']] = HalloweenChannel(tg_channel['tg_chat_id'])
+
+    while True:
+        await asyncio.sleep(100)
+
+        try:
+            for key in channels.keys():
+                if channels[key].can_spawn():
+                    msg = await client.send_message(int(key), pumpkin_message)
+                    channels[key].save(msg.id)
+        except Exception as ex:
+            client.logger.exception(ex)
+
+
+async def process_halloween_2020(event_data, event, channel)->None:
     client = event.client
 
     if not event.message.is_reply:
@@ -27,7 +70,7 @@ async def process_halloween_2020(event_data, event, channel):
         return
 
     try:
-        if expired_list[channel['channel_id']] == target_message.id:
+        if not channels[event.message.to_id.channel_id].is_active(target_message.id):
             try:
                 await event.delete()
             except:
@@ -44,7 +87,7 @@ async def process_halloween_2020(event_data, event, channel):
         return
 
     try:
-        expired_list[channel['channel_id']] = target_message.id
+        channels[event.message.to_id.channel_id].set_used(target_message.id)
         await target_message.delete()
     except:
         pass
