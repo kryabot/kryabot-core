@@ -46,6 +46,7 @@ async def halloween_pumpkin_spawner(client)->None:
             for key in channels.keys():
                 if channels[key].can_spawn():
                     msg = await client.send_message(int(key), pumpkin_message)
+                    client.logger.info("Spawned pumpkin ID {} in channel {}".format(msg.id, int(key)))
                     channels[key].save(msg.id)
         except Exception as ex:
             client.logger.exception(ex)
@@ -75,7 +76,7 @@ async def process_halloween_2020(event_data, event, channel)->None:
             except:
                 pass
 
-            client.logger.info('Skipping because found message ID in channels')
+            client.logger.info('Skipping because message ID {} in channel {} is not active!'.format(target_message.id, event.message.to_id.channel_id))
             return
     except:
         pass

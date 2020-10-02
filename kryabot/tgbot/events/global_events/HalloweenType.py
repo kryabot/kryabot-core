@@ -10,6 +10,8 @@ class HalloweenChannel:
         self.last_spawn: datetime = datetime.utcnow()
 
     def is_active(self, msg_id: int)->bool:
+        print("Checking if active {}".format(msg_id))
+        print(self.pumpkins)
         if not int(msg_id) in self.pumpkins:
             return False
 
@@ -32,6 +34,8 @@ class HalloweenChannel:
 
     def save(self, msg_id: int):
         self.pumpkins.append(Pumpkin(msg_id))
+        print("After save")
+        print(self.pumpkins)
 
 
 class Pumpkin:
