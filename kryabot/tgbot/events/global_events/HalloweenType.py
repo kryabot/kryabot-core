@@ -2,8 +2,10 @@ from datetime import datetime, timedelta
 from typing import Dict
 from random import randint
 
+from object.Base import Base
 
-class HalloweenChannel:
+
+class HalloweenChannel(Base):
     def __init__(self, channel_id):
         self.channel_id: int = channel_id
         self.pumpkins: Dict(int, Pumpkin) = []
@@ -38,7 +40,7 @@ class HalloweenChannel:
         print(self.pumpkins)
 
 
-class Pumpkin:
+class Pumpkin(Base):
     def __init__(self, msg_id):
         self.msg_id = msg_id
         self.active = True

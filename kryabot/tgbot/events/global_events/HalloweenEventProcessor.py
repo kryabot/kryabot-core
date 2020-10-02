@@ -19,8 +19,10 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         self.currency_key: str = "pumpkin"
         self.channels: Dict = {}
 
+        self.get_logger().info("Created HalloweenEventProcessor")
+
     async def pumpkin_spawner(self, client):
-        client.logger.info('Starting halloween_pumpkin_spawner')
+        client.logger.info('Starting pumpkin_spawner')
         global_events = await client.db.get_global_events()
 
         halloween_event = None
@@ -54,6 +56,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                         msg = await client.send_message(int(key), self.pumpkin_message)
                         client.logger.info("Spawned pumpkin ID {} in channel {}".format(msg.id, int(key)))
                         self.channels[key].save(msg.id)
+                        client.logger.info(self.channels[key].stringify())
             except Exception as ex:
                 client.logger.exception(ex)
 

@@ -1,3 +1,5 @@
+import logging
+
 from object.Base import Base
 
 
@@ -16,3 +18,6 @@ class GlobalEventProcessor(Base):
 
     async def process(self, **args):
         raise NotImplemented
+
+    def get_logger(self)->logging:
+        return logging.getLogger('krya.tg')
