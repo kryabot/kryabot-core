@@ -79,14 +79,14 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
         try:
             if not self.channels[event.message.to_id.channel_id].is_active(target_message.id):
+
                 try:
                     await event.delete()
                 except:
                     pass
 
-                client.logger.info(
-                    'Skipping because message ID {} in channel {} is not active!'.format(target_message.id,
-                                                                                         event.message.to_id.channel_id))
+                client.logger.info('Skipping because message ID {} in channel {} is not active!'.format(target_message.id, event.message.to_id.channel_id))
+                client.logger.info(self.channels[event.message.to_id.channel_id].stringify())
                 return
         except:
             pass
