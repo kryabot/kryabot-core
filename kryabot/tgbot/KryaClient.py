@@ -14,7 +14,6 @@ from object.ApiHelper import ApiHelper
 from object.Translator import Translator
 from tgbot.Moderation import Moderation
 import tgbot.events.handlers as krya_events
-from tgbot.events.global_events.halloween2020 import halloween_pumpkin_spawner
 
 from tgbot.events.global_events.HalloweenEventProcessor import HalloweenEventProcessor
 from utils.formatting import format_html_user_mention
