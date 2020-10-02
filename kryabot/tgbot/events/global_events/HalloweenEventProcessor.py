@@ -56,7 +56,6 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                         msg = await client.send_message(int(key), self.pumpkin_message)
                         client.logger.info("Spawned pumpkin ID {} in channel {}".format(msg.id, int(key)))
                         self.channels.channels[key].save(msg.id)
-                        client.logger.info(self.channels.channels[key].stringify())
             except Exception as ex:
                 client.logger.exception(ex)
 
@@ -85,7 +84,6 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                     pass
 
                 client.logger.info('Skipping because message ID {} in channel {} is not active!'.format(target_message.id, event.message.to_id.channel_id))
-                client.logger.info(self.channels.stringify())
                 return
         except:
             pass
