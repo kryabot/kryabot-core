@@ -110,6 +110,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         text += ' 🥰'
 
         await event.reply(text)
+        await event.delete()
 
     def is_event_message(self, text) -> bool:
         return text == self.pumpkin_message
