@@ -259,30 +259,30 @@ class ChannelMessages:
             await self.action_ban([{'sender': message.sender, 'message': message.original_message, 'ts': message.received_ts}])
             return None
         
-        for detection in self.detections:
-            for active in detection.messages:
-                if message.sender == active.sender:
-                    break
-
-                result = self.get_result(message.original_message, active.original_message)
-                if result < MATCH_THRESHOLD:
-                    break
-
-                await detection.add_message(message)
-                return detection
-
-        for old_message in self.messages:
-            if message.original_message in old_message.original_message:
-                continue
-
-            if message.original_message == old_message.original_message and message.sender != old_message.sender:
-                result = 1.0
-            else:
-                result = self.get_result(message.original_message, old_message.original_message)
-            if result < MATCH_THRESHOLD:
-                continue
-
-            return await self.update_detection(message, old_message)
+        # for detection in self.detections:
+        #     for active in detection.messages:
+        #         if message.sender == active.sender:
+        #             break
+        #
+        #         result = self.get_result(message.original_message, active.original_message)
+        #         if result < MATCH_THRESHOLD:
+        #             break
+        #
+        #         await detection.add_message(message)
+        #         return detection
+        #
+        # for old_message in self.messages:
+        #     if message.original_message in old_message.original_message:
+        #         continue
+        #
+        #     if message.original_message == old_message.original_message and message.sender != old_message.sender:
+        #         result = 1.0
+        #     else:
+        #         result = self.get_result(message.original_message, old_message.original_message)
+        #     if result < MATCH_THRESHOLD:
+        #         continue
+        #
+        #     return await self.update_detection(message, old_message)
 
         return None
 
