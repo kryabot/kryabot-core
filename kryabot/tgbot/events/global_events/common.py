@@ -1,5 +1,5 @@
+from tgbot.events.global_events.HalloweenEventProcessor import HalloweenEventProcessor
 from tgbot.events.global_events.easter import process_easter
-from tgbot.events.global_events.halloween2020 import process_halloween_2020
 from tgbot.constants import TG_TEST_GROUP_ID
 from utils.array import get_first
 from datetime import datetime
@@ -25,6 +25,7 @@ async def process_global_events(event):
         if global_event['event_key'] == 'easter':
             await process_easter(global_event, event, channel)
         elif global_event['event_key'] == 'halloween2020':
-            await process_halloween_2020(global_event, event, channel)
+            processor = HalloweenEventProcessor.get_instance()
+            await processor.process(global_event, event, channel)
         else:
             event.client.logger.error('Received unknown global event key: {}'.format(global_event['event_key']))

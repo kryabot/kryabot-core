@@ -15,6 +15,8 @@ from object.Translator import Translator
 from tgbot.Moderation import Moderation
 import tgbot.events.handlers as krya_events
 from tgbot.events.global_events.halloween2020 import halloween_pumpkin_spawner
+
+from tgbot.events.global_events.HalloweenEventProcessor import HalloweenEventProcessor
 from utils.formatting import format_html_user_mention
 from utils.decorators.exception import log_exception_ignore
 from utils.value_check import avoid_none, is_empty_string, map_kick_setting
@@ -81,7 +83,7 @@ class KryaClient(TelegramClient):
         self.loop.create_task(self.task_oauth_refresher())
         self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
 
-        self.loop.create_task(halloween_pumpkin_spawner(self))
+        self.loop.create_task(HalloweenEventProcessor.get_instance().pumpkin_spawner(self))
 
         await self.start()
         self.me = await self.get_me()
