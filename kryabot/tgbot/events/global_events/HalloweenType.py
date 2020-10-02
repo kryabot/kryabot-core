@@ -1,19 +1,37 @@
+import logging
 from datetime import datetime, timedelta
 from typing import Dict
 from random import randint
 
 from object.Base import Base
 
+logger = logging.getLogger('krya.tg')
+
+
+class HalloweenChannels(Base):
+    def __init__(self):
+        self.channels: Dict = {}
+
+    def new_channel(self, channel_id):
+        self.channels[channel_id] = HalloweenChannel(channel_id)
+
+    def new_spawn(self, channel_id, message_id):
+        self.channels[channel_id].save(message_id)
+
+    def is_active(self, channel_id, message_id)->bool:
+        return self.channels[channel_id].is_active(message_id)
+
+    def set_used(self, channel_id, message_id):
+        self.channels[channel_id].set_used(message_id)
+
 
 class HalloweenChannel(Base):
     def __init__(self, channel_id):
         self.channel_id: int = channel_id
-        self.pumpkins: Dict(int, Pumpkin) = []
+        self.pumpkins: Dict(int, Pumpkin) = {}
         self.last_spawn: datetime = datetime.utcnow()
 
     def is_active(self, msg_id: int)->bool:
-        print("Checking if active {}".format(msg_id))
-        print(self.pumpkins)
         if not int(msg_id) in self.pumpkins:
             return False
 
@@ -35,9 +53,7 @@ class HalloweenChannel(Base):
         return False
 
     def save(self, msg_id: int):
-        self.pumpkins.append(Pumpkin(msg_id))
-        print("After save")
-        print(self.pumpkins)
+        self.pumpkins[int(msg_id)] = Pumpkin(msg_id)
 
 
 class Pumpkin(Base):

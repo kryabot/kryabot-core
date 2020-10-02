@@ -4,7 +4,7 @@ from typing import Dict
 
 from tgbot.constants import TG_TEST_GROUP_ID
 from tgbot.events.global_events.GlobalEventProcessor import GlobalEventProcessor
-from tgbot.events.global_events.HalloweenType import HalloweenChannel
+from tgbot.events.global_events.HalloweenType import HalloweenChannel, HalloweenChannels
 from utils.array import get_first
 from utils.formatting import format_html_user_mention
 
@@ -17,7 +17,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         self.pumpkin_message: str = "🎃"
         self.punch_message: str = "👊"
         self.currency_key: str = "pumpkin"
-        self.channels: Dict = {}
+        self.channels: HalloweenChannels = HalloweenChannels()
 
         self.get_logger().info("Created HalloweenEventProcessor")
 
@@ -45,18 +45,18 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                 continue
 
             client.logger.info("Created HalloweenChannel for {}".format(tg_channel['tg_chat_id']))
-            self.channels[tg_channel['tg_chat_id']] = HalloweenChannel(tg_channel['tg_chat_id'])
+            self.channels.new_channel(tg_channel['tg_chat_id'])
 
         while True:
             await asyncio.sleep(100)
 
             try:
-                for key in self.channels.keys():
-                    if self.channels[key].can_spawn():
+                for key in self.channels.channels.keys():
+                    if self.channels.channels[key].can_spawn():
                         msg = await client.send_message(int(key), self.pumpkin_message)
                         client.logger.info("Spawned pumpkin ID {} in channel {}".format(msg.id, int(key)))
-                        self.channels[key].save(msg.id)
-                        client.logger.info(self.channels[key].stringify())
+                        self.channels.channels[key].save(msg.id)
+                        client.logger.info(self.channels.channels[key].stringify())
             except Exception as ex:
                 client.logger.exception(ex)
 
@@ -78,15 +78,14 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             return
 
         try:
-            if not self.channels[event.message.to_id.channel_id].is_active(target_message.id):
-
+            if not self.channels.is_active(event.message.to_id.channel_id, target_message.id):
                 try:
                     await event.delete()
                 except:
                     pass
 
                 client.logger.info('Skipping because message ID {} in channel {} is not active!'.format(target_message.id, event.message.to_id.channel_id))
-                client.logger.info(self.channels[event.message.to_id.channel_id].stringify())
+                client.logger.info(self.channels.stringify())
                 return
         except:
             pass
@@ -97,7 +96,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             return
 
         try:
-            self.channels[event.message.to_id.channel_id].set_used(target_message.id)
+            self.channels.set_used(event.message.to_id.channel_id, target_message.id)
             await target_message.delete()
         except:
             pass
