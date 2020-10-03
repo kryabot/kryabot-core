@@ -1,4 +1,5 @@
 import logging
+import math
 from datetime import datetime, timedelta
 from typing import Dict
 from random import randint
@@ -41,11 +42,29 @@ class HalloweenChannel(Base):
         if not int(msg_id) in self.pumpkins:
             return
 
+        logger.info("Pumking {} was destroyed after {} seconds".format(msg_id, (datetime.utcnow() - self.pumpkins[int(msg_id)].created).seconds))
         self.pumpkins[int(msg_id)] = None
 
-    def can_spawn(self)->bool:
-        delay = randint(10, 120)
+    def can_spawn(self, channel_size: int)->bool:
+        def calc(amt: int) -> int:
+            calc_ratio = math.log((amt + (amt / 5)) / 100000000)
+            calc_ratio = calc_ratio * calc_ratio / amt * 100
+            return min(int(calc_ratio), 500)
 
+        ratio = calc(channel_size)
+        min_time = max(int(ratio / 9), 5)
+        max_time = max(int(ratio / 3), 15)
+
+        active_exists = False
+        for key in self.pumpkins.keys():
+            if self.pumpkins[key] is not None and self.pumpkins[key].active:
+                active_exists = True
+
+        if active_exists:
+            logger.info("Skipping spawn in {} because still have active".format(self.channel_id))
+            return False
+
+        delay = randint(min_time, max_time)
         if self.last_spawn + timedelta(minutes=delay) < datetime.utcnow():
             self.last_spawn = datetime.utcnow()
             return True
@@ -57,6 +76,7 @@ class HalloweenChannel(Base):
 
 
 class Pumpkin(Base):
-    def __init__(self, msg_id):
-        self.msg_id = msg_id
-        self.active = True
+    def __init__(self, msg_id: int):
+        self.msg_id: int = msg_id
+        self.active: bool = True
+        self.created: datetime = datetime.utcnow()

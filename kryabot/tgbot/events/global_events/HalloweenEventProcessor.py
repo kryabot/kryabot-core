@@ -48,14 +48,16 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             self.channels.new_channel(tg_channel['tg_chat_id'])
 
         while True:
-            await asyncio.sleep(100)
+            await asyncio.sleep(300)
 
             try:
                 for key in self.channels.channels.keys():
-                    if self.channels.channels[key].can_spawn():
+                    count = (await client.get_participants(entity=int(key), limit=0)).total
+                    if self.channels.channels[key].can_spawn(count):
                         msg = await client.send_message(int(key), self.pumpkin_message)
                         client.logger.info("Spawned pumpkin ID {} in channel {}".format(msg.id, int(key)))
                         self.channels.channels[key].save(msg.id)
+                    await asyncio.sleep(3)
             except Exception as ex:
                 client.logger.exception(ex)
 
@@ -69,6 +71,9 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             return
 
         target_message = await event.message.get_reply_message()
+        if target_message is None:
+            return
+
         if not self.is_event_message(target_message.text):
             return
 
@@ -107,10 +112,17 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
         text = client.translator.getLangTranslation(channel['bot_lang'], 'GLOBAL_HALLOWEEN_PUMKIN_DESTROY')
         text = text.format(user=sender_label, total=int(currency_data['amount']))
-        text += ' 🥰'
+        text += ' 👻'
 
-        await event.reply(text)
-        await event.delete()
+        info_message = await event.reply(text)
+
+        try:
+            await event.delete()
+        except:
+            pass
+
+        await asyncio.sleep(60)
+        await info_message.delete()
 
     def is_event_message(self, text) -> bool:
         return text == self.pumpkin_message
