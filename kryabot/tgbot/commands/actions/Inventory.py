@@ -33,7 +33,7 @@ class Inventory(BaseCommand):
                 pass
             return
 
-        text = self.translator.getTranslation("CMD_INVENTORY_CONTAINS") + "\n"
+        text = self.get_translation("CMD_INVENTORY_CONTAINS") + "\n"
         for data in datas:
             text += "{} {}: {}\n".format(self.get_currency_emote(data['currency_key']), self.get_translation("INVENTORY_ITEM_" + str(data['currency_key']).capitalize()), int(data['currency']))
 

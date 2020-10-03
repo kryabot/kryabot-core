@@ -634,7 +634,7 @@ class Database:
         await self.query('save_spam_log', [channel_name, sender, message, ts])
 
     async def getUserAllCurrency(self, user_id):
-        return self.query('get_user_all_currencies', [user_id])
+        return await self.query('get_user_all_currencies', [user_id])
 
     async def get_list_values_full(self, list_name):
         return await self.query('get_active_list_values', [list_name])
