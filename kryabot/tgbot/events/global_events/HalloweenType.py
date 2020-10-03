@@ -53,11 +53,6 @@ class HalloweenChannel(Base):
             calc_ratio = calc_ratio * calc_ratio / amt * 100
             return min(int(calc_ratio), 500)
 
-        ratio = calc(channel_size)
-        min_time = max(int(ratio / 9), 5)
-        max_time = max(int(ratio / 3), 15)
-
-        logger.info('Result min: {} max: {}'.format(min_time, max_time))
         active_exists = False
         for key in self.pumpkins.keys():
             if self.pumpkins[key] is not None and self.pumpkins[key].active:
@@ -66,6 +61,11 @@ class HalloweenChannel(Base):
         if active_exists:
             logger.info("Skipping spawn in {} because still have active".format(self.channel_id))
             return False
+
+        ratio = calc(channel_size)
+        min_time = max(int(ratio / 9), 5)
+        max_time = max(int(ratio / 3), 15)
+        logger.info('Result min: {} max: {}'.format(min_time, max_time))
 
         delay = randint(min_time, max_time)
         if self.last_spawn + timedelta(minutes=delay) < datetime.utcnow():
