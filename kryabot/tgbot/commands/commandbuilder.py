@@ -30,6 +30,7 @@ command_list.append(SetMyInst)
 command_list.append(GetVote)
 command_list.append(Nominate)
 command_list.append(AddVote)
+command_list.append(Inventory)
 # Chat admin
 command_list.append(Whois)
 command_list.append(Banmedia)

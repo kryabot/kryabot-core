@@ -46,6 +46,8 @@ class HalloweenChannel(Base):
         self.pumpkins[int(msg_id)] = None
 
     def can_spawn(self, channel_size: int)->bool:
+        logger.info('Calculating for amount {}'.format(channel_size))
+
         def calc(amt: int) -> int:
             calc_ratio = math.log((amt + (amt / 5)) / 100000000)
             calc_ratio = calc_ratio * calc_ratio / amt * 100
@@ -55,6 +57,7 @@ class HalloweenChannel(Base):
         min_time = max(int(ratio / 9), 5)
         max_time = max(int(ratio / 3), 15)
 
+        logger.info('Result min: {} max: {}'.format(min_time, max_time))
         active_exists = False
         for key in self.pumpkins.keys():
             if self.pumpkins[key] is not None and self.pumpkins[key].active:

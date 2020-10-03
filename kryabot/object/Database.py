@@ -633,6 +633,9 @@ class Database:
     async def saveSpamLog(self, channel_name, sender, message, ts):
         await self.query('save_spam_log', [channel_name, sender, message, ts])
 
+    async def getUserAllCurrency(self, user_id):
+        return self.query('get_user_all_currencies', [user_id])
+
     async def get_list_values_full(self, list_name):
         return await self.query('get_active_list_values', [list_name])
 
@@ -784,6 +787,19 @@ class Database:
 
     async def set_whoami_cooldown(self, tg_chat_id, tg_user_id, seconds=60):
         cache_key = redis_key.get_tg_cd_whoami(tg_chat_id, tg_user_id)
+        await self.redis.set_value_by_key(key=cache_key, val=tg_chat_id, expire=seconds)
+
+    async def is_cooldown_inventory(self, tg_chat_id, tg_user_id) -> bool:
+        cache_key = redis_key.get_tg_cd_inventory(tg_chat_id, tg_user_id)
+        exists = await self.redis.key_exists(cache_key)
+
+        if exists is None:
+            return False
+
+        return bool(exists)
+
+    async def set_inventory_inventory(self, tg_chat_id, tg_user_id, seconds=60):
+        cache_key = redis_key.get_tg_cd_inventory(tg_chat_id, tg_user_id)
         await self.redis.set_value_by_key(key=cache_key, val=tg_chat_id, expire=seconds)
 
     async def update_tg_stats_message(self, tg_chat_id):

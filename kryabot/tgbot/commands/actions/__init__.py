@@ -20,3 +20,4 @@ from tgbot.commands.actions.SubHistory import SubHistory
 from tgbot.commands.actions.AddHelper import AddHelper
 from tgbot.commands.actions.SpeedTest import SpeedTest
 from tgbot.commands.actions.DLCoub import DLCoub
+from tgbot.commands.actions.Inventory import Inventory
