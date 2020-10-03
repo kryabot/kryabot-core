@@ -46,8 +46,6 @@ class HalloweenChannel(Base):
         self.pumpkins[int(msg_id)] = None
 
     def can_spawn(self, channel_size: int)->bool:
-        logger.info('Calculating for amount {}'.format(channel_size))
-
         def calc(amt: int) -> int:
             calc_ratio = math.log((amt + (amt / 5)) / 100000000)
             calc_ratio = calc_ratio * calc_ratio / amt * 100
@@ -63,9 +61,9 @@ class HalloweenChannel(Base):
             return False
 
         ratio = calc(channel_size)
-        min_time = max(int(ratio / 9), 5)
+        min_time = max(int(ratio / 15), 5)
         max_time = max(int(ratio / 3), 15)
-        logger.info('Result min: {} max: {}'.format(min_time, max_time))
+        logger.info('Result min: {} max: {} for size {}'.format(min_time, max_time, channel_size))
 
         delay = randint(min_time, max_time)
         if self.last_spawn + timedelta(minutes=delay) < datetime.utcnow():
