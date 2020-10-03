@@ -48,7 +48,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             self.channels.new_channel(tg_channel['tg_chat_id'])
 
         while True:
-            await asyncio.sleep(300)
+            await asyncio.sleep(120)
 
             try:
                 for key in self.channels.channels.keys():
