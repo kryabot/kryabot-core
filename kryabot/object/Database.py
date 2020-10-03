@@ -798,7 +798,7 @@ class Database:
 
         return bool(exists)
 
-    async def set_inventory_inventory(self, tg_chat_id, tg_user_id, seconds=60):
+    async def set_inventory_cooldown(self, tg_chat_id, tg_user_id, seconds=60):
         cache_key = redis_key.get_tg_cd_inventory(tg_chat_id, tg_user_id)
         await self.redis.set_value_by_key(key=cache_key, val=tg_chat_id, expire=seconds)
 
