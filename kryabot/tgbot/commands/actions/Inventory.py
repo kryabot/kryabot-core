@@ -35,7 +35,7 @@ class Inventory(BaseCommand):
 
         text = self.get_translation("CMD_INVENTORY_CONTAINS") + "\n"
         for data in datas:
-            text += "{} {}: {}\n".format(self.get_currency_emote(data['currency_key']), self.get_translation("INVENTORY_ITEM_" + str(data['currency_key']).capitalize()), int(data['currency']))
+            text += "{} {}: {}\n".format(self.get_currency_emote(data['currency_key']), self.get_translation("INVENTORY_ITEM_" + str(data['currency_key']).upper()), int(data['amount']))
 
         message = await self.event.reply(text, link_preview=False)
 
