@@ -643,6 +643,7 @@ class KryaClient(TelegramClient):
 
     async def get_sticker_set(self, pack_name):
         for pack in (await self(GetAllStickersRequest(0))).sets:
+            self.logger.info(pack.short_name)
             if pack.short_name == pack_name:
                 pack_content = await self(GetStickerSetRequest(stickerset=InputStickerSetID(id=pack.id, access_hash=pack.access_hash)))
                 return pack_content
