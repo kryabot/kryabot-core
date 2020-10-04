@@ -89,6 +89,8 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             event.client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.from_id))
             return
 
+        self.get_logger().info(target_message.stringify())
+
         if HalloweenConfig.is_event_boss(target_message):
             await self.process_boss(event_data, event, channel, target_message, sender)
         elif HalloweenConfig.is_event_regular(target_message):

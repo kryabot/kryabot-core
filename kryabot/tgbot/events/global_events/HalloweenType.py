@@ -105,11 +105,18 @@ class HalloweenChannel(Base):
 
     async def spawn_boss(self, client):
         self.last_boss = datetime.utcnow()
-        file = utils.resolve_bot_file_id("CAACAgIAAxkBAAEBaYNfebjPlW6ghH-wGRxbZsJUEIjIgQACJwEAAladvQqDPWc1nzLw6xsE")
-        msg = await client.send_message(self.channel_id, file=file)
+        msg = await self.send_halloween_sticker(client, self.channel_id, "🤬")
         client.logger.info("Spawned boss pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
         self.save(msg.id)
         client.loop.create_task(self.pumpkin_boss_info_updater(client, msg))
+
+    async def send_halloween_sticker(self, client, channel_id, emote):
+        kryabot_stickers = await client.get_sticker_set('Halloween Pumpkin')
+        for sticker in kryabot_stickers.packs:
+            if sticker.emoticon == emote:
+                for pack in kryabot_stickers.documents:
+                    if sticker.documents[0] == pack.id:
+                        return await client.send_file(channel_id, pack)
 
     async def pumpkin_boss_info_updater(self, client, boss_message):
         default_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_BOSS_INFO')
