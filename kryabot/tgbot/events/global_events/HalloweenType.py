@@ -6,6 +6,7 @@ from typing import Dict, List
 from random import randint
 
 from telethon import utils
+from telethon.tl.types import DocumentAttributeSticker
 
 from object.Base import Base
 
@@ -105,7 +106,7 @@ class HalloweenChannel(Base):
 
     async def spawn_boss(self, client):
         self.last_boss = datetime.utcnow()
-        msg = await self.send_halloween_sticker(client, self.channel_id, "🤬")
+        msg = await self.send_halloween_sticker(client, self.channel_id, HalloweenConfig.pumkin_boss)
         client.logger.info("Spawned boss pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
         self.save(msg.id)
         client.loop.create_task(self.pumpkin_boss_info_updater(client, msg))
@@ -134,6 +135,7 @@ class HalloweenChannel(Base):
                     continue
                 else:
                     try:
+                        last_text = new_text
                         if info_message is None:
                             info_message = await client.send_message(self.channel_id, new_text, reply_to=boss_message.id)
                         else:
@@ -211,7 +213,7 @@ class Pumpkin(Base):
 
 class HalloweenConfig:
     pumpkin_message: str = "🎃"
-    pumkin_boss = "TODO STICKER"
+    pumkin_boss = "🤬"
     hit_message: List[str] = ["👊", "🪓", "🔨", "🗡", "🔪"]
     currency_key: str = "pumpkin"
 
@@ -221,7 +223,14 @@ class HalloweenConfig:
 
     @staticmethod
     def is_event_boss(message)->bool:
-        return message.text == HalloweenConfig.pumkin_boss
+        if not message.sticker:
+            return False
+
+        for attr in message.media.document.attributes:
+            if isinstance(attr, DocumentAttributeSticker) and attr.stickerset.id == 773947703670341645 and attr.alt == HalloweenConfig.pumkin_boss:
+                return True
+
+        return False
 
     @staticmethod
     def is_event_reply(message)->bool:
