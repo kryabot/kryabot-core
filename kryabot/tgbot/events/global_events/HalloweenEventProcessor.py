@@ -1,9 +1,10 @@
 import asyncio
 from datetime import datetime
+from typing import List
 
 from tgbot.constants import TG_TEST_GROUP_ID
 from tgbot.events.global_events.GlobalEventProcessor import GlobalEventProcessor
-from tgbot.events.global_events.HalloweenType import HalloweenChannels
+from tgbot.events.global_events.HalloweenType import HalloweenChannels, HalloweenConfig
 from utils.array import get_first
 from utils.formatting import format_html_user_mention
 
@@ -11,13 +12,9 @@ from utils.formatting import format_html_user_mention
 class HalloweenEventProcessor(GlobalEventProcessor):
     name = "halloween2020"
 
-    def __init__(self):
+    def __init__(self, ):
         super().__init__()
-        self.pumpkin_message: str = "🎃"
-        self.punch_message: str = "👊"
-        self.currency_key: str = "pumpkin"
         self.channels: HalloweenChannels = HalloweenChannels()
-
         self.get_logger().info("Created HalloweenEventProcessor")
 
     async def pumpkin_spawner(self, client):
@@ -44,40 +41,35 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                 continue
 
             client.logger.info("Created HalloweenChannel for {}".format(tg_channel['tg_chat_id']))
-            self.channels.new_channel(tg_channel['tg_chat_id'])
+            self.channels.new_channel(tg_channel['tg_chat_id'], tg_channel['bot_lang'])
 
         while True:
-            await asyncio.sleep(180)
+            await asyncio.sleep(600)
 
             try:
                 for key in self.channels.channels.keys():
                     count = await client.get_group_member_count(int(key))
-                    if self.channels.channels[key].can_spawn(count):
-                        msg = await client.send_message(int(key), self.pumpkin_message)
-                        client.logger.info("Spawned pumpkin ID {} in channel {}".format(msg.id, int(key)))
-                        self.channels.channels[key].save(msg.id)
+                    if self.channels.channels[key].can_spawn_regular(count):
+                        await self.channels.channels[key].spawn_regular(client)
+                    elif self.channels.channels[key].can_spawn_boss(count):
+                        await self.channels.channels[key].spawn_boss(client)
+
                     await asyncio.sleep(3)
             except Exception as ex:
                 client.logger.exception(ex)
 
     async def process(self, event_data, event, channel) -> None:
-        client = event.client
-
         if not event.message.is_reply:
             return
 
-        if not self.is_event_reply(event.message.text):
+        if not HalloweenConfig.is_event_reply(event.message):
             return
 
         target_message = await event.message.get_reply_message()
         if target_message is None:
             return
 
-        if not self.is_event_message(target_message.text):
-            return
-
-        if target_message.from_id != client.me.id:
-            client.logger.info('Skipping because pumpkin not sent by bot')
+        if target_message.from_id != event.client.me.id:
             return
 
         try:
@@ -87,29 +79,43 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                 except:
                     pass
 
-                client.logger.info('Skipping because message ID {} in channel {} is not active!'.format(target_message.id, event.message.to_id.channel_id))
+                event.client.logger.info('Skipping because message ID {} in channel {} is not active!'.format(target_message.id, event.message.to_id.channel_id))
                 return
         except:
             pass
 
-        sender = await get_first(await client.db.getUserByTgChatId(event.message.from_id))
+        sender = await get_first(await event.client.db.getUserByTgChatId(event.message.from_id))
         if sender is None:
-            client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.from_id))
+            event.client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.from_id))
             return
 
+        if HalloweenConfig.is_event_boss(target_message):
+            await self.process_boss(event_data, event, channel, target_message, sender)
+        elif HalloweenConfig.is_event_regular(target_message):
+            await self.process_regular(event_data, event, channel, target_message, sender)
+        else:
+            return
+
+    async def process_regular(self, event_data, event, channel, target_message, sender):
+        client = event.client
+
+        destroyed = False
         try:
-            self.channels.set_used(event.message.to_id.channel_id, target_message.id)
+            destroyed = self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, event.message.from_id)
             await target_message.delete()
-        except:
-            pass
+        except Exception as ex:
+            self.get_logger().exception(ex)
 
-        await client.db.add_currency_to_user(self.currency_key, sender['user_id'], 1)
+        if not destroyed:
+            return
 
-        currency_data = await get_first(await client.db.get_user_currency_amount(self.currency_key, sender['user_id']))
+        await client.db.add_currency_to_user(HalloweenConfig.currency_key, sender['user_id'], 1)
+
+        currency_data = await get_first(await client.db.get_user_currency_amount(HalloweenConfig.currency_key, sender['user_id']))
         sender_entity = await client.get_entity(event.message.from_id)
         sender_label = await format_html_user_mention(sender_entity)
 
-        text = client.translator.getLangTranslation(channel['bot_lang'], 'GLOBAL_HALLOWEEN_PUMKIN_DESTROY')
+        text = client.translator.getLangTranslation(channel['bot_lang'], 'GLOBAL_HALLOWEEN_PUMPKIN_DESTROY')
         text = text.format(user=sender_label, total=int(currency_data['amount']))
         text += ' 👻'
 
@@ -117,14 +123,22 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
         try:
             await event.delete()
-        except:
-            pass
+        except Exception as ex:
+            self.get_logger().exception(ex)
 
         await asyncio.sleep(60)
         await info_message.delete()
 
-    def is_event_message(self, text) -> bool:
-        return text == self.pumpkin_message
+    async def process_boss(self, event_data, event, channel, target_message, sender):
+        try:
+            if self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, event.message.from_id):
+                await target_message.delete()
+        except Exception as ex:
+            self.get_logger().exception(ex)
 
-    def is_event_reply(self, text) -> bool:
-        return text == self.punch_message
+
+        try:
+            await event.delete()
+        except Exception as ex:
+            self.get_logger().exception(ex)
+
