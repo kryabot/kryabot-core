@@ -108,7 +108,7 @@ class HalloweenChannel(Base):
         self.last_boss = datetime.utcnow()
         msg = await self.send_halloween_sticker(client, self.channel_id, HalloweenConfig.pumkin_boss)
         client.logger.info("Spawned boss pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
-        self.save(msg.id)
+        self.save(msg.id, boss=True)
         client.loop.create_task(self.pumpkin_boss_info_updater(client, msg))
 
     async def send_halloween_sticker(self, client, channel_id, emote):
