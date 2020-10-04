@@ -16,7 +16,7 @@ class Pinger(Base):
 
     async def run_task(self):
         self.logger.info("Created pinger task for {}".format(self.system))
-        await self.redis.set_value_by_key(key=redis_key.get_general_startup(str(self.system.value)), val=self.get_body())
+        await self.redis.set_parsed_value_by_key(key=redis_key.get_general_startup(str(self.system.value)), val=self.get_body())
 
         while True:
             try:
