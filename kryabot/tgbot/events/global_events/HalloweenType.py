@@ -69,7 +69,7 @@ class HalloweenChannel(Base):
             return False
 
         ratio = HalloweenConfig.calc(channel_size)
-        min_time = max(int(ratio), 60)
+        min_time = min(int(ratio), 60)
         max_time = max(int(ratio), 180)
         logger.info('Result min: {} max: {} for size {}'.format(min_time, max_time, channel_size))
 
