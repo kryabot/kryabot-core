@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List
 from random import randint
 
+from telethon import utils
+
 from object.Base import Base
 
 logger: logging = logging.getLogger('krya.tg')
@@ -92,8 +94,8 @@ class HalloweenChannel(Base):
 
         return False
 
-    def save(self, msg_id: int):
-        self.pumpkins[int(msg_id)] = Pumpkin(msg_id)
+    def save(self, msg_id: int, boss=False):
+        self.pumpkins[int(msg_id)] = Pumpkin(msg_id, boss=boss)
 
     async def spawn_regular(self, client):
         self.last_regular = datetime.utcnow()
@@ -103,7 +105,8 @@ class HalloweenChannel(Base):
 
     async def spawn_boss(self, client):
         self.last_boss = datetime.utcnow()
-        msg = await client.send_message(self.channel_id, HalloweenConfig.pumkin_boss)
+        file = utils.resolve_bot_file_id("CAACAgIAAxkBAAEBaYNfebjPlW6ghH-wGRxbZsJUEIjIgQACJwEAAladvQqDPWc1nzLw6xsE")
+        msg = await client.send_message(self.channel_id, file=file)
         client.logger.info("Spawned boss pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
         self.save(msg.id)
         client.loop.create_task(self.pumpkin_boss_info_updater(client, msg))
