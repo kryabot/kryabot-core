@@ -15,7 +15,7 @@ class Pinger(Base):
         self.redis: RedisHelper = redis
 
     async def run_task(self):
-        self.logger("Created pinger task for {}".format(self.system))
+        self.logger.info("Created pinger task for {}".format(self.system))
         await self.redis.set_value_by_key(key=redis_key.get_general_startup(str(self.system.value)), val=self.get_body())
 
         while True:

@@ -180,7 +180,7 @@ class WebHandler:
         if event_id is None:
             return self.response_bad_input()
 
-        self.loop.create_task(self.guard_bot.twitch_event_unsubscribe(event_id))
+        #self.loop.create_task(self.guard_bot.twitch_event_unsubscribe(event_id))
         return self.response_success()
 
     @authorized()
