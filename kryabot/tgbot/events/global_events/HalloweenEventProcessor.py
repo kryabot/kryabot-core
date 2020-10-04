@@ -103,7 +103,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
         destroyed = False
         try:
-            destroyed = self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, event.message.from_id)
+            destroyed = self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, sender['user_id'])
             await target_message.delete()
         except Exception as ex:
             self.get_logger().exception(ex)
@@ -133,7 +133,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
     async def process_boss(self, event_data, event, channel, target_message, sender):
         try:
-            if self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, event.message.from_id):
+            if self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):
                 await target_message.delete()
         except Exception as ex:
             self.get_logger().exception(ex)
