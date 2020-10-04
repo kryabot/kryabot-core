@@ -154,6 +154,6 @@ async def getSql(sqlType):
         'add_currency_to_user': 'CALL addCurrencyToUser(%s, %s, %s)',
         'get_user_currency': 'SELECT uc.user_id, uc.amount, ct.currency_key, ct.currency_type_id FROM user_currency uc LEFT JOIN currency_type ct ON uc.currency_type_id = ct.currency_type_id WHERE ct.currency_key = %s and uc.user_id = %s',
         'save_to_list': 'CALL addToList(%s, %s, %s, %s);',
-        'get_user_all_currencies': 'SELECT uc.user_id, uc.amount, ct.currency_key FROM user_currency uc LEFT JOIN currency_type ct ON uc.currency_type_id = ct.currency_type_id WHERE uc.user_id = %s;',
+        'get_user_all_currencies': 'SELECT uc.user_id, uc.amount, ct.currency_key FROM user_currency uc LEFT JOIN currency_type ct ON uc.currency_type_id = ct.currency_type_id WHERE uc.user_id = %s and ct.active = 1 and ct.public = 1;',
 
     }.get(sqlType, 'unknown_sql_type')
