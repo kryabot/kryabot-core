@@ -50,9 +50,9 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                 for key in self.channels.channels.keys():
                     count = int(await client.get_group_member_count(int(key)))
                     if self.channels.channels[key].can_spawn_regular(count):
-                        await self.channels.channels[key].spawn_regular(client)
+                        await self.channels.channels[key].spawn_regular(client, count)
                     elif self.channels.channels[key].can_spawn_boss(count):
-                        await self.channels.channels[key].spawn_boss(client)
+                        await self.channels.channels[key].spawn_boss(client, count)
 
                     await asyncio.sleep(3)
             except Exception as ex:

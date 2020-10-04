@@ -95,20 +95,20 @@ class HalloweenChannel(Base):
 
         return False
 
-    def save(self, msg_id: int, boss=False):
-        self.pumpkins[int(msg_id)] = Pumpkin(msg_id, boss=boss)
+    def save(self, msg_id: int, boss=False, hp=1):
+        self.pumpkins[int(msg_id)] = Pumpkin(msg_id, boss=boss, hp=hp)
 
-    async def spawn_regular(self, client):
+    async def spawn_regular(self, client, size: int):
         self.last_regular = datetime.utcnow()
         msg = await client.send_message(self.channel_id, HalloweenConfig.pumpkin_message)
         client.logger.info("Spawned regular pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
         self.save(msg.id)
 
-    async def spawn_boss(self, client):
+    async def spawn_boss(self, client, size: int):
         self.last_boss = datetime.utcnow()
         msg = await self.send_halloween_sticker(client, self.channel_id, HalloweenConfig.pumkin_boss)
         client.logger.info("Spawned boss pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
-        self.save(msg.id, boss=True)
+        self.save(msg.id, boss=True, hp=HalloweenConfig.calc_boss_hp(size))
         client.loop.create_task(self.pumpkin_boss_info_updater(client, msg))
 
     async def send_halloween_sticker(self, client, channel_id, emote):
@@ -196,13 +196,13 @@ class HalloweenChannel(Base):
 
 
 class Pumpkin(Base):
-    def __init__(self, msg_id: int, boss=False):
+    def __init__(self, msg_id: int, boss: bool=False, hp: int=1):
         self.msg_id: int = msg_id
         self.active: bool = True
         self.created: datetime = datetime.utcnow()
         self.last_activity: datetime = datetime.utcnow()
         self.boss: bool = boss
-        self.hp: int = 10 if self.boss else 1
+        self.hp: int = hp
         self.damagers: Dict[int, int] = {}
 
     def hit(self, user_id: int, dmg: int = 1)->bool:
@@ -256,3 +256,7 @@ class HalloweenConfig:
         calc_ratio = math.log((amt + (amt / 5)) / 100000000)
         calc_ratio = calc_ratio * calc_ratio / amt * 100
         return min(int(calc_ratio), 500)
+
+    @staticmethod
+    def calc_boss_hp(size: int)->int:
+        return max(int(min(size / 2, 30)), 3)
