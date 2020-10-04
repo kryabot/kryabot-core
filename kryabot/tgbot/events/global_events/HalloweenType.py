@@ -119,6 +119,12 @@ class HalloweenChannel(Base):
                     if sticker.documents[0] == pack.id:
                         return await client.send_file(channel_id, pack)
 
+    def get_attackers(self, msg_id: int):
+        if msg_id not in self.pumpkins:
+            return None
+
+        return self.pumpkins[msg_id].damagers
+
     async def pumpkin_boss_info_updater(self, client, boss_message):
         default_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_BOSS_INFO')
         last_text = ""
@@ -143,8 +149,17 @@ class HalloweenChannel(Base):
                     except Exception as ex:
                         logger.exception(ex)
             else:
+                total = 0
+                attackers = self.get_attackers(boss_message.id)
+
+                if attackers is not None:
+                    for user_id in attackers.keys():
+                        count = min(attackers[user_id], 3)
+                        total += count
+                        await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, count)
+
                 # If its not active anymore then post results, wait a bit and clean up
-                final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_BOSS_DIED').format(pumpkins=0, fighters=last_fighters)
+                final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_BOSS_DIED').format(pumpkins=total, fighters=last_fighters)
                 try:
                     await info_message.edit(final_text)
                 except Exception as ex:
@@ -214,7 +229,7 @@ class Pumpkin(Base):
 class HalloweenConfig:
     pumpkin_message: str = "🎃"
     pumkin_boss = "🤬"
-    hit_message: List[str] = ["👊", "🪓", "🔨", "🗡", "🔪"]
+    hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "⚔️", "🔫"]
     currency_key: str = "pumpkin"
 
     @staticmethod
