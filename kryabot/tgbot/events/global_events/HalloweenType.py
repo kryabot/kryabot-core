@@ -111,7 +111,7 @@ class HalloweenChannel(Base):
         client.loop.create_task(self.pumpkin_boss_info_updater(client, msg))
 
     async def send_halloween_sticker(self, client, channel_id, emote):
-        kryabot_stickers = await client.get_sticker_set('Halloween Pumpkin')
+        kryabot_stickers = await client.get_sticker_set('Halloweenkin')
         for sticker in kryabot_stickers.packs:
             if sticker.emoticon == emote:
                 for pack in kryabot_stickers.documents:
