@@ -1000,7 +1000,7 @@ class KryaClient(TelegramClient):
     async def get_group_member_count(self, tg_group_id: int, skip_cache=False)->int:
         data = None
         if not skip_cache:
-            data = self.db.get_telegram_group_size_from_cache(tg_group_id)
+            data = await self.db.get_telegram_group_size_from_cache(tg_group_id)
 
         if data is None:
             data = (await self.get_participants(entity=int(tg_group_id), limit=0)).total
