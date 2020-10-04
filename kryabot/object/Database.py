@@ -875,3 +875,9 @@ class Database:
 
     async def get_twitch_sub_count_from_cache(self, tw_channel_id, tw_user_id):
         return await self.redis.get_value_by_key(redis_key.get_tw_sub_month(tw_chat_id=tw_channel_id, tw_user_id=tw_user_id))
+
+    async def get_telegram_group_size_from_cache(self, tg_channel_id: int):
+        return await self.redis.get_value_by_key(redis_key.get_telegram_group_size(tg_channel_id))
+
+    async def save_telegram_group_size_to_cache(self, tg_channel_id: int, size: int):
+        return await self.redis.set_value_by_key(redis_key.get_telegram_group_size(tg_channel_id), int(size), expire=redis_key.ttl_day)

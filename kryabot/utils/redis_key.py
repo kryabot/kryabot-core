@@ -152,3 +152,7 @@ def get_error_queue():
 
 def get_irc_response_queue():
     return 'irc.response.queue'
+
+
+def get_telegram_group_size(tg_group_id):
+    return 'tg.group.size.{}'.format(tg_group_id)

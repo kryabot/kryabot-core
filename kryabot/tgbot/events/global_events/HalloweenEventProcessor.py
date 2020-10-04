@@ -48,11 +48,11 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             self.channels.new_channel(tg_channel['tg_chat_id'])
 
         while True:
-            await asyncio.sleep(120)
+            await asyncio.sleep(180)
 
             try:
                 for key in self.channels.channels.keys():
-                    count = (await client.get_participants(entity=int(key), limit=0)).total
+                    count = await client.get_group_member_count(int(key))
                     if self.channels.channels[key].can_spawn(count):
                         msg = await client.send_message(int(key), self.pumpkin_message)
                         client.logger.info("Spawned pumpkin ID {} in channel {}".format(msg.id, int(key)))

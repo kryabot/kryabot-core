@@ -993,3 +993,14 @@ class KryaClient(TelegramClient):
             await self.init_channels(channel['channel_id'])
         if topic == 'telegram_award':
             await self.init_awards(channel['channel_id'], user_id)
+
+    async def get_group_member_count(self, tg_group_id: int, skip_cache=False)->int:
+        data = None
+        if not skip_cache:
+            data = self.db.get_telegram_group_size_from_cache(tg_group_id)
+
+        if data is None:
+            data = (await self.get_participants(entity=int(tg_group_id), limit=0)).total
+            await self.db.save_telegram_group_size_to_cache(tg_group_id, data)
+
+        return data
