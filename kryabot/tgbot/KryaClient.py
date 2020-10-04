@@ -1006,4 +1006,4 @@ class KryaClient(TelegramClient):
             data = (await self.get_participants(entity=int(tg_group_id), limit=0)).total
             await self.db.save_telegram_group_size_to_cache(tg_group_id, data)
 
-        return data
+        return int(data)

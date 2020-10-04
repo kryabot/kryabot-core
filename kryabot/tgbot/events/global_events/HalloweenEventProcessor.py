@@ -48,7 +48,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
             try:
                 for key in self.channels.channels.keys():
-                    count = await client.get_group_member_count(int(key))
+                    count = int(await client.get_group_member_count(int(key)))
                     if self.channels.channels[key].can_spawn_regular(count):
                         await self.channels.channels[key].spawn_regular(client)
                     elif self.channels.channels[key].can_spawn_boss(count):
@@ -89,7 +89,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             event.client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.from_id))
             return
 
-        self.get_logger().info(target_message.stringify())
+        #self.get_logger().info(target_message.stringify())
 
         if HalloweenConfig.is_event_boss(target_message):
             await self.process_boss(event_data, event, channel, target_message, sender)
