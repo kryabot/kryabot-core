@@ -9,6 +9,8 @@ from unidecode import unidecode
 from object.ApiHelper import ApiHelper
 from object.Database import Database
 import utils.redis_key as redis_key
+from object.Pinger import Pinger
+from object.System import System
 
 MIN_WORDS = 5
 INTERVAL_CHECK = 15
@@ -76,6 +78,7 @@ class SpamDetector:
 
         logger.debug('Starting topic listener')
         loop.create_task(db.redis.start_listener(self.redis_subscribe))
+        loop.create_task(Pinger(System.KRYABOT_SPAM_DETECTOR, logger, db.redis).run_task())
         logger.info('Init completed')
 
     async def create_channel(self, channel_name: str):

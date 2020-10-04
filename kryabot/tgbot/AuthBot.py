@@ -5,6 +5,8 @@ from telethon.tl.custom import Button
 from telethon.extensions import html
 from object.Database import Database
 from object.ApiHelper import ApiHelper
+from object.Pinger import Pinger
+from object.System import System
 from object.Translator import Translator
 from utils.twitch import get_active_oauth_data
 import logging
@@ -63,7 +65,7 @@ class AuthBot(TelegramClient):
         self.add_event_handler(reloadtranslations)
         self._parse_mode = html
         self.loop.create_task(self.db.db_activity())
-        self.loop.create_task(self.ping_checker())
+        self.loop.create_task(Pinger(System.AUTHBOT_TELEGRAM, self.logger, self.db.redis).run_task())
 
     async def run(self):
         await self.reload_translations()
@@ -74,13 +76,6 @@ class AuthBot(TelegramClient):
 
     async def reload_translations(self):
         self.translator = Translator(await self.db.getTranslations(), self.logger)
-
-    async def ping_checker(self):
-        while True:
-            await asyncio.sleep(3600)
-            if self.last_ping + timedelta(hours=1) < datetime.now():
-                await self.report_to_monitoring(' @Kuroskas missing ping from main bot!')
-                # TODO: Autorestart KryaClient bot
 
     async def exception_reporter(self, err, info):
         await self.report_to_monitoring(message='Error: {}: {}\n\n{}\n\n<pre>{}</pre>'.format(type(err).__name__, err, info, ''.join(traceback.format_tb(err.__traceback__))))

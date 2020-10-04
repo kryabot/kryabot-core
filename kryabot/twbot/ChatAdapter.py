@@ -4,6 +4,8 @@ import logging
 from typing import Dict, List, Union
 
 from api.twitch import Twitch
+from object.Pinger import Pinger
+from object.System import System
 from twbot.ResponseAction import ResponseAction
 from twitchio import Context, Message, Channel, User
 from twitchio.ext import commands
@@ -32,6 +34,8 @@ class ChatAdapter(Base, commands.Bot):
                          prefix=self.cfg.getTwitchConfig()['GLOBAL_PREFIX'],
                          loop=self.loop,
                          modes=("commands", "tags"))
+
+        self.loop.create_task(Pinger(System.KRYABOT_TMI, self.logger, self.db.redis).run_task())
 
     async def event_pubsub(self, data):
         pass

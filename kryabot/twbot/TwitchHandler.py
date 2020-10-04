@@ -7,6 +7,8 @@ from object.ApiHelper import ApiHelper
 from object.Base import Base
 from object.BotConfig import BotConfig
 from object.Database import Database
+from object.Pinger import Pinger
+from object.System import System
 from twbot import ResponseAction
 from twbot.command.CommandBase import CommandBase
 from twbot.object.Channel import Channel
@@ -122,9 +124,11 @@ class TwitchHandler(Base):
 
         listener = self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
         triggers = schedule.schedule_task_periodically(5, self.timed_task_processor, logger=self.logger)
+        ping = self.loop.create_task(Pinger(System.KRYABOT_TWITCH, self.logger, self.db.redis).run_task())
 
         self.tasks.append(triggers)
         self.tasks.append(listener)
+        self.tasks.append(ping)
 
     # List of subscribes executed during initialization
     async def redis_subscribe(self)->None:

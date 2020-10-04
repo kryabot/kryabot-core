@@ -156,3 +156,11 @@ def get_irc_response_queue():
 
 def get_telegram_group_size(tg_group_id):
     return 'tg.group.size.{}'.format(tg_group_id)
+
+
+def get_general_ping(system: str):
+    return 'general.ping.{}'.format(system)
+
+
+def get_general_startup(system: str):
+    return 'general.startup.{}'.format(system)

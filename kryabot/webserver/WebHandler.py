@@ -6,6 +6,8 @@ from sanic.request import Request
 from sanic.response import text, json
 from sanic.exceptions import NotFound, ServerError
 from object.BotConfig import BotConfig
+from object.Pinger import Pinger
+from object.System import System
 from tgbot.KryaClient import KryaClient
 from webserver.common import get_value, get_param_value
 from webserver.decorators import authorized, user
@@ -49,9 +51,10 @@ class WebHandler:
         self.app.error_handler.add(NotFound, self.handle_not_found)
 
     async def start(self, guard_bot: KryaClient):
-    #async def start(self):
         self.guard_bot = guard_bot
         self.register_routes()
+
+        self.loop.create_task(Pinger(System.WEBSERVER, self.logger, guard_bot.db.redis).run_task())
 
         server = self.app.create_server(host="0.0.0.0", port=5000, return_asyncio_server=True)
         self.server = asyncio.ensure_future(server, loop=self.loop)

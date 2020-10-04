@@ -1,10 +1,9 @@
 import asyncio
 from datetime import datetime
-from typing import Dict
 
 from tgbot.constants import TG_TEST_GROUP_ID
 from tgbot.events.global_events.GlobalEventProcessor import GlobalEventProcessor
-from tgbot.events.global_events.HalloweenType import HalloweenChannel, HalloweenChannels
+from tgbot.events.global_events.HalloweenType import HalloweenChannels
 from utils.array import get_first
 from utils.formatting import format_html_user_mention
 

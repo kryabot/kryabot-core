@@ -11,6 +11,8 @@ import traceback
 from datetime import datetime, date, timedelta
 from object.Database import Database
 from object.ApiHelper import ApiHelper
+from object.Pinger import Pinger
+from object.System import System
 from object.Translator import Translator
 from tgbot.Moderation import Moderation
 import tgbot.events.handlers as krya_events
@@ -80,6 +82,7 @@ class KryaClient(TelegramClient):
         self.loop.create_task(self.connection_activity())
         self.logger.info('Creating task_oauth_refresher')
         self.loop.create_task(self.task_oauth_refresher())
+        self.loop.create_task(Pinger(System.KRYABOT_TELEGRAM, self.logger, self.db.redis).run_task())
         self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
 
         self.loop.create_task(HalloweenEventProcessor.get_instance().pumpkin_spawner(self))

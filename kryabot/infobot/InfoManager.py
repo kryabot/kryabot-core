@@ -18,6 +18,8 @@ from infobot.youtube.YoutubeListener import YoutubeListener
 from object.ApiHelper import ApiHelper
 from object.BotConfig import BotConfig
 from object.Database import Database
+from object.Pinger import Pinger
+from object.System import System
 
 
 class InfoManager:
@@ -49,6 +51,7 @@ class InfoManager:
     async def start(self):
         await self.db.redis.connection_init()
         self.loop.create_task(self.db.redis.start_listener(self.subscribe))
+        self.loop.create_task(Pinger(System.INFOMANAGER, self.logger, self.db.redis).run_task())
 
         await self.update()
         await self.start_services()

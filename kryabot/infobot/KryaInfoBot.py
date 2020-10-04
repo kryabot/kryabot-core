@@ -17,6 +17,8 @@ from infobot.Target import Target
 from infobot.boosty.BoostyEvents import BoostyEvent
 from infobot.instagram.InstagramEvents import InstagramPostEvent, InstagramStoryEvent
 from infobot.twitch.TwitchEvents import TwitchEvent
+from object.Pinger import Pinger
+from object.System import System
 from object.Translator import Translator
 from tgbot import constants
 
@@ -154,6 +156,7 @@ class KryaInfoBot(TelegramClient):
 
         super().__init__(path + 'info_bot_session', base_logger=self.logger, api_id= self.cfg.getTelegramConfig()['API_ID'], api_hash=self.cfg.getTelegramConfig()['API_HASH'], flood_sleep_threshold=300)
         self._parse_mode = html
+        self.loop.create_task(Pinger(System.INFOBOT_TELEGRAM, self.logger, self.db.redis).run_task())
 
     async def run(self, wait=False):
         self.logger.debug('Starting TG info bot')
