@@ -229,7 +229,7 @@ class Pumpkin(Base):
 class HalloweenConfig:
     pumpkin_message: str = "🎃"
     pumkin_boss = "🤬"
-    hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "⚔️", "🔫"]
+    hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "⚔", "🔫"]
     currency_key: str = "pumpkin"
 
     @staticmethod
