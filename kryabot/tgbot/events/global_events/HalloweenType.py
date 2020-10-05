@@ -28,6 +28,7 @@ class HalloweenChannels(Base):
 
     def hit_pumkin(self, channel_id: int, message_id: int, user_id: int)->bool:
         channel: HalloweenChannel = self.channels[channel_id]
+        channel.delete_messages.append(message_id)
         return channel.hit_pumpkin(message_id, user_id)
 
 
@@ -38,6 +39,7 @@ class HalloweenChannel(Base):
         self.pumpkins: Dict[int, Pumpkin] = {}
         self.last_regular: datetime = datetime.utcnow()
         self.last_boss: datetime = datetime.utcnow()
+        self.delete_messages: List[int] = []
 
     def is_active(self, msg_id: int)->bool:
         if not int(msg_id) in self.pumpkins:
@@ -149,6 +151,12 @@ class HalloweenChannel(Base):
                     except Exception as ex:
                         logger.exception(ex)
             else:
+                try:
+                    await client.delete_messages(entity=self.channel_id, message_ids=self.delete_messages)
+                except Exception as ex:
+                    logger.exception(ex)
+
+                self.delete_messages = []
                 total = 0
                 attackers = self.get_attackers(boss_message.id)
 

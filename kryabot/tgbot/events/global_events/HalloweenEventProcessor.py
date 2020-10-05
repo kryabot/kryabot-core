@@ -138,9 +138,8 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         except Exception as ex:
             self.get_logger().exception(ex)
 
-
-        try:
-            await event.delete()
-        except Exception as ex:
-            self.get_logger().exception(ex)
+        # try:
+        #     await event.delete()
+        # except Exception as ex:
+        #     self.get_logger().exception(ex)
 
