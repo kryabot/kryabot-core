@@ -152,7 +152,9 @@ class HalloweenChannel(Base):
                         logger.exception(ex)
             else:
                 try:
-                    await client.delete_messages(entity=self.channel_id, message_ids=self.delete_messages)
+                    logger.info("Deleting messages: {}".format(self.delete_messages))
+                    result = await client.delete_messages(entity=self.channel_id, message_ids=self.delete_messages)
+                    logger.info(result.stringify())
                 except Exception as ex:
                     logger.exception(ex)
 
