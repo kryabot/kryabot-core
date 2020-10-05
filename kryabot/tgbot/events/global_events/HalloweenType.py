@@ -28,9 +28,11 @@ class HalloweenChannels(Base):
 
     def hit_pumkin(self, channel_id: int, message_id: int, user_id: int)->bool:
         channel: HalloweenChannel = self.channels[channel_id]
-        channel.delete_messages.append(message_id)
         return channel.hit_pumpkin(message_id, user_id)
 
+    def add_for_deletion(self, channel_id: int, message_id: int):
+        channel: HalloweenChannel = self.channels[channel_id]
+        channel.delete_messages.append(message_id)
 
 class HalloweenChannel(Base):
     def __init__(self, channel_id, lang):
@@ -154,7 +156,6 @@ class HalloweenChannel(Base):
                 try:
                     logger.info("Deleting messages: {}".format(self.delete_messages))
                     result = await client.delete_messages(entity=self.channel_id, message_ids=self.delete_messages)
-                    logger.info(result.stringify())
                 except Exception as ex:
                     logger.exception(ex)
 

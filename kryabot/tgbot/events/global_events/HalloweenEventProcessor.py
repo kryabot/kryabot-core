@@ -133,6 +133,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
     async def process_boss(self, event_data, event, channel, target_message, sender):
         try:
+            self.channels.add_for_deletion(event.message.to_id.channel_id, event.message.id)
             if self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):
                 await target_message.delete()
         except Exception as ex:
