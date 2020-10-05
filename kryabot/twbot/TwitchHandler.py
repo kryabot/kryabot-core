@@ -185,7 +185,7 @@ class TwitchHandler(Base):
     async def task_save_badge_info(self, context):
         try:
             if context.get_sub_months() > 0:
-                await self.db.save_twitch_sub_count_to_cache(context.channel.channel_id, context.user.twitch_id, context.get_sub_months())
+                await self.db.save_twitch_sub_count_to_cache(context.channel.tw_id, context.user.twitch_id, context.get_sub_months())
         except Exception as ex:
             self.logger.exception(ex)
 
