@@ -106,7 +106,7 @@ class HalloweenChannel(Base):
 
     async def spawn_boss(self, client, size: int):
         self.last_boss = datetime.utcnow()
-        msg = await self.send_halloween_sticker(client, self.channel_id, HalloweenConfig.pumkin_boss)
+        msg = await self.send_halloween_sticker(client, self.channel_id, HalloweenConfig.pumpkin_boss)
         client.logger.info("Spawned boss pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
         self.save(msg.id, boss=True, hp=HalloweenConfig.calc_boss_hp(size))
         client.loop.create_task(self.pumpkin_boss_info_updater(client, msg))
@@ -228,8 +228,8 @@ class Pumpkin(Base):
 
 class HalloweenConfig:
     pumpkin_message: str = "🎃"
-    pumkin_boss = "🤬"
-    hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "⚔", "🔫"]
+    pumpkin_boss = "🤬"
+    hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "🔫"]
     currency_key: str = "pumpkin"
 
     @staticmethod
@@ -242,7 +242,7 @@ class HalloweenConfig:
             return False
 
         for attr in message.media.document.attributes:
-            if isinstance(attr, DocumentAttributeSticker) and attr.stickerset.id == 773947703670341645 and attr.alt == HalloweenConfig.pumkin_boss:
+            if isinstance(attr, DocumentAttributeSticker) and attr.stickerset.id == 773947703670341645 and attr.alt == HalloweenConfig.pumpkin_boss:
                 return True
 
         return False
