@@ -37,6 +37,7 @@ class HalloweenChannels(Base):
         if channel_id in self.channels:
             self.channels.pop(channel_id)
 
+
 class HalloweenChannel(Base):
     def __init__(self, channel_id, lang):
         self.channel_id: int = channel_id
