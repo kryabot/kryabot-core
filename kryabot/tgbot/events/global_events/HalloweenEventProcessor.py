@@ -1,8 +1,6 @@
 import asyncio
 from datetime import datetime
-from typing import List
 
-from tgbot.constants import TG_TEST_GROUP_ID
 from tgbot.events.global_events.GlobalEventProcessor import GlobalEventProcessor
 from tgbot.events.global_events.HalloweenType import HalloweenChannels, HalloweenConfig
 from utils.array import get_first
@@ -92,6 +90,21 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         if target_message.from_id != event.client.me.id:
             return
 
+        sender = await get_first(await event.client.db.getUserByTgChatId(event.message.from_id))
+        if sender is None:
+            event.client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.from_id))
+            return
+
+        if HalloweenConfig.is_event_boss(target_message):
+            await self.process_boss(event_data, event, channel, target_message, sender)
+        elif HalloweenConfig.is_event_regular(target_message):
+            await self.process_regular(event_data, event, channel, target_message, sender)
+        else:
+            return
+
+    async def process_regular(self, event_data, event, channel, target_message, sender):
+        client = event.client
+
         try:
             if not self.channels.is_active(event.message.to_id.channel_id, target_message.id):
                 try:
@@ -103,23 +116,6 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                 return
         except:
             pass
-
-        sender = await get_first(await event.client.db.getUserByTgChatId(event.message.from_id))
-        if sender is None:
-            event.client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.from_id))
-            return
-
-        #self.get_logger().info(target_message.stringify())
-
-        if HalloweenConfig.is_event_boss(target_message):
-            await self.process_boss(event_data, event, channel, target_message, sender)
-        elif HalloweenConfig.is_event_regular(target_message):
-            await self.process_regular(event_data, event, channel, target_message, sender)
-        else:
-            return
-
-    async def process_regular(self, event_data, event, channel, target_message, sender):
-        client = event.client
 
         destroyed = False
         try:
@@ -148,10 +144,22 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         except Exception as ex:
             self.get_logger().exception(ex)
 
-        await asyncio.sleep(60)
-        await info_message.delete()
+        # await asyncio.sleep(60)
+        # await info_message.delete()
 
     async def process_boss(self, event_data, event, channel, target_message, sender):
+        try:
+            if not self.channels.is_active(event.message.to_id.channel_id, target_message.id):
+                try:
+                    await event.delete()
+                except:
+                    pass
+
+                event.client.logger.info('Skipping because message ID {} in channel {} is not active!'.format(target_message.id, event.message.to_id.channel_id))
+                return
+        except:
+            pass
+
         try:
             self.channels.add_for_deletion(event.message.to_id.channel_id, event.message.id)
             if self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):

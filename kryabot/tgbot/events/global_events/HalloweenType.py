@@ -158,7 +158,7 @@ class HalloweenChannel(Base):
                         logger.exception(ex)
             else:
                 try:
-                    logger.info("Deleting messages: {}".format(self.delete_messages))
+                    logger.info("Deleting messages: {}".format(self.delete_messages.append(info_message.id)))
                     result = await client.delete_messages(entity=self.channel_id, message_ids=self.delete_messages)
                 except Exception as ex:
                     logger.exception(ex)
@@ -176,16 +176,16 @@ class HalloweenChannel(Base):
                 # If its not active anymore then post results, wait a bit and clean up
                 final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_BOSS_DIED').format(pumpkins=total, fighters=last_fighters)
                 try:
-                    await info_message.edit(final_text)
+                    await client.send_message(final_text)
                 except Exception as ex:
                     logger.exception(ex)
 
-                await asyncio.sleep(60)
-                try:
-                    await info_message.delete()
-                except:
-                    pass
-                break
+                # await asyncio.sleep(60)
+                # try:
+                #     await info_message.delete()
+                # except:
+                #     pass
+                # break
 
             await asyncio.sleep(3)
 
