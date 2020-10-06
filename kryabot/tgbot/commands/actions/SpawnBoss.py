@@ -19,4 +19,4 @@ class SpawnBoss(BaseCommand):
             return
 
         processor = HalloweenEventProcessor.get_instance()
-        await processor.channels.channels[self.channel['tg_chat_id']].spawn_boss(self.client, 25)
+        await processor.channels.channels[self.channel['tg_chat_id']].spawn_boss(self.client, 25, test=True)
