@@ -40,6 +40,9 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         try:
             tg_channels = await client.db.get_auth_subchats()
             for tg_channel in tg_channels:
+                if tg_channel['tg_chat_id'] == 0:
+                    continue
+
                 if tg_channel['global_events'] == 1:
                     if not tg_channel['tg_chat_id'] in self.channels.channels:
                         client.logger.info("Created HalloweenChannel for {}".format(tg_channel['tg_chat_id']))
