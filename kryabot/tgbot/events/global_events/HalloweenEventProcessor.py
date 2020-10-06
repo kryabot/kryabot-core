@@ -34,6 +34,8 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         if halloween_event['active_from'] is not None and halloween_event['active_from'] > datetime.now():
             return False
 
+        return True
+
     async def update_channels(self, client):
         try:
             tg_channels = await client.db.get_auth_subchats()
@@ -53,10 +55,10 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             self.get_logger().exception(ex)
 
     async def pumpkin_spawner(self, client):
-        client.logger.info('Starting pumpkin_spawner')
         if not await self.is_active_event(client):
             return
 
+        client.logger.info('Starting pumpkin_spawner')
         while True:
             await asyncio.sleep(600)
 
