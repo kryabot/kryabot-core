@@ -17,8 +17,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         self.channels: HalloweenChannels = HalloweenChannels()
         self.get_logger().info("Created HalloweenEventProcessor")
 
-    async def pumpkin_spawner(self, client):
-        client.logger.info('Starting pumpkin_spawner')
+    async def is_active_event(self, client)->bool:
         global_events = await client.db.get_global_events()
 
         halloween_event = None
@@ -27,33 +26,52 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                 halloween_event = event
 
         if halloween_event is None:
-            return
+            return False
 
         if halloween_event['active_to'] is not None and halloween_event['active_to'] < datetime.now():
-            return
+            return False
 
         if halloween_event['active_from'] is not None and halloween_event['active_from'] > datetime.now():
+            return False
+
+    async def update_channels(self, client):
+        try:
+            tg_channels = await client.db.get_auth_subchats()
+            for tg_channel in tg_channels:
+                if TG_TEST_GROUP_ID != tg_channel['tg_chat_id']:
+                    continue
+
+                if tg_channel['global_events'] == 1:
+                    if not tg_channel['tg_chat_id'] in self.channels.channels:
+                        client.logger.info("Created HalloweenChannel for {}".format(tg_channel['tg_chat_id']))
+                        self.channels.new_channel(tg_channel['tg_chat_id'], tg_channel['bot_lang'])
+                else:
+                    if tg_channel['tg_chat_id'] in self.channels.channels:
+                        client.logger.info("Removing HalloweenChannel for {}".format(tg_channel['tg_chat_id']))
+                        self.channels.remove_channel(tg_channel['tg_chat_id'])
+        except Exception as ex:
+            self.get_logger().exception(ex)
+
+    async def pumpkin_spawner(self, client):
+        client.logger.info('Starting pumpkin_spawner')
+        if not await self.is_active_event(client):
             return
-
-        tg_channels = await client.db.get_auth_subchats()
-        for tg_channel in tg_channels:
-            if TG_TEST_GROUP_ID != tg_channel['tg_chat_id']:
-                continue
-
-            client.logger.info("Created HalloweenChannel for {}".format(tg_channel['tg_chat_id']))
-            self.channels.new_channel(tg_channel['tg_chat_id'], tg_channel['bot_lang'])
 
         while True:
             await asyncio.sleep(600)
 
             try:
+                if not await self.is_active_event(client):
+                    return
+
+                await self.update_channels(client)
+
                 for key in self.channels.channels.keys():
                     count = int(await client.get_group_member_count(int(key)))
                     if self.channels.channels[key].can_spawn_regular(count):
                         await self.channels.channels[key].spawn_regular(client, count)
                     elif self.channels.channels[key].can_spawn_boss(count):
                         await self.channels.channels[key].spawn_boss(client, count)
-
                     await asyncio.sleep(3)
             except Exception as ex:
                 client.logger.exception(ex)

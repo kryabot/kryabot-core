@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from typing import Dict, List
 from random import randint
 
-from telethon import utils
 from telethon.tl.types import DocumentAttributeSticker
 
 from object.Base import Base
@@ -33,6 +32,10 @@ class HalloweenChannels(Base):
     def add_for_deletion(self, channel_id: int, message_id: int):
         channel: HalloweenChannel = self.channels[channel_id]
         channel.delete_messages.append(message_id)
+
+    def remove_channel(self, channel_id: int):
+        if channel_id in self.channels:
+            self.channels.pop(channel_id)
 
 class HalloweenChannel(Base):
     def __init__(self, channel_id, lang):
@@ -65,7 +68,7 @@ class HalloweenChannel(Base):
         return pumpkin.hit(user_id)
 
     def can_spawn_boss(self, channel_size: int) -> bool:
-        if channel_size < 20:
+        if channel_size < 15:
             return False
 
         if self.has_active_pumpkin():
