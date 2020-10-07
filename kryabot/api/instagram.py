@@ -4,7 +4,7 @@ from api.core import Core
 class Instagram(Core):
     def __init__(self, cfg=None):
         super().__init__(cfg=cfg)
-        self.session_key = 'ds_user_id=2308951415&amp;sessionid=2308951415%3A3cdNkznNCKNJQz%3A25'
+        self.session_key = 'ds_user_id=2308951415&amp;sessionid=2308951415%3Af20N33AgeREZPa%3A22'
 
     async def get_story_by_id(self, instagram_user_id):
         headers = {

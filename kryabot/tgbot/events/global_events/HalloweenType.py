@@ -72,7 +72,7 @@ class HalloweenChannel(Base):
         return pumpkin.hit(user_id)
 
     def can_spawn_boss(self, channel_size: int) -> bool:
-        if channel_size < 15:
+        if channel_size < 20:
             return False
 
         if self.has_active_pumpkin():
