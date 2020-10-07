@@ -1,11 +1,14 @@
 # Docker for python bot - Kryabot
+# Same container used multiple time with different entry points
+
 FROM python:latest
 RUN python --version &&\
 	apt-get update &&\
 	apt-get install curl &&\
 	apt-get -y install vim &&\
 	apt-get -y install less &&\
-	apt-get -y install ffmpeg
+	apt-get -y install ffmpeg &&\
+	apt-get -y install libblas-dev liblapack-dev
 COPY requirements.txt .
 RUN pip install -r requirements.txt && pip install -U https://github.com/LonamiWebs/Telethon/archive/master.zip
 
@@ -22,9 +25,7 @@ COPY kryabot kryabot
 COPY scripts scripts
 RUN /bin/bash -c 'chmod +x scripts/*'
 
-# Twitch webhook
-EXPOSE 5050
-# Flask for telegram webhook
+# Webserver
 EXPOSE 5000
 
 # Start up script
