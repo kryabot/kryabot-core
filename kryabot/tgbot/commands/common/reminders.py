@@ -17,7 +17,7 @@ async def reminder_format_message(event, client, channel, is_auto):
     reminders = await client.db.getRemindersByUserId(channel['user_id'])
     if len(reminders) == 0:
         return
-    tg_user = await client.get_entity(PeerUser(event.message.from_id))
+    tg_user = await client.get_entity(PeerUser(event.message.sender_id))
 
     active_reminders = 0
     completed_reminders = 0
@@ -51,7 +51,7 @@ async def reminder_check(event, channel):
     if channel['reminder_cooldown'] is None or channel['reminder_cooldown'] == 0:
         return
 
-    sender = await event.client.db.getUserByTgChatId(event.message.from_id)
+    sender = await event.client.db.getUserByTgChatId(event.message.sender_id)
     if len(sender) == 0:
         return
 

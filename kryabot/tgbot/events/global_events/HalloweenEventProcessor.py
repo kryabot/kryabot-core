@@ -87,12 +87,12 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         if target_message is None:
             return
 
-        if target_message.from_id != event.client.me.id:
+        if target_message.sender_id != event.client.me.id:
             return
 
-        sender = await get_first(await event.client.db.getUserByTgChatId(event.message.from_id))
+        sender = await get_first(await event.client.db.getUserByTgChatId(event.message.sender_id))
         if sender is None:
-            event.client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.from_id))
+            event.client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.sender_id))
             return
 
         if HalloweenConfig.is_event_boss(target_message):
@@ -130,7 +130,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         await client.db.add_currency_to_user(HalloweenConfig.currency_key, sender['user_id'], 1)
 
         currency_data = await get_first(await client.db.get_user_currency_amount(HalloweenConfig.currency_key, sender['user_id']))
-        sender_entity = await client.get_entity(event.message.from_id)
+        sender_entity = await client.get_entity(event.message.sender_id)
         sender_label = await format_html_user_mention(sender_entity)
 
         text = client.translator.getLangTranslation(channel['bot_lang'], 'GLOBAL_HALLOWEEN_PUMPKIN_DESTROY')

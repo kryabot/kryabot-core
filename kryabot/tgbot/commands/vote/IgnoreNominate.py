@@ -23,7 +23,7 @@ class IgnoreNominate(BaseCommand):
 
         existing_vote = existing_votes[0]
 
-        target = await self.db.getUserByTgChatId(self.reply_message.from_id)
+        target = await self.db.getUserByTgChatId(self.reply_message.sender_id)
         if target is None or len(target) == 0:
             await self.reply_fail(self.get_translation("CMD_NOMINATE_NOT_VERIFIED"))
             return

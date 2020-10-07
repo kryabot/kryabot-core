@@ -59,13 +59,13 @@ class BaseCommand:
             return UserAccess.UNKNOWN
         if self.sender is None or self.sender == [] or self.sender == {}:
             return UserAccess.NOT_VERIFIED
-        if self.event.message.from_id in super_admin_list:
+        if self.event.message.sender_id in super_admin_list:
             return UserAccess.SUPER_ADMIN
         if self.sender['user_id'] == self.channel['user_id']:
             return UserAccess.CHAT_OWNER
-        if await self.is_chatsudo(self.sender['user_id'], self.event.message.from_id):
+        if await self.is_chatsudo(self.sender['user_id'], self.event.message.sender_id):
             return UserAccess.CHAT_SUDO
-        if await self.is_chatadmin(self.event.message.from_id):
+        if await self.is_chatadmin(self.event.message.sender_id):
             return UserAccess.CHAT_ADMIN
 
         # TODO: follow and sub flags (from cache, not from api!)
@@ -75,7 +75,7 @@ class BaseCommand:
     async def fetch_data(self):
         self.chat = await self.event.get_input_chat()
         self.channel = await self.get_first(await self.client.db.get_auth_subchat(self.event.message.to_id.channel_id))
-        self.sender = await self.get_first(await self.client.db.getUserByTgChatId(self.event.message.from_id))
+        self.sender = await self.get_first(await self.client.db.getUserByTgChatId(self.event.message.sender_id))
         self.admins = await self.client.get_group_admins_cache(self.chat)
         self.user_level = await self.select_user_access()
 

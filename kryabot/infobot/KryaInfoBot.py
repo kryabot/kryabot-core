@@ -75,9 +75,9 @@ async def link(event):
 
 @events.register(events.NewMessage(pattern='/unlink', func=lambda e: e.is_private))
 async def unlink(event):
-    user_record = await event.client.db.getUserByTgChatId(event.message.from_id)
+    user_record = await event.client.db.getUserByTgChatId(event.message.sender_id)
     if user_record is None or len(user_record) == 0:
-        event.client.logger.debug('Unauthorized unlink attempt from user {}'.format(event.message.from_id))
+        event.client.logger.debug('Unauthorized unlink attempt from user {}'.format(event.message.sender_id))
         return
 
     user_record = user_record[0]

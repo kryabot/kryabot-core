@@ -17,6 +17,6 @@ class Whois(BaseCommand):
         if not (await self.can_process()):
             return
 
-        data = await get_user_data(self.client, self.channel, self.reply_message.from_id, skip_bits=False)
+        data = await get_user_data(self.client, self.channel, self.reply_message.sender_id, skip_bits=False)
         text = await format_user_data(data, self.client, self.channel)
         await self.event.reply(text, link_preview=False)

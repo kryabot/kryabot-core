@@ -2,8 +2,8 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+# from sklearn.feature_extraction.text import CountVectorizer
+# from sklearn.metrics.pairwise import cosine_similarity
 from unidecode import unidecode
 
 from object.ApiHelper import ApiHelper
@@ -28,15 +28,15 @@ api = ApiHelper(redis=db.redis)
 logger = logging.getLogger('krya.spam')
 bttv_global = None
 
-def get_cosine_sim(*strs):
-    vectors = [t for t in get_vectors(*strs)]
-    return cosine_similarity(vectors)
-
-def get_vectors(*strs):
-    text = [t for t in strs]
-    vectorizer = CountVectorizer(input=text)
-    vectorizer.fit(text)
-    return vectorizer.transform(text).toarray()
+# def get_cosine_sim(*strs):
+#     vectors = [t for t in get_vectors(*strs)]
+#     return cosine_similarity(vectors)
+#
+# def get_vectors(*strs):
+#     text = [t for t in strs]
+#     vectorizer = CountVectorizer(input=text)
+#     vectorizer.fit(text)
+#     return vectorizer.transform(text).toarray()
 
 def parse_fz_emotes(response):
     if response is None:
@@ -249,11 +249,11 @@ class ChannelMessages:
         self.messages = [message for message in self.messages if not message.too_old()]
         self.detections = [detection for detection in self.detections if not detection.too_old()]
 
-    def get_result(self, first_text, second_text) -> float:
-        try:
-            return get_cosine_sim(first_text, second_text)[0][1]
-        except ValueError:
-            return 0
+    # def get_result(self, first_text, second_text) -> float:
+    #     try:
+    #         return get_cosine_sim(first_text, second_text)[0][1]
+    #     except ValueError:
+    #         return 0
 
     async def find_detection(self, message: ChannelMessage)->[Detection, None]:
         last_word = str(message.original_message.split(' ')[-1:][0])

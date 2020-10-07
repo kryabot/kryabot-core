@@ -27,7 +27,7 @@ class Nominate(BaseCommand):
             await self.reply_fail(self.get_translation('CMD_NOMINATE_NOT_ALLOWED'))
             return
 
-        target = await self.db.getUserByTgChatId(self.reply_message.from_id)
+        target = await self.db.getUserByTgChatId(self.reply_message.sender_id)
         if target is None or len(target) == 0:
             await self.reply_fail(self.get_translation("CMD_NOMINATE_NOT_VERIFIED"))
             return
@@ -36,7 +36,7 @@ class Nominate(BaseCommand):
         nominee = await self.db.getTgVoteNominee(existing_vote['tg_vote_id'], target['user_id'])
 
         try:
-            tg_participant = await self.client(GetParticipantRequest(self.channel['tg_chat_id'], self.reply_message.from_id))
+            tg_participant = await self.client(GetParticipantRequest(self.channel['tg_chat_id'], self.reply_message.sender_id))
         except Exception as ex:
             self.client.logger.error(str(ex))
             tg_participant = None

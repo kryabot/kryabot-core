@@ -65,7 +65,7 @@ class Moderation:
         if channel['max_warns'] is None or channel['max_warns'] == 0:
             return
 
-        existing_user_warnings = await self.get_user_existing_warns(channel, message.from_id)
+        existing_user_warnings = await self.get_user_existing_warns(channel, message.sender_id)
 
         warn = {}
         warn['ts'] = datetime.now()
@@ -78,7 +78,7 @@ class Moderation:
 
         # Warn or mute
         warn_count = len(existing_user_warnings)
-        user = await self.tg.get_entity(PeerUser(message.from_id))
+        user = await self.tg.get_entity(PeerUser(message.sender_id))
         user_url = await format_html_user_mention(user)
 
         if warn_count >= channel['max_warns']:
@@ -98,7 +98,7 @@ class Moderation:
                 warning_text = self.tg.translator.getLangTranslation(channel['bot_lang'], 'WARNS_ADDED_MANUAL').format(
                     user=user_url, warns=warn_count, total=channel['max_warns'])
 
-        await self.cache_set_user_warns(channel['channel_subchat_id'], message.from_id, existing_user_warnings, channel['warn_expires_in'] * 60 * 60)
+        await self.cache_set_user_warns(channel['channel_subchat_id'], message.sender_id, existing_user_warnings, channel['warn_expires_in'] * 60 * 60)
         await self.tg.send_message(channel['tg_chat_id'], warning_text)
 
     async def cache_get_user_warns(self, chat_id, user_id):

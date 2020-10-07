@@ -181,7 +181,7 @@ class HalloweenChannel(Base):
                 # If its not active anymore then post results, wait a bit and clean up
                 final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_BOSS_DIED').format(pumpkins=total, fighters=last_fighters)
                 try:
-                    await client.send_message(final_text)
+                    await client.send_message(self.channel_id, final_text)
                 except Exception as ex:
                     logger.exception(ex)
 
@@ -190,7 +190,7 @@ class HalloweenChannel(Base):
                 #     await info_message.delete()
                 # except:
                 #     pass
-                # break
+                break
 
             await asyncio.sleep(3)
 
@@ -289,7 +289,7 @@ class HalloweenConfig:
     def calc_boss_hp(size: int)->int:
         a = size / 2
         b = a / 2
-        c = randint(a, b)
+        c = randint(int(b), int(a))
         return max(int(min(c, 30)), 3)
 
     @staticmethod

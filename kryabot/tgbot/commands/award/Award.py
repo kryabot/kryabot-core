@@ -31,7 +31,7 @@ class Award(BaseCommand):
 
         for award in existing_awards:
             if keyword.lower() == award['award_key'].lower():
-                await self.db.setTgAwardForUser(award['tg_award_id'], self.reply_message.from_id, award_count)
+                await self.db.setTgAwardForUser(award['tg_award_id'], self.reply_message.sender_id, award_count)
                 await self.reply_success(self.get_translation('KB_AWARD_GIVEN').format(key=keyword, count=award_count))
                 return
 

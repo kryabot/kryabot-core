@@ -17,7 +17,7 @@ class AddBan(BaseCommand):
         if not (await self.can_process()):
             return
 
-        if await self.is_chatadmin(self.reply_message.from_id):
+        if await self.is_chatadmin(self.reply_message.sender_id):
             await self.reply_fail(self.get_translation('CMD_ADDBAN_IS_ADMIN'))
             return
 

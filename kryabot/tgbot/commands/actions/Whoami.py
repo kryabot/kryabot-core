@@ -16,12 +16,12 @@ class Whoami(BaseCommand):
         if not (await self.can_process()):
             return
 
-        if await self.db.is_cooldown_whoami(self.channel['tg_chat_id'], self.event.from_id):
+        if await self.db.is_cooldown_whoami(self.channel['tg_chat_id'], self.event.sender_id):
             return
 
-        data = await get_user_data(self.client, self.channel, self.event.from_id, skip_bits=False)
+        data = await get_user_data(self.client, self.channel, self.event.sender_id, skip_bits=False)
         if data['is_verified'] is True:
-            await self.db.set_whoami_cooldown(self.channel['tg_chat_id'], self.event.from_id)
+            await self.db.set_whoami_cooldown(self.channel['tg_chat_id'], self.event.sender_id)
 
         text = await format_user_data(data, self.client, self.channel)
         await self.event.reply(text, link_preview=False)

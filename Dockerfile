@@ -1,14 +1,28 @@
 # Docker for python bot - Kryabot
 # Same container used multiple time with different entry points
 
-FROM python:latest
+# [gfortran libblas-dev liblapack-dev] needed for scikit-learn and scipy requirements
+
+#FROM python:latest
+FROM python:alpine
 RUN python --version &&\
-	apt-get update &&\
-	apt-get install curl &&\
-	apt-get -y install vim &&\
-	apt-get -y install less &&\
-	apt-get -y install ffmpeg &&\
-	apt-get -y install libblas-dev liblapack-dev
+	pip install -U pip &&\
+	apk update &&\
+	apk add curl \
+			bash \
+			vim \
+			less \
+			ffmpeg \
+			zlib-dev \
+			jpeg-dev \
+			libffi-dev \
+			openssl-dev \
+			musl-dev \
+			make \
+			gcc \
+			g++
+	
+	
 COPY requirements.txt .
 RUN pip install -r requirements.txt && pip install -U https://github.com/LonamiWebs/Telethon/archive/master.zip
 

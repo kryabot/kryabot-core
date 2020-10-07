@@ -25,7 +25,7 @@ class StartMasskick(BaseCommand):
         settings += '\n\n<b>Should i continue?</b> Reply me with yes/no'
 
         channel_entity = await self.client.get_entity(PeerChannel(int(self.channel['tg_chat_id'])))
-        sender_id = self.event.message.from_id
+        sender_id = self.event.message.sender_id
 
         try:
             async with self.client.conversation(channel_entity) as conv:
@@ -35,7 +35,7 @@ class StartMasskick(BaseCommand):
                 resp = None
                 while answer not in ['yes', 'no']:
                     resp = await conv.get_reply(message=question)
-                    if resp.from_id != sender_id:
+                    if resp.sender_id != sender_id:
                         continue
                     answer = resp.raw_text.lower()
                 if answer == 'yes':
@@ -43,7 +43,7 @@ class StartMasskick(BaseCommand):
                     continue_answer = ''
                     while continue_answer not in ['yes', 'no']:
                         resp2 = await conv.get_reply(message=setting_question)
-                        if resp2.from_id != sender_id:
+                        if resp2.sender_id != sender_id:
                             continue
                         continue_answer = resp2.raw_text.lower()
                     if continue_answer == 'yes':

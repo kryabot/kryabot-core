@@ -16,7 +16,7 @@ class SubHistory(BaseCommand):
         if not (await self.can_process()):
             return
 
-        target = await self.db.getUserByTgChatId(self.reply_message.from_id)
+        target = await self.db.getUserByTgChatId(self.reply_message.sender_id)
         if target is None or len(target) == 0:
             await self.reply_fail(self.get_translation("CMD_SUB_HISTORY_NOT_VERIFIED"))
             return

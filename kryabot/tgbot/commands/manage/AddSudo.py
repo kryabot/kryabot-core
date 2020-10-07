@@ -17,7 +17,7 @@ class AddSudo(BaseCommand):
         if not (await self.can_process()):
             return
 
-        if not await self.is_chatadmin(self.reply_message.from_id):
+        if not await self.is_chatadmin(self.reply_message.sender_id):
             await self.reply_fail(self.get_translation('CMD_ADDSUDO_NOT_ADMIN'))
             return
 

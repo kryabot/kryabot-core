@@ -16,7 +16,7 @@ class GetWarns(BaseCommand):
         if not (await self.can_process()):
             return
 
-        warns = await self.client.moderation.get_user_existing_warns(self.channel, self.reply_message.from_id)
+        warns = await self.client.moderation.get_user_existing_warns(self.channel, self.reply_message.sender_id)
         if warns is None or len(warns) == 0:
             await self.event.reply(self.get_translation('CMD_USER_WARNS_EMPTY'))
             return

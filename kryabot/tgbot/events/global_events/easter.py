@@ -19,25 +19,25 @@ async def process_easter(event_data, tg_event, channel):
     # if not is_event_message(target_message.text):
     #     return
     #
-    # if await client.db.is_global_event_cooldown(tg_event.message.to_id.channel_id, tg_event.message.from_id, cache_cooldown_key):
+    # if await client.db.is_global_event_cooldown(tg_event.message.to_id.channel_id, tg_event.message.sender_id, cache_cooldown_key):
     #     await tg_event.message.delete()
-    #     tg_event.client.logger.debug('Skipping event because of cooldown: {} - {}'.format(tg_event.message.to_id.channel_id, tg_event.message.from_id))
+    #     tg_event.client.logger.debug('Skipping event because of cooldown: {} - {}'.format(tg_event.message.to_id.channel_id, tg_event.message.sender_id))
     #     return
     #
-    # await client.db.set_global_event_cooldown(tg_event.message.to_id.channel_id, tg_event.message.from_id, cache_cooldown_key, event_data['cd'])
+    # await client.db.set_global_event_cooldown(tg_event.message.to_id.channel_id, tg_event.message.sender_id, cache_cooldown_key, event_data['cd'])
     #
-    # sender = await get_first(await client.db.getUserByTgChatId(tg_event.message.from_id))
+    # sender = await get_first(await client.db.getUserByTgChatId(tg_event.message.sender_id))
     # if sender is None:
-    #     client.logger.debug('Skipping event because sender user record not found: {}'.format(tg_event.message.from_id))
+    #     client.logger.debug('Skipping event because sender user record not found: {}'.format(tg_event.message.sender_id))
     #     return
     #
-    # if target_message.from_id == tg_event.message.from_id:
-    #     client.logger.debug('Skipping event because sender replied to himself: {}'.format(tg_event.message.from_id))
+    # if target_message.sender_id == tg_event.message.sender_id:
+    #     client.logger.debug('Skipping event because sender replied to himself: {}'.format(tg_event.message.sender_id))
     #     return
     #
-    # target_user = await get_first(await client.db.getUserByTgChatId(target_message.from_id))
+    # target_user = await get_first(await client.db.getUserByTgChatId(target_message.sender_id))
     # if target_user is None:
-    #     client.logger.debug('Skipping event because target user record not found: {}'.format(target_message.from_id))
+    #     client.logger.debug('Skipping event because target user record not found: {}'.format(target_message.sender_id))
     #     return
     #
     # from_event_data = await get_first(await client.db.getGlobalEventUserDataByEvent(event_data['global_event_id'], sender['user_id']))
@@ -88,8 +88,8 @@ async def process_easter(event_data, tg_event, channel):
     # await client.db.setGlobalEventDataForUser(event_data['global_event_id'], target_user['user_id'], to_event_data_amount, to_event_data_val)
     #
     #
-    # sender_entity = await client.get_entity(tg_event.message.from_id)
-    # target_entity = await client.get_entity(target_message.from_id)
+    # sender_entity = await client.get_entity(tg_event.message.sender_id)
+    # target_entity = await client.get_entity(target_message.sender_id)
     #
     # sender_label = await format_html_user_mention(sender_entity)
     # target_label = await format_html_user_mention(target_entity)

@@ -24,7 +24,7 @@ async def event_private_message(event: events.NewMessage.Event):
 @events.register(events.NewMessage(func=lambda e: e.is_group or e.is_channel))
 async def event_group_message(event: events.NewMessage.Event):
     # IF for TEST only
-    # if event.message.to_id.channel_id != 1144972862 and event.from_id != owner_id:
+    # if event.message.to_id.channel_id != 1144972862 and event.sender_id != owner_id:
     #     return
     await event.mark_read()
     try:
@@ -41,7 +41,7 @@ async def event_group_message(event: events.NewMessage.Event):
 @events.register(events.MessageEdited(func=lambda e: e.is_group or e.is_channel))
 async def event_group_message_edit(event: events.MessageEdited.Event):
     # IF for TEST only
-    # if event.message.to_id.channel_id != 1144972862 and event.from_id != owner_id:
+    # if event.message.to_id.channel_id != 1144972862 and event.sender_id != owner_id:
     #     return
     await event.mark_read()
     try:
@@ -53,7 +53,7 @@ async def event_group_message_edit(event: events.MessageEdited.Event):
 
 @events.register(events.NewMessage(pattern='^/', func=lambda e: e.is_group or e.is_channel))
 async def event_group_message_command(event: events.NewMessage.Event):
-    # if event.message.to_id.channel_id != 1144972862 and event.from_id != owner_id:
+    # if event.message.to_id.channel_id != 1144972862 and event.sender_id != owner_id:
     #     return
     await event.mark_read()
     try:
@@ -91,11 +91,11 @@ async def event_chat_action(event: events.ChatAction.Event):
     elif event.new_photo is True and event.photo is not None:
         await process_event_new_photo(event)
     elif event.user_joined is True:
-        await user_join_check(event.client, channel, event.action_message.from_id, event.action_message.id)
+        await user_join_check(event.client, channel, event.action_message.sender_id, event.action_message.id)
     elif event.user_added is True:
         await user_join_check(event.client, channel, event.action_message.action.users[0], event.action_message.id)
     elif event.user_left is True:
-        await user_left(event.client, channel, event.action_message.from_id)
+        await user_left(event.client, channel, event.action_message.sender_id)
     elif event.user_kicked or event.created or event.unpin:
         # Ignored chat actions
         pass

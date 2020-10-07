@@ -36,5 +36,5 @@ class SetMyInst(BaseCommand):
             return
 
         await self.db.setUserSocInst(self.sender['user_id'], new_text)
-        await self.db.getUserByTgChatId(self.event.message.from_id, skip_cache=True)
+        await self.db.getUserByTgChatId(self.event.message.sender_id, skip_cache=True)
         await self.reply_success('OK!')

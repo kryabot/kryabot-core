@@ -113,7 +113,7 @@ class AuthBot(TelegramClient):
 
         self.logger.info('Received code: ' + params['code'])
         # Check if tg chat already linked to any twitch account
-        chatCheck = await self.db.getResponseByChatId(event.message.from_id)
+        chatCheck = await self.db.getResponseByChatId(event.message.sender_id)
         if len(chatCheck) == 0:
             # Check if request with this code exists. What to do if 1+ found?
             request = await self.db.selectExisingActiveRequestsByCode(params['code'])
@@ -125,11 +125,11 @@ class AuthBot(TelegramClient):
             # Check if response does not exists yet
             response = await self.db.getResponseByRequest(request[0]['request_id'])
             if len(response) == 0:
-                user_entity = await self.get_entity(event.message.from_id)
-                await self.db.createResponseRecord(request[0]['request_id'], str(event.message.from_id),
+                user_entity = await self.get_entity(event.message.sender_id)
+                await self.db.createResponseRecord(request[0]['request_id'], str(event.message.sender_id),
                                               str(user_entity.first_name),
                                               str(user_entity.last_name), str(user_entity.username))
-            chatCheck = await self.db.getResponseByChatId(event.message.from_id)
+            chatCheck = await self.db.getResponseByChatId(event.message.sender_id)
 
         # Technical problems, records was not created.
         if len(chatCheck) == 0:

@@ -23,7 +23,7 @@ class OnRefund(BaseCommand):
         wait_answer = -1
 
         channel_entity = await self.client.get_entity(PeerChannel(int(self.channel['tg_chat_id'])))
-        sender_id = self.event.message.from_id
+        sender_id = self.event.message.sender_id
 
         main_text = self.get_translation('CMD_ON_REFUND_OPTIONS').format(onref=self.channel['on_refund'])
 
@@ -34,7 +34,7 @@ class OnRefund(BaseCommand):
                 answer = wait_answer
                 while answer > max_value or answer < min_value:
                     resp = await conv.get_reply(message=question)
-                    if resp.from_id != sender_id:
+                    if resp.sender_id != sender_id:
                         continue
                     try:
                         answer = int(resp.raw_text)

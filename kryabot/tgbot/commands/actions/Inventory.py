@@ -17,10 +17,10 @@ class Inventory(BaseCommand):
         if not (await self.can_process()):
             return
 
-        if await self.db.is_cooldown_inventory(self.channel['tg_chat_id'], self.event.from_id):
+        if await self.db.is_cooldown_inventory(self.channel['tg_chat_id'], self.event.sender_id):
             return
 
-        await self.db.set_inventory_cooldown(self.channel['tg_chat_id'], self.event.from_id)
+        await self.db.set_inventory_cooldown(self.channel['tg_chat_id'], self.event.sender_id)
 
         datas = await self.db.getUserAllCurrency(self.sender['user_id'])
         if datas is None or not datas:

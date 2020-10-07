@@ -25,7 +25,7 @@ class AddVote(BaseCommand):
 
         if self.event.message.is_reply:
             message = await self.event.message.get_reply_message()
-            target = await self.db.getUserByTgChatId(message.from_id)
+            target = await self.db.getUserByTgChatId(message.sender_id)
             if target is None or len(target) == 0:
                 await self.reply_fail(self.get_translation('CMD_ADD_VOTE_NOT_VERIFIED'))
                 return
