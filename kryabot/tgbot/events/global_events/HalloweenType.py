@@ -34,6 +34,10 @@ class HalloweenChannels(Base):
         if channel_id in self.channels:
             self.channels.pop(channel_id)
 
+    def remove_pumpkin(self, channel_id: int, message_id: int):
+        channel: HalloweenChannel = self.channels[channel_id]
+        channel.delete(message_id)
+
 
 class HalloweenChannel(Base):
     def __init__(self, channel_id, lang):
@@ -109,6 +113,9 @@ class HalloweenChannel(Base):
     def save(self, msg_id: int, boss=False, hp=1, test: bool=False):
         self.pumpkins[int(msg_id)] = Pumpkin(msg_id, boss=boss, hp=hp, is_test=test)
 
+    def delete(self, msg_id: int):
+        self.pumpkins[int(msg_id)] = None
+
     async def spawn_regular(self, client, size: int, test: bool=False):
         self.last_regular = datetime.utcnow()
         msg = await client.send_message(self.channel_id, HalloweenConfig.pumpkin_message)
@@ -140,8 +147,21 @@ class HalloweenChannel(Base):
         default_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_BOSS_INFO')
         last_text = ""
         info_message = None
+        started_at = datetime.utcnow()
 
         while True:
+            if started_at + timedelta(minutes=15) < datetime.utcnow():
+                try:
+                    if info_message is not None:
+                        self.delete_messages.append(info_message.id)
+                    self.delete_messages.append(boss_message.id)
+                    self.delete(boss_message.id)
+                    logger.info("Expired boss. Deleting messages: {}".format(self.delete_messages))
+                    result = await client.delete_messages(entity=self.channel_id, message_ids=self.delete_messages)
+                except Exception as ex:
+                    logger.exception(ex)
+                break
+
             await asyncio.sleep(1)
             last_hp = self.get_boss_hp(boss_message.id)
             full_hp = self.get_boss_max_hp(boss_message.id)
