@@ -25,7 +25,7 @@ class InstagramListener(Listener):
     async def start(self):
         await super().start()
         await self.login()
-        self.period = 300
+        self.period = 420
 
     @Listener.repeatable
     async def listen(self):

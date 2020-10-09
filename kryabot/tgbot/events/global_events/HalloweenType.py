@@ -6,8 +6,9 @@ from typing import Dict, List
 from random import randint
 
 from telethon.tl.types import DocumentAttributeSticker
-
+from utils import redis_key
 from object.Base import Base
+from utils.array import get_first
 
 logger: logging = logging.getLogger('krya.tg')
 
@@ -47,6 +48,9 @@ class HalloweenChannel(Base):
         self.last_regular: datetime = datetime.utcnow()
         self.last_boss: datetime = datetime.utcnow()
         self.delete_messages: List[int] = []
+        self.client = None
+        self.next_boss: datetime = None
+        self.channel_size: int = 1
 
     def is_test(self, msg_id: int)->bool:
         if not int(msg_id) in self.pumpkins:
@@ -75,7 +79,15 @@ class HalloweenChannel(Base):
         pumpkin: Pumpkin = self.pumpkins[msg_id]
         return pumpkin.hit(user_id)
 
+    def calc_next_boss_spawn(self,):
+        ratio = HalloweenConfig.calc(self.channel_size)
+        min_time = min(int(ratio), 60)
+        max_time = max(int(ratio), 180)
+        delay = randint(min_time, max_time)
+        self.next_boss = datetime.utcnow() + timedelta(minutes=delay)
+
     def can_spawn_boss(self, channel_size: int) -> bool:
+        self.channel_size = channel_size
         if channel_size < 20:
             return False
 
@@ -83,18 +95,13 @@ class HalloweenChannel(Base):
             logger.info("Skipping spawn of boss in {} because still have active".format(self.channel_id))
             return False
 
-        ratio = HalloweenConfig.calc(channel_size)
-        min_time = min(int(ratio), 60)
-        max_time = max(int(ratio), 180)
-        logger.info('Result min: {} max: {} for size {}'.format(min_time, max_time, channel_size))
+        if self.next_boss is None:
+            self.calc_next_boss_spawn()
 
-        delay = randint(min_time, max_time)
-        if self.last_boss + timedelta(minutes=delay) < datetime.utcnow():
-            return True
-
-        return False
+        return self.next_boss < datetime.utcnow()
 
     def can_spawn_regular(self, channel_size: int)->bool:
+        self.channel_size = channel_size
         if self.has_active_pumpkin():
             logger.info("Skipping spawn of regular in {} because still have active".format(self.channel_id))
             return False
@@ -102,8 +109,6 @@ class HalloweenChannel(Base):
         ratio = HalloweenConfig.calc(channel_size)
         min_time = max(int(ratio / 5), 10)
         max_time = max(int(ratio / 4), 30)
-        logger.info('Result min: {} max: {} for size {}'.format(min_time, max_time, channel_size))
-
         delay = randint(min_time, max_time)
         if self.last_regular + timedelta(minutes=delay) < datetime.utcnow():
             return True
@@ -117,12 +122,14 @@ class HalloweenChannel(Base):
         self.pumpkins[int(msg_id)] = None
 
     async def spawn_regular(self, client, size: int, test: bool=False):
+        self.client = client
         self.last_regular = datetime.utcnow()
         msg = await client.send_message(self.channel_id, HalloweenConfig.pumpkin_message)
         client.logger.info("Spawned regular pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
         self.save(msg.id, test=test)
 
     async def spawn_boss(self, client, size: int, test: bool=False):
+        self.client = client
         self.last_boss = datetime.utcnow()
         msg = await self.send_halloween_sticker(client, self.channel_id, HalloweenConfig.pumpkin_boss)
         client.logger.info("Spawned boss pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
@@ -144,6 +151,7 @@ class HalloweenChannel(Base):
         return self.pumpkins[msg_id].damagers
 
     async def pumpkin_boss_info_updater(self, client, boss_message):
+        self.client = client
         default_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_BOSS_INFO')
         last_text = ""
         info_message = None
@@ -188,6 +196,7 @@ class HalloweenChannel(Base):
                 except Exception as ex:
                     logger.exception(ex)
 
+                self.calc_next_boss_spawn()
                 self.delete_messages = []
                 total = 0
                 attackers = self.get_attackers(boss_message.id)
@@ -197,6 +206,7 @@ class HalloweenChannel(Base):
                         count = min(attackers[user_id], 3)
                         total += count
                         await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, count)
+                        client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
 
                 # If its not active anymore then post results, wait a bit and clean up
                 final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_BOSS_DIED').format(pumpkins=total, fighters=last_fighters)
@@ -239,6 +249,26 @@ class HalloweenChannel(Base):
             unique_list.append(user)
 
         return len(unique_list)
+
+    async def publish_pumpkin_amount_update(self, user_id: int):
+        if not self.client:
+            return
+
+        currency_data = await get_first(await self.client.db.get_user_currency_amount(HalloweenConfig.currency_key, user_id))
+        if currency_data is None:
+            return
+
+        user_data = await get_first(await self.client.db.getUserById(user_id))
+        if user_data is None:
+            return
+
+        body = {
+            'name': user_data['name'],
+            'dname': user_data['dname'],
+            'amount': int(currency_data['amount'])
+        }
+
+        await self.client.db.redis.publish_event(redis_key.get_halloween_update_topic(), body)
 
 
 class Pumpkin(Base):

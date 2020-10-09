@@ -164,3 +164,7 @@ def get_general_ping(system: str):
 
 def get_general_startup(system: str):
     return 'general.startup.{}'.format(system)
+
+
+def get_halloween_update_topic():
+    return 'globalevent.halloween.update'

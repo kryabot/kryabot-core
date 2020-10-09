@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+from random import randint
 
 from tgbot.events.global_events.GlobalEventProcessor import GlobalEventProcessor
 from tgbot.events.global_events.HalloweenType import HalloweenChannels, HalloweenConfig
@@ -58,7 +59,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
         client.logger.info('Starting pumpkin_spawner')
         while True:
-            await asyncio.sleep(600)
+            await asyncio.sleep(60)
 
             try:
                 if not await self.is_active_event(client):
@@ -70,9 +71,10 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                     count = int(await client.get_group_member_count(int(key)))
                     if self.channels.channels[key].can_spawn_regular(count):
                         await self.channels.channels[key].spawn_regular(client, count)
+                        await asyncio.sleep(randint(2, 15))
                     elif self.channels.channels[key].can_spawn_boss(count):
                         await self.channels.channels[key].spawn_boss(client, count)
-                    await asyncio.sleep(3)
+                        await asyncio.sleep(randint(2, 15))
             except Exception as ex:
                 client.logger.exception(ex)
 
@@ -133,19 +135,18 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         sender_entity = await client.get_entity(event.message.sender_id)
         sender_label = await format_html_user_mention(sender_entity)
 
+
         text = client.translator.getLangTranslation(channel['bot_lang'], 'GLOBAL_HALLOWEEN_PUMPKIN_DESTROY')
         text = text.format(user=sender_label, total=int(currency_data['amount']))
         text += ' 👻'
 
-        info_message = await event.reply(text)
-
         try:
+            await event.reply(text)
             await event.delete()
         except Exception as ex:
             self.get_logger().exception(ex)
 
-        # await asyncio.sleep(60)
-        # await info_message.delete()
+        client.loop.create_task(self.channels.channels[event.message.to_id.channel_id].publish_pumpkin_amount_update(sender['user_id']))
 
     async def process_boss(self, event_data, event, channel, target_message, sender):
         try:
