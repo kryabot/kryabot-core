@@ -225,6 +225,9 @@ class Twitch(Core):
 
         return await self.make_get_request(url, headers=headers)
 
+    async def get_void_info(self, void_id: int):
+        pass
+
     async def get_channel_chatters(self, channel_name: str, skip_cache: bool = False):
         cache_key = redis_key.get_chatters(channel_name)
         data = None

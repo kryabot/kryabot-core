@@ -85,6 +85,8 @@ command_list.append(GlobalUserReport)
 command_list.append(SpeedTest)
 command_list.append(DLCoub)
 command_list.append(SpawnBoss)
+command_list.append(SpawnBox)
+command_list.append(SpawnLove)
 
 
 async def build(command_name, event, parsed):

@@ -43,14 +43,16 @@ class Listener:
         """
         pass
 
-    async def sleep(self)->None:
+    async def sleep(self, sleep_time: int=None)->None:
         """
         Little wrapper for asyncio sleep. Used to sleep between `listen()` method calls
 
         :return:
         """
-        #self.logger.debug('Sleeping for {} seconds'.format(self.period))
-        await asyncio.sleep(self.period)
+        if sleep_time is None:
+            sleep_time = self.period
+
+        await asyncio.sleep(sleep_time)
 
     async def on_update(self, data):
         if data['topic'] != 'all' and data['topic'] != self.update_topic:

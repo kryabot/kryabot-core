@@ -21,21 +21,20 @@ class InstagramListener(Listener):
             self.file_dir = ''
 
         self.instagram_profile_cache = {}
+        self.session_token = ''
 
     async def start(self):
         await super().start()
         await self.login()
+        await self.update_session_token()
         self.period = 420
 
     @Listener.repeatable
     async def listen(self):
         self.logger.debug('Checking instagram data')
 
-        #self.login()
         self.listen_posts()
         await self.listen_stories()
-        #self.instagram.close()
-        #os.remove(self.file_dir + 'instaloader-session-' + self.cfg.getConfig()['INSTAGRAM']['login'])
 
     def recreate_session_from_firefox(self):
         SESSION_FILE = self.file_dir + "cookies.sqlite"
@@ -93,9 +92,9 @@ class InstagramListener(Listener):
         self.logger.debug('Checking instagram stories')
 
         for profile in self.profiles:
+            await self.sleep(5)
             try:
-                instprofile = self.get_cached_profile(profile.instagram_name)
-                data = await self.manager.api.instagram.get_story_by_id(instprofile.userid)
+                data = await self.manager.api.instagram.get_story_by_id(self.session_token, profile.instagram_id)
 
                 if data is not None and 'reel' in data and data['reel'] is not None and 'items' in data['reel']:
                     new_items = []
@@ -113,7 +112,9 @@ class InstagramListener(Listener):
                         self.loop.create_task(self.manager.event(event))
             except Exception as ex:
                 await self.manager.on_exception(ex, 'Instagram story check for {}'.format(profile.instagram_name))
-
+                await self.update_session_token()
+                if "Bad Request" in str(ex):
+                    self.sleep(60)
 
     async def update_data(self, start: bool = False)->None:
         self.logger.info('Updating instagram listener data')
@@ -136,3 +137,10 @@ class InstagramListener(Listener):
         profile = self.instagram.check_profile_id(instagram_name)
         self.instagram_profile_cache[instagram_name] = profile
         return profile
+
+    async def update_session_token(self):
+        setting = await self.db.get_setting('instagram_token')
+        if setting is None or len(setting) == 0:
+            raise Exception('Failed to find instagram_token setting')
+
+        self.session_token = setting[0]['setting_value']

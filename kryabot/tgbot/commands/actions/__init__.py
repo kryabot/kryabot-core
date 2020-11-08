@@ -22,3 +22,5 @@ from tgbot.commands.actions.SpeedTest import SpeedTest
 from tgbot.commands.actions.DLCoub import DLCoub
 from tgbot.commands.actions.Inventory import Inventory
 from tgbot.commands.actions.SpawnBoss import SpawnBoss
+from tgbot.commands.actions.SpawnBox import SpawnBox
+from tgbot.commands.actions.SpawnLove import SpawnLove

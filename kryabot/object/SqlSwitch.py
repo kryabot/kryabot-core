@@ -33,6 +33,7 @@ async def getSql(sqlType):
         'add_response': 'INSERT INTO response (request_id, tg_id, tg_name, tg_second_name, tg_tag) VALUES (%s, %s, %s, %s, %s)',
         'add_request_link': 'INSERT INTO request_link (channel_id, user_id, link) VALUES (%s, %s, %s)',
         'get_settings': 'SELECT setting_key, setting_value FROM setting WHERE type = "BOT"',
+        'get_setting': 'SELECT setting_key, setting_value FROM setting WHERE type = "BOT" AND setting_key=%s',
         'save_bot_refresh_token': 'UPDATE auth SET auth.token = %s, auth.expires_at = CURRENT_TIMESTAMP + interval %s second, auth.refresh_token = %s where auth.type = "BOT" and auth.user_id = %s',
         'get_user_by_tg_id': 'select user.user_id, user.name, user.dname, user.tw_id, user.is_admin, user.supporter, user.soc_vk, user.soc_inst, user.soc_ut, user.allow_soc from user where user_id = (select request.user_id from request where request.request_id = (select response.request_id from response where response.tg_id = %s))',
         'save_chat_info_by_hash': 'UPDATE channel_subchat SET channel_subchat.tg_chat_id = %s, channel_subchat.tg_chat_name = %s WHERE channel_subchat.join_link like %s',

@@ -3,7 +3,7 @@ from datetime import datetime
 from random import randint
 
 from tgbot.events.global_events.GlobalEventProcessor import GlobalEventProcessor
-from tgbot.events.global_events.HalloweenType import HalloweenChannels, HalloweenConfig
+from tgbot.events.global_events.halloween.HalloweenType import HalloweenChannels, HalloweenConfig
 from utils.array import get_first
 from utils.formatting import format_html_user_mention
 
@@ -72,17 +72,20 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                     if self.channels.channels[key].can_spawn_regular(count):
                         await self.channels.channels[key].spawn_regular(client, count)
                         await asyncio.sleep(randint(2, 15))
+                    elif self.channels.channels[key].can_spawn_love(count):
+                        await self.channels.channels[key].spawn_love_pumpkin(client, count)
+                        await asyncio.sleep(randint(2, 15))
                     elif self.channels.channels[key].can_spawn_boss(count):
                         await self.channels.channels[key].spawn_boss(client, count)
+                        await asyncio.sleep(randint(2, 15))
+                    elif self.channels.channels[key].can_spawn_box(count):
+                        await self.channels.channels[key].spawn_box(client, count)
                         await asyncio.sleep(randint(2, 15))
             except Exception as ex:
                 client.logger.exception(ex)
 
     async def process(self, event_data, event, channel) -> None:
         if not event.message.is_reply:
-            return
-
-        if not HalloweenConfig.is_event_reply(event.message):
             return
 
         target_message = await event.message.get_reply_message()
@@ -97,14 +100,20 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             event.client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.sender_id))
             return
 
-        if HalloweenConfig.is_event_boss(target_message):
+        if HalloweenConfig.is_event_reply(event.message) and HalloweenConfig.is_event_boss(target_message):
             await self.process_boss(event_data, event, channel, target_message, sender)
-        elif HalloweenConfig.is_event_regular(target_message):
+        elif HalloweenConfig.is_event_box_reply(event.message) and HalloweenConfig.is_event_box(target_message):
+            await self.process_box(event_data, event, channel, target_message, sender)
+        elif HalloweenConfig.is_event_reply(event.message) and HalloweenConfig.is_event_regular(target_message):
             await self.process_regular(event_data, event, channel, target_message, sender)
+        elif HalloweenConfig.is_event_love_reply(event.message) and HalloweenConfig.is_event_love(target_message):
+            await self.process_love(event_data, event, channel, target_message, sender)
         else:
+            event.client.logger.info('Unknown event from message {} to message {} in channel {}'.format(event.message.id, target_message.id, channel))
             return
 
     async def process_regular(self, event_data, event, channel, target_message, sender):
+        event.client.logger.debug('routed to process_regular')
         client = event.client
 
         try:
@@ -135,7 +144,6 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         sender_entity = await client.get_entity(event.message.sender_id)
         sender_label = await format_html_user_mention(sender_entity)
 
-
         text = client.translator.getLangTranslation(channel['bot_lang'], 'GLOBAL_HALLOWEEN_PUMPKIN_DESTROY')
         text = text.format(user=sender_label, total=int(currency_data['amount']))
         text += ' 👻'
@@ -149,17 +157,8 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         client.loop.create_task(self.channels.channels[event.message.to_id.channel_id].publish_pumpkin_amount_update(sender['user_id']))
 
     async def process_boss(self, event_data, event, channel, target_message, sender):
-        try:
-            if not self.channels.is_active(event.message.to_id.channel_id, target_message.id):
-                try:
-                    await event.delete()
-                except:
-                    pass
-
-                event.client.logger.info('Skipping because message ID {} in channel {} is not active!'.format(target_message.id, event.message.to_id.channel_id))
-                return
-        except:
-            pass
+        if not await self.is_active(event, target_message):
+            return
 
         try:
             self.channels.add_for_deletion(event.message.to_id.channel_id, event.message.id)
@@ -168,8 +167,49 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         except Exception as ex:
             self.get_logger().exception(ex)
 
-        # try:
-        #     await event.delete()
-        # except Exception as ex:
-        #     self.get_logger().exception(ex)
+    async def process_box(self, event_data, event, channel, target_message, sender):
+        event.client.logger.debug('routed to process_box')
+        if not await self.is_active(event, target_message):
+            return
 
+        try:
+            if await event.client.db.is_cooldown_helloween_chestbox(sender['user_id']):
+                try:
+                    await event.delete()
+                except:
+                    pass
+                return
+
+            await event.client.db.set_helloween_chestbox_cooldown(sender['user_id'])
+            self.channels.add_for_deletion(event.message.to_id.channel_id, event.message.id)
+            if self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):
+                await target_message.delete()
+        except Exception as ex:
+            self.get_logger().exception(ex)
+
+    async def process_love(self, event_data, event, channel, target_message, sender):
+        event.client.logger.info('routed to process_love')
+        if not await self.is_active(event, target_message):
+            return
+
+        try:
+            self.channels.add_for_deletion(event.message.to_id.channel_id, event.message.id)
+            if self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):
+                await target_message.delete()
+        except Exception as ex:
+            self.get_logger().exception(ex)
+
+    async def is_active(self, event, message)->bool:
+        try:
+            if not self.channels.is_active(event.message.to_id.channel_id, message.id):
+                try:
+                    await event.delete()
+                except:
+                    pass
+
+                event.client.logger.info('Skipping because message ID {} in channel {} is not active!'.format(message.id, event.message.to_id.channel_id))
+                return False
+        except:
+            pass
+
+        return True

@@ -72,6 +72,10 @@ def get_tg_cd_inventory(tg_chat_id, tg_user_id):
     return '{}cd.inventory:{}:{}'.format(tg_prefix, tg_chat_id, tg_user_id)
 
 
+def get_tg_cd_halloween_chestbox( tg_user_id):
+    return '{}cd.halloween.chestbox:{}'.format(tg_prefix, tg_user_id)
+
+
 def get_stats_tg_msg(tg_chat_id, n=None):
     if n is None:
         n = datetime.now()

@@ -296,7 +296,7 @@ class TwitchHandler(Base):
     async def sync_event(self, msg):
         self.logger.info('Received sync event: {}'.format(msg))
 
-        channel = ChannelCache.get_by_channel_id(msg['user_id'])
+        channel = ChannelCache.get_by_kb_user_id(msg['user_id'])
         if channel is None:
             self.logger.info('Skipping sync because did not find channel by user id {}'.format(msg['user_id']))
             return

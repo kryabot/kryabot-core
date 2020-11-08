@@ -223,6 +223,9 @@ class Database:
     async def get_settings(self):
         return await self.query('get_settings', [])
 
+    async def get_setting(self, setting_key: str):
+        return await self.query('get_setting', [setting_key])
+
     async def saveBotAuth(self, kb_user_id, token, refresh_token, expires_in):
         return await self.query('save_bot_refresh_token', [token, expires_in, refresh_token, kb_user_id])
 
@@ -801,6 +804,18 @@ class Database:
     async def set_inventory_cooldown(self, tg_chat_id, tg_user_id, seconds=60):
         cache_key = redis_key.get_tg_cd_inventory(tg_chat_id, tg_user_id)
         await self.redis.set_value_by_key(key=cache_key, val=tg_chat_id, expire=seconds)
+
+    async def is_cooldown_helloween_chestbox(self, tg_user_id) -> bool:
+        cache_key = redis_key.get_tg_cd_halloween_chestbox(tg_user_id)
+        exists = await self.redis.key_exists(cache_key)
+        if exists is None:
+            return False
+
+        return bool(exists)
+
+    async def set_helloween_chestbox_cooldown(self, tg_user_id, seconds=15):
+        cache_key = redis_key.get_tg_cd_halloween_chestbox(tg_user_id)
+        await self.redis.set_value_by_key(key=cache_key, val=tg_user_id, expire=seconds)
 
     async def update_tg_stats_message(self, tg_chat_id):
         key = redis_key.get_stats_tg_msg(tg_chat_id)

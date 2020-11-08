@@ -7,6 +7,7 @@ from infobot.Profile import Profile
 class InstagramProfile(Profile):
     def __init__(self, raw, ts):
         self.instagram_name: str = None
+        self.instagram_id: int = None
         self.check_stories: bool = None
         self.check_posts: bool = None
         self.last_story_id = None
@@ -26,6 +27,7 @@ class InstagramProfile(Profile):
     def update(self, raw, ts):
         super().update(raw, ts)
         self.instagram_name = str(raw['instagram_name'])
+        self.instagram_id = int(raw['instagram_id'])
         self.check_stories = bool(raw['stories'] or 0)
         self.check_posts = bool(raw['posts'] or 0)
 

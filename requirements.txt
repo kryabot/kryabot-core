@@ -4,7 +4,7 @@ aiomysql
 python-dateutil
 pympler
 flask
-Telethon==1.16.4
+Telethon==1.17.5
 redis
 aioredis
 hiredis

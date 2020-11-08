@@ -1,3 +1,5 @@
+from telethon.tl.types import MessageMediaUnsupported
+
 from tgbot.commands.UserAccess import UserAccess
 from tgbot.commands.base import BaseCommand
 
@@ -17,6 +19,10 @@ class Banmedia(BaseCommand):
             return
 
         if self.reply_message.media is None:
+            return
+
+        if isinstance(self.reply_message.media, MessageMediaUnsupported):
+            await self.reply_fail(self.get_translation('CMD_BANMEDIA_UNSUPPORTED'))
             return
 
         try:

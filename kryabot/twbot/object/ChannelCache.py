@@ -38,6 +38,12 @@ class ChannelCache(Base):
                 return ChannelCache.get(channel_key)
 
     @staticmethod
+    def get_by_kb_user_id(kb_user_id: int)->Channel:
+        for channel_key in ChannelCache.get_all().keys():
+            if ChannelCache.get(channel_key).user_id == kb_user_id:
+                return ChannelCache.get(channel_key)
+
+    @staticmethod
     def add(channel: Channel):
         ChannelCache.get_instance().channels[str(channel.channel_name).lower()] = channel
 
