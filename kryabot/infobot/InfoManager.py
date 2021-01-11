@@ -113,3 +113,6 @@ class InfoManager:
 
         if tg_targets:
             self.loop.create_task(self.tg_bot.info_event(tg_targets, event))
+
+    async def publish_stream_video(self, event, stream):
+        await self.tg_bot.publish_stream_video(event, stream)

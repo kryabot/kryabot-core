@@ -545,6 +545,8 @@ class Database:
         await self.query('update_channel_global_events', [0, tg_chat_id])
         await self.get_auth_subchat(tg_chat_id, skip_cache=True)
 
+    async def getAllTgMembers(self):
+        return await self.query('get_all_tg_members', [])
 
     async def getChannelPointActions(self, channel_id=None):
         if channel_id is not None:
@@ -553,10 +555,27 @@ class Database:
             return await self.query('get_point_actions', [])
 
     async def getChannelCommands(self, channel_id=None):
+        def merge(cmds, options):
+            for cmd in cmds:
+                if 'options' not in cmd:
+                    cmd['options'] = []
+                for option in options:
+                    if option['channel_command_id'] == cmd['channel_command_id']:
+                        cmd['options'].append(option)
+
+            return cmds
+
         if channel_id is None:
-            return await self.query('find_channel_commands', [])
+            cmds, options = await asyncio.gather(*[self.query('find_channel_commands', []), self.query('find_channel_command_options', [])], return_exceptions=True)
         else:
-            return await self.query('find_channel_commands_by_id', [channel_id])
+            cmds, options = await asyncio.gather(*[self.query('find_channel_commands_by_id', [channel_id]), self.query('find_channel_command_options_by_id', [channel_id])], return_exceptions=True)
+
+        if isinstance(cmds, Exception):
+            raise cmds
+        if isinstance(options, Exception):
+            raise options
+
+        return merge(cmds, options)
 
     async def getChannelSongs(self, channel_id=None):
         if channel_id is None:
@@ -639,11 +658,17 @@ class Database:
     async def getUserAllCurrency(self, user_id):
         return await self.query('get_user_all_currencies', [user_id])
 
+    async def getTgChatCurrency(self, channel_id):
+        return await self.query('get_channel_currency', [channel_id])
+
     async def get_list_values_full(self, list_name):
         return await self.query('get_active_list_values', [list_name])
 
     async def add_currency_to_user(self, currency_key: str, user_id: int, amount: int):
         return await self.query('add_currency_to_user', [currency_key, user_id, amount])
+
+    async def add_currency_to_channel(self, currency_key: str, channel_id: int, amount: int):
+        return await self.query('add_currency_to_channel', [currency_key, channel_id, amount])
 
     async def get_user_currency_amount(self, currency_key: str, user_id: int):
         return await self.query('get_user_currency', [currency_key, user_id])
@@ -896,3 +921,9 @@ class Database:
 
     async def save_telegram_group_size_to_cache(self, tg_channel_id: int, size: int):
         return await self.redis.set_value_by_key(redis_key.get_telegram_group_size(tg_channel_id), int(size), expire=redis_key.ttl_day)
+
+    async def get_winter_generator_details(self):
+        return await self.redis.get_parsed_value_by_key(key='tg.winter.event')
+
+    async def set_winter_generator_details(self, data):
+        await self.redis.set_parsed_value_by_key(key='tg.winter.event', val=data, expire=redis_key.ttl_week)

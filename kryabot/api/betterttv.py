@@ -19,3 +19,7 @@ class Betterttv(Core):
             if ex.status == 404:
                 return None
             raise ex
+
+    async def search(self, query, offset: int=0, limit: int=50):
+        url = 'https://api.betterttv.net/3/emotes/shared/search?query={}&offset={}&limit={}'.format(query, offset, limit)
+        return await self.make_get_request(url=url)

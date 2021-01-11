@@ -1,3 +1,6 @@
+scikit-learn
+scipy
+matplotlib
 aiohttp
 websockets
 aiomysql
@@ -18,3 +21,4 @@ hachoir
 sanic
 instaloader
 Unidecode
+streamlink

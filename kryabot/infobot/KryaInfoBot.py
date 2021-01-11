@@ -8,7 +8,7 @@ from telethon.extensions import html
 from telethon.tl.functions.channels import GetParticipantRequest, GetFullChannelRequest
 from telethon.tl.functions.messages import GetFullChatRequest
 from telethon.tl.types import UpdateChannel, UpdateNewChannelMessage, MessageService, MessageActionChatDeleteUser, \
-    MessageActionChatAddUser, UpdateNewMessage, UpdateChatParticipants, InputMediaPhotoExternal
+    MessageActionChatAddUser, UpdateNewMessage, UpdateChatParticipants, InputMediaPhotoExternal, DocumentAttributeVideo
 
 from telethon import TelegramClient, events, Button
 
@@ -21,6 +21,7 @@ from object.Pinger import Pinger
 from object.System import System
 from object.Translator import Translator
 from tgbot import constants
+from tgbot.FastTelethon import upload_file
 
 
 @events.register(events.NewMessage(pattern='/ping'))
@@ -356,3 +357,13 @@ class KryaInfoBot(TelegramClient):
                 await self.report_to_monitoring('ChannelPrivateError. Target ID: {}, tg ID: {}'.format(target.id, target.target_id), True)
             except Exception as ex:
                 await self.exception_reporter(ex, 'boosty_post_event')
+
+    async def publish_stream_video(self, event, stream):
+        self.logger.info("Receive stream video for publishing: {}".format(stream))
+
+        binary_file = open(stream['converted'], 'rb')
+        uploaded_file = await upload_file(self, file=binary_file, file_name=stream['converted'])
+        await self.upload_file()
+        await self.send_file(1255287898, file=uploaded_file, attributes=[DocumentAttributeVideo(w=stream['width'], h=stream['height'], duration=30, supports_streaming=True)], supports_streaming=True)
+
+        os.remove(stream['converted'])

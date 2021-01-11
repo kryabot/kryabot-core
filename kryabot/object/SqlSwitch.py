@@ -16,7 +16,9 @@ async def getSql(sqlType):
         'find_channel_notices': 'SELECT * FROM channel_notice',
         'find_auto_join': 'SELECT c.channel_id, c.channel_name, c.channel_name, c.command_symbol, c.default_notification, c.auto_join, c.trigger_period, c.scan_messages, c.on_spam_detect, c.priority, u.user_id, u.name, u.dname, u.tw_id, u.is_admin FROM channel c JOIN user u on c.user_id = u.user_id WHERE auto_join = TRUE ORDER BY c.priority DESC',
         'find_channel_commands': 'SELECT * FROM channel_command ORDER BY level DESC',
+        'find_channel_command_options': 'SELECT cco.channel_command_option_id, cco.channel_command_id, cco.response, cco.ratio FROM channel_command_option cco',
         'find_channel_commands_by_id': 'SELECT * FROM channel_command where channel_command.channel_id = %s ORDER BY level DESC',
+        'find_channel_command_options_by_id': 'SELECT cco.channel_command_option_id, cco.channel_command_id, cco.response, cco.ratio FROM channel_command_option cco LEFT JOIN channel_command cc ON cc.channel_command_id = cco.channel_command_id WHERE cc.channel_id = %s',
         'find_notice_types': 'SELECT * FROM notice_type WHERE active = TRUE',
         'find_request_by_id': 'SELECT * FROM request WHERE request_id = %s',
         'find_request_by_user': 'SELECT * FROM request WHERE user_id = %s',
@@ -40,6 +42,7 @@ async def getSql(sqlType):
         'save_chat_info_after_join': 'UPDATE channel_subchat SET channel_subchat.tg_chat_id = %s, channel_subchat.tg_chat_name = %s, channel_subchat.join_link = %s WHERE channel_subchat.channel_subchat_id = %s',
         'delete_tg_members': 'DELETE FROM tg_group_member where tg_group_member.tg_chat_id = %s',
         'add_tg_member': 'INSERT INTO tg_group_member (tg_chat_id, tg_user_id, tg_first_name, tg_second_name, tg_username, sub_type) values (%s, %s, %s, %s, %s, %s)',
+        'get_all_tg_members': 'SELECT * FROM tg_group_member ORDER BY tg_user_id',
         'update_member_refresh_sta': 'UPDATE channel_subchat SET channel_subchat.refresh_status = %s, channel_subchat.last_member_refresh = CURRENT_TIMESTAMP where channel_subchat.tg_chat_id = %s',
         'update_auto_mass_kick_ts': 'UPDATE channel_subchat SET channel_subchat.last_auto_kick = %s where channel_subchat.channel_subchat_id = %s',
         'check_generated_id': 'select r.request_id from request r where r.code = %s and not exists(select 1 from response where response.request_id = r.request_id LIMIT 1)',
@@ -156,5 +159,6 @@ async def getSql(sqlType):
         'get_user_currency': 'SELECT uc.user_id, uc.amount, ct.currency_key, ct.currency_type_id FROM user_currency uc LEFT JOIN currency_type ct ON uc.currency_type_id = ct.currency_type_id WHERE ct.currency_key = %s and uc.user_id = %s',
         'save_to_list': 'CALL addToList(%s, %s, %s, %s);',
         'get_user_all_currencies': 'SELECT uc.user_id, uc.amount, ct.currency_key FROM user_currency uc LEFT JOIN currency_type ct ON uc.currency_type_id = ct.currency_type_id WHERE uc.user_id = %s and ct.active = 1 and ct.public = 1;',
-
+        'get_channel_currency': 'SELECT ct.currency_key, tgi.amt FROM tg_group_inventory tgi LEFT JOIN currency_type ct ON tgi.currency_id = ct.currency_type_id WHERE tgi.channel_id = %s and ct.active = 1 and ct.public = 1',
+        'add_currency_to_channel': 'CALL addCurrencyToChannel(%s, %s, %s)',
     }.get(sqlType, 'unknown_sql_type')

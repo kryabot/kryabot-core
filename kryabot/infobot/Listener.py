@@ -11,11 +11,11 @@ import asyncio
 
 class Listener:
     def __init__(self, manager):
-        self.logger: Logger = manager.logger
+        self.logger: Logger = manager.logger if manager else Logger('default')
         self.loop = asyncio.get_event_loop()
-        self.cfg = manager.cfg
-        self.api: ApiHelper = manager.api
-        self.db: Database = manager.db
+        self.cfg = manager.cfg if manager else None
+        self.api: ApiHelper = manager.api if manager else None
+        self.db: Database = manager.db if manager else None
         self.period: int = 30
         self.manager = manager
         self.update_topic: str = 'all'

@@ -1,7 +1,7 @@
 from logging import Logger
 from typing import Dict
 from datetime import datetime, timedelta
-
+from random import randint
 
 class Command:
     def __init__(self, raw: Dict, updated_at: datetime, logger: Logger):
@@ -12,7 +12,7 @@ class Command:
         self.command_name: str = None
         self.action: str = None
         self.level: int = None
-        self.active: int = None
+        self.active: bool = None
         self.use_cooldown: int = None
         self.trigger_cooldown: int = None
         self.message: str = None
@@ -21,7 +21,7 @@ class Command:
 
         self.last_trigger: datetime = None
         self.last_use: datetime = None
-
+        self.options: [] = None
         self.last_update: datetime = None
         self.set(raw, updated_at)
 
@@ -39,6 +39,7 @@ class Command:
         self.message = str(raw['reply_message'] or '')
         self.additional_text = str(raw['additional_text'] or '')
         self.usages = int(raw['used']) or 0
+        self.options = raw['options']
 
     def used(self)->None:
         self.last_use = datetime.now()
@@ -72,3 +73,25 @@ class Command:
 
     def outdated(self, ts: datetime)->bool:
         return self.last_update < ts
+
+    def get_response(self)->str:
+        if self.options is None or len(self.options) == 0:
+            return self.message
+        if len(self.options) == 1:
+            return self.options[0]['response']
+
+        possibilities = []
+        for option in self.options:
+            if option['ratio'] < 1:
+                continue
+
+            ratio = min(option['ratio'], 100)
+            for i in range(0, ratio):
+                possibilities.append(option['response'])
+
+        if len(possibilities) == 0:
+            return self.options[0]['response']
+
+        roll = randint(0, len(possibilities) - 1)
+        return possibilities[roll]
+

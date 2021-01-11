@@ -16,8 +16,8 @@ from object.System import System
 from object.Translator import Translator
 from tgbot.Moderation import Moderation
 import tgbot.events.handlers as krya_events
+from tgbot.events.global_events.GlobalEventFactory import GlobalEventFactory
 
-from tgbot.events.global_events.HalloweenEventProcessor import HalloweenEventProcessor
 from utils.formatting import format_html_user_mention
 from utils.decorators.exception import log_exception_ignore
 from utils.value_check import avoid_none, is_empty_string, map_kick_setting
@@ -34,7 +34,6 @@ super_admins = TG_SUPER_ADMINS
 
 
 class KryaClient(TelegramClient):
-
     def __init__(self, loop=None, logger=None, cfg=None):
         self.logger = logger
         self.cfg = cfg
@@ -46,6 +45,7 @@ class KryaClient(TelegramClient):
         self.me = None
         self.banned_media = None
         self.participant_cache = []
+        self.in_refresh: bool = False
 
         # Path to session file
         path = os.getenv('SECRET_DIR')
@@ -85,7 +85,7 @@ class KryaClient(TelegramClient):
         self.loop.create_task(Pinger(System.KRYABOT_TELEGRAM, self.logger, self.db.redis).run_task())
         self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
 
-        self.loop.create_task(HalloweenEventProcessor.get_instance().pumpkin_spawner(self))
+        GlobalEventFactory.start_all(self)
 
         await self.start()
         self.me = await self.get_me()
@@ -94,7 +94,7 @@ class KryaClient(TelegramClient):
         await self.report_to_monitoring('[Main] KryaBot for Telegram has started. @Kuroskas')
         await self.report_to_monitoring('/ping')
 
-        # Disabled catch up because it dublicates last actions on some chats
+        # Disabled catch up because it duplicates last actions on some chats
         #await self.catch_up()
 
         self.logger.info('Updating command list')
@@ -229,8 +229,8 @@ class KryaClient(TelegramClient):
         await self.run_channel_refresh(channel, is_kick, params)
 
     @log_exception_ignore(log=global_logger, reporter=reporter)
-    async def run_channel_refresh(self, channel, kick, params):
-        self.logger.info('Task: Refresh group members Channel: '.format(channel['channel_name']))
+    async def run_channel_refresh(self, channel, kick, params, silent=False):
+        self.logger.info('Task: Refresh group members Channel: {}'.format(channel['channel_name']))
         self.logger.info('Kick: {} params: {}'.format(kick, params))
         report = '[Task]\nType: Refresh group members\nChannel: {}'.format(channel['channel_name'])
         report += '\nAuto-kick: {}'.format(kick)
@@ -284,7 +284,7 @@ class KryaClient(TelegramClient):
         verified = 0
         subs = 0
 
-        self.logger.info('Refresh on channel: ' + str(channel))
+        #self.logger.info('Refresh on channel: ' + str(channel))
 
         kick_array = []
         async with self.action(channel['tg_chat_id'], 'game'):
@@ -298,7 +298,7 @@ class KryaClient(TelegramClient):
                     error_message = ''
                     sanity_check += 1
 
-                    self.logger.info(str(user))
+                    self.logger.debug(str(user))
                     user_string = await avoid_none(user.first_name) + ' ' + await avoid_none(user.last_name) + ' ' + await avoid_none(user.username)
                     user_string.strip()
 
@@ -411,14 +411,16 @@ class KryaClient(TelegramClient):
                     break
 
                 if sanity_check > max_sanity_check:
-                    await self.send_message(channel['tg_chat_id'], self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_SANITY_STOP'))
+                    if not silent:
+                        await self.send_message(channel['tg_chat_id'], self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_SANITY_STOP'))
                     break
 
-        self.logger.info('Mass kick loop finished')
+        self.logger.debug('Mass kick loop finished')
         await self.db.finishTgMemberRefresh(channel['tg_chat_id'], error_message)
-        await self.report_to_monitoring(report + '\nStatus: Done\nTotal members: ' + str(total) + '\nVerified: ' + str(verified) + '\nSubscribers: ' + str(subs))
+        if not silent:
+            await self.report_to_monitoring(report + '\nStatus: Done\nTotal members: ' + str(total) + '\nVerified: ' + str(verified) + '\nSubscribers: ' + str(subs))
 
-        if kick:
+        if kick and not silent:
             await self.send_message(channel['tg_chat_id'], self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_FINISH'), parse_mode='html')
             await self.send_krya_love_sticker(channel['tg_chat_id'])
 

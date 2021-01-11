@@ -29,3 +29,4 @@ class DeleteAward(BaseCommand):
         else:
             await self.db.deleteTgAward(self.channel['user_id'], award[0]['tg_award_id'], self.sender['user_id'])
             await self.reply_success(self.get_translation('CMD_AWARD_DELETE').format(award_keyword=keyword))
+            await self.db.getChannelTgAwards(self.channel['channel_id'], self.channel['user_id'], skip_cache=True)

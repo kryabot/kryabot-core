@@ -92,7 +92,7 @@ class InstagramListener(Listener):
         self.logger.debug('Checking instagram stories')
 
         for profile in self.profiles:
-            await self.sleep(5)
+            await self.sleep(30)
             try:
                 data = await self.manager.api.instagram.get_story_by_id(self.session_token, profile.instagram_id)
 
@@ -113,8 +113,8 @@ class InstagramListener(Listener):
             except Exception as ex:
                 await self.manager.on_exception(ex, 'Instagram story check for {}'.format(profile.instagram_name))
                 await self.update_session_token()
-                if "Bad Request" in str(ex):
-                    self.sleep(60)
+                if "Bad Request" in str(ex) or "-" in str(ex):
+                    await self.sleep(600)
 
     async def update_data(self, start: bool = False)->None:
         self.logger.info('Updating instagram listener data')

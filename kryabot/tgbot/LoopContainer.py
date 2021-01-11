@@ -37,6 +37,11 @@ class LoopContainer:
         tasks.append(self.guard_bot.run_until_disconnected())
         tasks.append(self.daily_tasks_utc18())
         tasks.append(self.daily_tasks_utc17())
+        tasks.append(self.daily_tasks_utc16())
+        tasks.append(self.daily_tasks_utc10())
+        tasks.append(self.daily_tasks_utc4())
+        tasks.append(self.daily_tasks_utc22())
+
         await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED, loop=self.loop)
 
         print('run failed')
@@ -79,6 +84,53 @@ class LoopContainer:
                 await self.guard_bot.exception_reporter(e, 'Error during daily task:')
 
     # TODO use schedule libs to schedule things, or write proper decorator
+    async def daily_tasks_utc16(self):
+        await self.daily_tasks_tg_member_refresher(16, 0)
+
+    async def daily_tasks_utc22(self):
+        await self.daily_tasks_tg_member_refresher(22, 0)
+
+    async def daily_tasks_utc4(self):
+        await self.daily_tasks_tg_member_refresher(4, 0)
+
+    async def daily_tasks_utc10(self):
+        await self.daily_tasks_tg_member_refresher(10, 0)
+
+    async def daily_tasks_tg_member_refresher(self, hour, minute):
+        while True:
+            try:
+                now = datetime.utcnow()
+                runtime = datetime(now.year, now.month, now.day, hour, minute)
+                diff = runtime - now
+                if diff.seconds > 120:
+                    self.logger.info('Going to sleep for {sec}'.format(sec=diff.seconds))
+                    await asyncio.sleep(diff.seconds)
+                    continue
+
+                self.logger.info('Starting daily tasks ({})'.format(hour))
+
+                await self.guard_bot.update_data()
+                self.guard_bot.in_refresh = True
+
+                for channel in await self.guard_bot.db.get_auth_subchats():
+                    if channel['tg_chat_id'] == 0:
+                        continue
+
+                    if channel['refresh_status'] != 'DONE':
+                        continue
+
+                    try:
+                        await self.guard_bot.run_channel_refresh(channel, False, None, silent=True)
+                    except Exception as ex:
+                        await self.guard_bot.exception_reporter(ex, 'TG member updater task for {}'.format(channel['channel_name']))
+
+                self.guard_bot.in_refresh = False
+            except Exception as ex:
+                await self.guard_bot.report_exception(ex, 'Error during daily task:')
+            finally:
+                self.guard_bot.in_refresh = False
+
+    # TODO use schedule libs to schedule things, or write proper decorator
     async def daily_tasks_utc17(self):
         while True:
             try:
@@ -92,6 +144,7 @@ class LoopContainer:
 
                 self.logger.info('Starting daily tasks (20)')
                 await self.guard_bot.update_data()
+                self.guard_bot.in_refresh = True
 
                 for channel in await self.guard_bot.db.get_auth_subchats():
                     if channel['tg_chat_id'] == 0:
@@ -124,5 +177,8 @@ class LoopContainer:
                         else:
                             self.logger.info('Skipping automated mass kick, too early')
                     await asyncio.sleep(10)
+                self.guard_bot.in_refresh = False
             except Exception as e:
                 await self.guard_bot.report_exception(e, 'Error during daily task:')
+            finally:
+                self.guard_bot.in_refresh = False

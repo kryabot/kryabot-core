@@ -75,14 +75,14 @@ class ChatAdapter(Base, commands.Bot):
         if self.tasks:
             return
 
-        auto_task = schedule.schedule_task_periodically(wait_time=redis_key.ttl_hour,
-                                                        func=self.auto_join_channels,
-                                                        logger=self.logger)
+        # auto_task = schedule.schedule_task_periodically(wait_time=redis_key.ttl_hour,
+        #                                                 func=self.auto_join_channels,
+        #                                                 logger=self.logger)
 
         redis_task = self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
         response_task = self.loop.create_task(self.listen_responses())
 
-        self.tasks.append(auto_task)
+        # self.tasks.append(auto_task)
         self.tasks.append(redis_task)
         self.tasks.append(response_task)
 
@@ -126,7 +126,7 @@ class ChatAdapter(Base, commands.Bot):
                         await channel.ban(event['sender'], reason="Spambot")
 
                     # TODO: ban queue, currently ban in onlyashaa channel.
-                    await self._ws.send_privmsg('olyashaa', ".ban {} Spambot, detected in channel {}".format(event['sender'], body['channel']))
+                    #await self._ws.send_privmsg('olyashaa', ".ban {} Spambot, detected in channel {}".format(event['sender'], body['channel']))
         elif action == 'unban':
             if body['users']:
                 for event in body['users']:

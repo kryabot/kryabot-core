@@ -280,8 +280,11 @@ async def fill_twitch_sub_info(user_data, client, channel):
                 user_data['sub_months'] = sub_months_cache
 
     subgift_history = await client.db.getSubgiftHistory(channel['channel_id'], user_data['kb_id'])
-    if len(subgift_history) > 0 and subgift_history[0]['count2'] > 0:
-        user_data['gifted_subs'] = subgift_history[0]['count2']
+    if subgift_history:
+        for history in subgift_history:
+            if history['count2'] > 0:
+                user_data['gifted_subs'] = history['count2']
+                break
 
     return user_data
 

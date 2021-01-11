@@ -11,6 +11,7 @@ from tgbot.commands.award import *
 from tgbot.commands.vote import *
 from tgbot.commands.moderation import *
 from tgbot.commands.manage import *
+from tgbot.commands.items import *
 
 helper_bot_name = '@KryaHelpBot'
 command_list = []
@@ -56,6 +57,7 @@ command_list.append(Award)
 command_list.append(AddHelper)
 command_list.append(EnableGlobalEvents)
 command_list.append(DisableGlobalEvents)
+command_list.append(ChatInventory)
 # Chat super admin
 command_list.append(SetReminderCooldown)
 command_list.append(StartMasskick)
@@ -87,6 +89,7 @@ command_list.append(DLCoub)
 command_list.append(SpawnBoss)
 command_list.append(SpawnBox)
 command_list.append(SpawnLove)
+command_list.append(SpawnSnowing)
 
 
 async def build(command_name, event, parsed):

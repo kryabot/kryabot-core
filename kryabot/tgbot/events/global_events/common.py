@@ -1,5 +1,5 @@
-from tgbot.events.global_events.HalloweenEventProcessor import HalloweenEventProcessor
-from tgbot.events.global_events.easter import process_easter
+from tgbot.events.global_events.GlobalEventFactory import GlobalEventFactory
+from tgbot.events.global_events.GlobalEventProcessor import GlobalEventProcessor
 from tgbot.constants import TG_TEST_GROUP_ID
 from utils.array import get_first
 from datetime import datetime
@@ -22,10 +22,8 @@ async def process_global_events(event):
             event.client.logger.info('Skipping event {} because not active anymore: {}'.format(global_event['event_key'], global_event['active_to']))
             continue
 
-        if global_event['event_key'] == 'easter':
-            await process_easter(global_event, event, channel)
-        elif global_event['event_key'] == 'halloween2020':
-            processor = HalloweenEventProcessor.get_instance()
-            await processor.process(global_event, event, channel)
-        else:
-            event.client.logger.error('Received unknown global event key: {}'.format(global_event['event_key']))
+        try:
+            processor: GlobalEventProcessor = GlobalEventFactory.get(global_event['event_key'])
+            await processor.process(global_event=global_event, event=event, channel=channel)
+        except Exception as e:
+            event.client.logger.exception(e)

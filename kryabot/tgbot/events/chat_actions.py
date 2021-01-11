@@ -49,7 +49,7 @@ async def user_join_check(client, channel, tg_user_id, message_id=0):
                     await client.exception_reporter(wex, 'Channel join: {} -> {}'.format(tg_user_id, channel['channel_name']))
             else:
                 await client.send_krya_guard_sticker(channel['tg_chat_id'])
-        else:
+        elif channel['auto_kick'] == 0:
             await client.send_krya_kill_sticker(channel['tg_chat_id'])
 
     except Exception as err:

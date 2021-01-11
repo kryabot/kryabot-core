@@ -13,9 +13,9 @@ class Instagram(Core):
         url = 'https://i.instagram.com/api/v1/feed/user/{}/story/'.format(instagram_user_id)
         return await self.make_get_request(url=url, headers=headers)
 
-    async def get_stories(self, user):
+    async def get_stories(self, session_key, user):
         id = await self.get_user_id(user)
-        return await self.get_story_by_id(id)
+        return await self.get_story_by_id(session_key, id)
 
     async def get_user(self, username):
         url = 'https://www.instagram.com/{}/?__a=1'.format(username)

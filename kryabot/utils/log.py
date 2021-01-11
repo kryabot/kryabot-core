@@ -94,6 +94,12 @@ KRYA_LOGGING_CONFIG = dict(
             "propagate": True,
             "qualname": "krya.infomanager",
         },
+        "streamlink": {
+            "level": GLOBAL_LOG_LEVEL,
+            "handlers": ["file.infomanager"],
+            "propagate": True,
+            "qualname": "streamlink",
+        },
         "krya.spam": {
             "level": GLOBAL_LOG_LEVEL,
             "handlers": ["file.spam"],

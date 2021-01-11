@@ -2,8 +2,8 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict
-# from sklearn.feature_extraction.text import CountVectorizer
-# from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from unidecode import unidecode
 
 from object.ApiHelper import ApiHelper
@@ -12,10 +12,10 @@ import utils.redis_key as redis_key
 from object.Pinger import Pinger
 from object.System import System
 
-MIN_WORDS = 5
+MIN_WORDS = 3
 INTERVAL_CHECK = 15
 MATCH_THRESHOLD = 0.7
-MPS_RATIO = 8
+MPS_RATIO = 10
 
 SKIP_LIST = []
 LIST_NAME_BANNED_WORDS = 'spambot_banned_words'
@@ -28,15 +28,15 @@ api = ApiHelper(redis=db.redis)
 logger = logging.getLogger('krya.spam')
 bttv_global = None
 
-# def get_cosine_sim(*strs):
-#     vectors = [t for t in get_vectors(*strs)]
-#     return cosine_similarity(vectors)
-#
-# def get_vectors(*strs):
-#     text = [t for t in strs]
-#     vectorizer = CountVectorizer(input=text)
-#     vectorizer.fit(text)
-#     return vectorizer.transform(text).toarray()
+def get_cosine_sim(*strs):
+    vectors = [t for t in get_vectors(*strs)]
+    return cosine_similarity(vectors)
+
+def get_vectors(*strs):
+    text = [t for t in strs]
+    vectorizer = CountVectorizer(input=text)
+    vectorizer.fit(text)
+    return vectorizer.transform(text).toarray()
 
 def parse_fz_emotes(response):
     if response is None:
@@ -59,27 +59,48 @@ class SpamDetector:
         self.channels: List[ChannelMessages] = []
 
     async def init(self):
-        global BANNED_WORDS
-        global SKIP_LIST
         global bttv_global
 
-        BANNED_WORDS = await db.get_list_values_str(LIST_NAME_BANNED_WORDS)
-        SKIP_LIST = await db.get_list_values_str(LIST_NAME_IGNORED_CHANNELS)
-
-        logger.info('Banned words: {}'.format(BANNED_WORDS))
-        logger.info('Skip list: {}'.format(SKIP_LIST))
         logger.info('Receiving bttv global emotes')
         bttv_global = await api.betterttv.get_global_emotes()
 
-        channels = await db.getAutojoinChannels()
-        for channel in channels:
-            ch = await self.create_channel(channel['channel_name'])
-            self.channels.append(ch)
+        await self.update()
 
         logger.debug('Starting topic listener')
+        loop.create_task(self.auto_update())
         loop.create_task(db.redis.start_listener(self.redis_subscribe))
         loop.create_task(Pinger(System.KRYABOT_SPAM_DETECTOR, logger, db.redis).run_task())
         logger.info('Init completed')
+
+    async def update(self):
+        global BANNED_WORDS
+        global SKIP_LIST
+
+        BANNED_WORDS = await db.get_list_values_str(LIST_NAME_BANNED_WORDS)
+        SKIP_LIST = await db.get_list_values_str(LIST_NAME_IGNORED_CHANNELS)
+        logger.info('Banned words: {}'.format(BANNED_WORDS))
+        logger.info('Skip list: {}'.format(SKIP_LIST))
+
+        channels = await db.getAutojoinChannels()
+        for channel in channels:
+            exists = False
+            for existing_ch in self.channels:
+                if existing_ch.channel_name.lower() == channel['channel_name'].lower():
+                    exists = True
+
+            if exists:
+                continue
+
+            ch = await self.create_channel(channel['channel_name'])
+            self.channels.append(ch)
+
+    async def auto_update(self):
+        while True:
+            await asyncio.sleep(3600)
+            try:
+                await self.update()
+            except Exception as e:
+                logger.exception(e)
 
     async def create_channel(self, channel_name: str):
         ch = ChannelMessages(str(channel_name).lower())
@@ -249,11 +270,11 @@ class ChannelMessages:
         self.messages = [message for message in self.messages if not message.too_old()]
         self.detections = [detection for detection in self.detections if not detection.too_old()]
 
-    # def get_result(self, first_text, second_text) -> float:
-    #     try:
-    #         return get_cosine_sim(first_text, second_text)[0][1]
-    #     except ValueError:
-    #         return 0
+    def get_result(self, first_text, second_text) -> float:
+        try:
+            return get_cosine_sim(first_text, second_text)[0][1]
+        except ValueError:
+            return 0
 
     async def find_detection(self, message: ChannelMessage)->[Detection, None]:
         last_word = str(message.original_message.split(' ')[-1:][0])
@@ -262,30 +283,30 @@ class ChannelMessages:
             await self.action_ban([{'sender': message.sender, 'message': message.original_message, 'ts': message.received_ts}])
             return None
         
-        # for detection in self.detections:
-        #     for active in detection.messages:
-        #         if message.sender == active.sender:
-        #             break
-        #
-        #         result = self.get_result(message.original_message, active.original_message)
-        #         if result < MATCH_THRESHOLD:
-        #             break
-        #
-        #         await detection.add_message(message)
-        #         return detection
-        #
-        # for old_message in self.messages:
-        #     if message.original_message in old_message.original_message:
-        #         continue
-        #
-        #     if message.original_message == old_message.original_message and message.sender != old_message.sender:
-        #         result = 1.0
-        #     else:
-        #         result = self.get_result(message.original_message, old_message.original_message)
-        #     if result < MATCH_THRESHOLD:
-        #         continue
-        #
-        #     return await self.update_detection(message, old_message)
+        for detection in self.detections:
+            for active in detection.messages:
+                if message.sender == active.sender:
+                    break
+
+                result = self.get_result(message.original_message, active.original_message)
+                if result < MATCH_THRESHOLD:
+                    break
+
+                await detection.add_message(message)
+                return detection
+
+        for old_message in self.messages:
+            if message.original_message in old_message.original_message:
+                continue
+
+            if message.original_message == old_message.original_message and message.sender != old_message.sender:
+                result = 1.0
+            else:
+                result = self.get_result(message.original_message, old_message.original_message)
+            if result < MATCH_THRESHOLD:
+                continue
+
+            return await self.update_detection(message, old_message)
 
         return None
 

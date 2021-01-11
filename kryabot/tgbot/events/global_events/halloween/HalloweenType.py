@@ -6,6 +6,8 @@ from typing import Dict, List
 from random import randint
 
 from telethon.tl.types import DocumentAttributeSticker
+
+from tgbot.events.global_events.GlobalEventProcessor import EventChannels, EventChannel
 from tgbot.events.global_events.halloween import HalloweenMonsters
 from utils import redis_key
 from object.Base import Base
@@ -15,12 +17,9 @@ from utils.formatting import format_html_user_mention
 logger: logging = logging.getLogger('krya.tg')
 
 
-class HalloweenChannels(Base):
+class HalloweenChannels(EventChannels):
     def __init__(self):
-        self.channels: Dict[int, HalloweenChannel] = {}
-
-    def new_channel(self, channel_id, lang):
-        self.channels[channel_id] = HalloweenChannel(channel_id, lang)
+        super().__init__(HalloweenChannel)
 
     def is_active(self, channel_id, message_id)->bool:
         return self.channels[channel_id].is_active(message_id)
@@ -33,10 +32,6 @@ class HalloweenChannels(Base):
         channel: HalloweenChannel = self.channels[channel_id]
         channel.delete_messages.append(message_id)
 
-    def remove_channel(self, channel_id: int):
-        if channel_id in self.channels:
-            self.channels.pop(channel_id)
-
     def remove_pumpkin(self, channel_id: int, message_id: int):
         channel: HalloweenChannel = self.channels[channel_id]
         channel.delete(message_id)
@@ -46,10 +41,9 @@ class HalloweenChannels(Base):
         return channel.is_test(message_id)
 
 
-class HalloweenChannel(Base):
+class HalloweenChannel(EventChannel):
     def __init__(self, channel_id, lang):
-        self.channel_id: int = channel_id
-        self.lang: str = lang
+        super().__init__(channel_id, lang)
         self.pumpkins: Dict[int, HalloweenMonsters.Monster] = {}
         self.last_regular: datetime = datetime.utcnow()
         self.last_boss: datetime = datetime.utcnow()

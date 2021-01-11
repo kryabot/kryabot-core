@@ -2,6 +2,7 @@ import asyncio
 
 from tgbot.commands.UserAccess import UserAccess
 from tgbot.commands.base import BaseCommand
+from tgbot.commands.items.ItemMap import get_item_emote
 
 
 class Inventory(BaseCommand):
@@ -35,7 +36,7 @@ class Inventory(BaseCommand):
 
         text = self.get_translation("CMD_INVENTORY_CONTAINS") + "\n"
         for data in datas:
-            text += "{} {}: {}\n".format(self.get_currency_emote(data['currency_key']), self.get_translation("INVENTORY_ITEM_" + str(data['currency_key']).upper()), int(data['amount']))
+            text += "{} {}: {}\n".format(get_item_emote(data['currency_key']), self.get_translation("INVENTORY_ITEM_" + str(data['currency_key']).upper()), int(data['amount']))
 
         message = await self.event.reply(text, link_preview=False)
 
@@ -45,7 +46,3 @@ class Inventory(BaseCommand):
             await self.event.delete()
         except:
             pass
-
-    def get_currency_emote(self, currency_name: str):
-        return {"egg": "🥚",
-                "pumpkin": "🎃"}.get(currency_name, "📦")

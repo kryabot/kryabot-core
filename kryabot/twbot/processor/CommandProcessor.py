@@ -217,7 +217,7 @@ class CommandProcessor(Processor):
 
     async def replace_keywords(self, channel: Channel, cmd: Command, sender_name: str, text: str):
         after_text = ' '.join(text.split(' ')[1:]).strip()
-        answer = cmd.message
+        answer = cmd.get_response()
         answer = answer.replace('#user#', sender_name)
         answer = answer.replace('#target#', self.get_message_word(text, 1))
         answer = answer.replace('#w1#', self.get_message_word(text, 1))

@@ -20,7 +20,10 @@ RUN python --version &&\
 			musl-dev \
 			make \
 			gcc \
-			g++
+			g++ \
+			gfortran \
+			openblas-dev \
+			lapack-dev
 	
 	
 COPY requirements.txt .
