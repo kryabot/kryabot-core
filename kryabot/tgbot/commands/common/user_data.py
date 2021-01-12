@@ -354,5 +354,6 @@ async def custom_subinfo_badge(channel_id):
             40: '🦉',
             41: '🐧',
             51: '🦊',
+            64: '🥢',
             }.get(channel_id, '')
 
