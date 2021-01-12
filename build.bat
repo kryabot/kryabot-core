@@ -7,6 +7,8 @@ SET DOCKER_TAG=latest
 
 call :log "Starting new build at %DATE% %TIME%"
 call :log "Pulling changes from git repo"
+git reset --hard >> %BUILD_LOG% || goto :error
+git clean -f -d >> %BUILD_LOG% || goto :error
 git pull >> %BUILD_LOG% || goto :error
 call :log "Building docker image"
 docker build -t %DOCKER_REPO%:%DOCKER_TAG% . >> %BUILD_LOG% || goto :error
