@@ -13,7 +13,7 @@ call :log "Building docker image"
 docker build -t %DOCKER_REPO%:%DOCKER_TAG% . >> %BUILD_LOG% || goto :error
 call :log "Pushing docker image to repository %DOCKER_REPO%"
 docker push %DOCKER_REPO%:%DOCKER_TAG% >> %BUILD_LOG% || goto :error
-call :log "Success"
+call :log "Success %DATE% %TIME%"
 
 exit /b 0
 

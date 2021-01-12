@@ -44,11 +44,12 @@ class LoopContainer:
         tasks.append(self.daily_tasks_utc10())
         tasks.append(self.daily_tasks_utc4())
         tasks.append(self.daily_tasks_utc22())
-        tasks.append(schedule.run_pending())
+        tasks.append(self.run_scheduler())
 
-        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED, loop=self.loop)
-
+        task_response = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED, loop=self.loop)
+        self.logger.error(task_response)
         print('run failed')
+
         try:
             if self.guard_bot.is_connected():
                 await self.guard_bot.report_to_monitoring("@Kurokas LoopContainer.run() completed as one of task finished.")
@@ -59,10 +60,15 @@ class LoopContainer:
         schedule.every().day.at("15:30").do(self.guard_bot.task_check_invite_links)
         schedule.every().day.at("07:30").do(self.guard_bot.task_check_invite_links)
         schedule.every().day.at("15:00").do(self.guard_bot.task_check_chat_publicity)
-        schedule.every(1).hours.do(self.guard_bot.task_delete_old_messages())
-        schedule.every(1).hours.do(self.guard_bot.task_fix_twitch_ids())
-        schedule.every(1).hours.do(self.guard_bot.task_fix_twitch_names())
-        schedule.every(1).hours.do(self.guard_bot.task_ping())
+        schedule.every(1).hours.do(self.guard_bot.task_delete_old_messages)
+        schedule.every(1).hours.do(self.guard_bot.task_fix_twitch_ids)
+        schedule.every(1).hours.do(self.guard_bot.task_fix_twitch_names)
+        schedule.every(1).hours.do(self.guard_bot.task_ping)
+
+    async def run_scheduler(self):
+        while True:
+            await schedule.run_pending()
+            await asyncio.sleep(60)
 
     async def stop(self):
         pass
