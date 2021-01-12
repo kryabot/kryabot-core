@@ -5,6 +5,7 @@ from object.BotConfig import BotConfig
 from tgbot.AuthBot import AuthBot
 from tgbot.KryaClient import KryaClient
 from webserver.WebHandler import WebHandler
+import aioschedule as schedule
 
 
 class LoopContainer:
@@ -33,6 +34,8 @@ class LoopContainer:
         self.logger.info('All services started')
 
     async def run(self):
+        await self.init_scheduler()
+
         tasks = []
         tasks.append(self.guard_bot.run_until_disconnected())
         tasks.append(self.daily_tasks_utc18())
@@ -41,10 +44,25 @@ class LoopContainer:
         tasks.append(self.daily_tasks_utc10())
         tasks.append(self.daily_tasks_utc4())
         tasks.append(self.daily_tasks_utc22())
+        tasks.append(schedule.run_pending())
 
         await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED, loop=self.loop)
 
         print('run failed')
+        try:
+            if self.guard_bot.is_connected():
+                await self.guard_bot.report_to_monitoring("@Kurokas LoopContainer.run() completed as one of task finished.")
+        except Exception as ex:
+            self.logger.exception(ex)
+
+    async def init_scheduler(self):
+        schedule.every().day.at("15:30").do(self.guard_bot.task_check_invite_links)
+        schedule.every().day.at("07:30").do(self.guard_bot.task_check_invite_links)
+        schedule.every().day.at("15:00").do(self.guard_bot.task_check_chat_publicity)
+        schedule.every(1).hours.do(self.guard_bot.task_delete_old_messages())
+        schedule.every(1).hours.do(self.guard_bot.task_fix_twitch_ids())
+        schedule.every(1).hours.do(self.guard_bot.task_fix_twitch_names())
+        schedule.every(1).hours.do(self.guard_bot.task_ping())
 
     async def stop(self):
         pass

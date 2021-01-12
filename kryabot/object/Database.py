@@ -661,6 +661,13 @@ class Database:
     async def getTgChatCurrency(self, channel_id):
         return await self.query('get_channel_currency', [channel_id])
 
+    async def updateChatForcePause(self, tg_chat_id, force_pause):
+        await self.query('update_subchat_forced_pause', [force_pause, tg_chat_id])
+        await self.get_auth_subchat(tg_chat_id, skip_cache=True)
+
+    async def updateInviteLink(self, tg_chat_id, new_link):
+        await self.query('update_invite_link', [new_link, tg_chat_id])
+
     async def get_list_values_full(self, list_name):
         return await self.query('get_active_list_values', [list_name])
 
@@ -927,3 +934,4 @@ class Database:
 
     async def set_winter_generator_details(self, data):
         await self.redis.set_parsed_value_by_key(key='tg.winter.event', val=data, expire=redis_key.ttl_week)
+

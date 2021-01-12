@@ -1,8 +1,7 @@
 import functools
-import traceback
 
 
-def exception(logger=None, raise_error=True, reporter=None, monitoring_id=1255287898):
+def exception(logger=None, raise_error=True, reporter=None):
     """
     A decorator that wraps the passed in function.
     On exception, logs and sends to monitoring chat
@@ -13,19 +12,18 @@ def exception(logger=None, raise_error=True, reporter=None, monitoring_id=125528
             try:
                 return await function(*args, **kwargs)
             except Exception as err:
-                tb = ''.join(traceback.format_tb(err.__traceback__))
                 if logger is not None:
                     logger.exception(err)
 
                 if reporter is not None:
                     try:
-                        await reporter(str(err), tb)
+                        await reporter(err, function.__name__)
                     except:
                         pass
 
                 # re-raise the exception
                 if raise_error:
-                    raise
+                    raise err
         return wrapper
     return decorator
 

@@ -142,6 +142,12 @@ KRYA_LOGGING_CONFIG = dict(
             "propagate": True,
             "qualname": "websockets.server",
         },
+        "schedule": {
+            "level": GLOBAL_LOG_LEVEL,
+            "handlers": ["file.tg"],
+            "propagate": True,
+            "qualname": "schedule",
+        }
     },
     handlers={
         'file.sanic.error': {

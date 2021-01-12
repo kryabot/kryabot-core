@@ -1,10 +1,12 @@
 from telethon import TelegramClient
-from telethon.errors import UserNotParticipantError
+from telethon.errors import UserNotParticipantError, InviteHashInvalidError
 from telethon.extensions import html
-from telethon.tl.functions.channels import LeaveChannelRequest, EditBannedRequest, GetParticipantRequest
+from telethon.tl.functions.channels import LeaveChannelRequest, EditBannedRequest, GetParticipantRequest, \
+    GetFullChannelRequest
 from telethon.tl.types import PeerUser, PeerChannel, InputStickerSetID, \
-    ChatInviteAlready, ChatInvite, ChatBannedRights, ChannelParticipantsAdmins, InputPeerChannel
-from telethon.tl.functions.messages import ImportChatInviteRequest, GetAllStickersRequest, GetStickerSetRequest, CheckChatInviteRequest
+    ChatInviteAlready, ChatInvite, ChatBannedRights, ChannelParticipantsAdmins, InputPeerChannel, ChatInvitePeek
+from telethon.tl.functions.messages import ImportChatInviteRequest, GetAllStickersRequest, GetStickerSetRequest, \
+    CheckChatInviteRequest, ExportChatInviteRequest
 import os
 import asyncio
 import traceback
@@ -47,6 +49,7 @@ class KryaClient(TelegramClient):
         self.participant_cache = []
         self.in_refresh: bool = False
 
+        self.run_until_disconnected()
         # Path to session file
         path = os.getenv('SECRET_DIR')
         if path is None:
@@ -78,8 +81,6 @@ class KryaClient(TelegramClient):
         await self.update_data()
         self.logger.info('Creating db_activity task')
         self.loop.create_task(self.db.db_activity())
-        self.logger.info('Creating connection_activity task')
-        self.loop.create_task(self.connection_activity())
         self.logger.info('Creating task_oauth_refresher')
         self.loop.create_task(self.task_oauth_refresher())
         self.loop.create_task(Pinger(System.KRYABOT_TELEGRAM, self.logger, self.db.redis).run_task())
@@ -709,60 +710,6 @@ class KryaClient(TelegramClient):
 
         await self.report_to_monitoring(report + '\nStatus: Done')
 
-    async def connection_activity(self):
-        @log_exception_ignore(log=global_logger, reporter=reporter)
-        async def maintenance_fix_twitch_id():
-            while True:
-                try:
-                    row = await self.db.do_query('select * from user where user.tw_id = 0 limit 1', [])
-                    if len(row) == 0:
-                        break
-
-                    try:
-                        tw_user = await self.api.twitch.get_user_by_name(row[0]['name'])
-                        new_id = tw_user['users'][0]['_id']
-                    except Exception as e:
-                        await self.report_to_monitoring(
-                            'ID fix for {uname} failed: {err}'.format(uname=row[0]['name'], err=str(e)))
-                        new_id = -1
-
-                    self.logger.info('Updating Twitch ID for user {} to {}'.format(row[0]['name'], new_id))
-                    await self.db.updateUserTwitchId(row[0]['user_id'], new_id)
-                except Exception as e:
-                    await self.exception_reporter(e, 'User maintenance failed (maintenance_fix_twitch_id)')
-
-        @log_exception_ignore(log=global_logger, reporter=reporter)
-        async def maintenance_fix_twitch_name():
-            while True:
-                await asyncio.sleep(3)
-                try:
-                    row = await self.db.do_query('select * from user where user.name = "" limit 1', [])
-                    if len(row) == 0:
-                        break
-
-                    try:
-                        tw_user = await self.api.twitch.get_user_by_id(row[0]['tw_id'], skip_cache=True)
-                        self.logger.info('Updating Twitch name for user {} to {}'.format(row[0]['tw_id'], tw_user['name']))
-                        await self.db.updateUserTwitchName(row[0]['user_id'], tw_user['name'], tw_user['display_name'], tw_user_id=row[0]['tw_id'])
-                    except Exception as e:
-                        await self.exception_reporter(e, 'Name fix for ID {uid} failed:'.format(uid=row[0]['tw_id']))
-
-                except Exception as e:
-                    await self.exception_reporter(e, 'User maintenance failed (maintenance_fix_twitch_name)')
-
-        async def maintenance_delete_old_messages():
-            try:
-                await self.db.deleteOldTwitchMessages()
-            except Exception as ex:
-                await self.exception_reporter(ex, 'Maintenance (maintenance_delete_old_messages)')
-
-        while True:
-            await asyncio.sleep(3600)
-            await self.report_to_monitoring('/ping')
-            await maintenance_fix_twitch_id()
-            await maintenance_fix_twitch_name()
-            await maintenance_delete_old_messages()
-
     @log_exception_ignore(log=global_logger, reporter=reporter)
     async def is_media_banned(self, channel_id, media_id, media_type):
         if media_type is None or media_type == '':
@@ -999,6 +946,7 @@ class KryaClient(TelegramClient):
         if topic == 'telegram_award':
             await self.init_awards(channel['channel_id'], user_id)
 
+    @log_exception_ignore(log=global_logger)
     async def get_group_member_count(self, tg_group_id: int, skip_cache=False)->int:
         data = None
         if not skip_cache:
@@ -1009,3 +957,107 @@ class KryaClient(TelegramClient):
             await self.db.save_telegram_group_size_to_cache(tg_group_id, data)
 
         return int(data)
+
+    @log_exception_ignore(log=global_logger)
+    async def task_check_chat_publicity(self):
+        chats = await self.get_all_auth_channels()
+
+        for chat in chats:
+            # Already paused
+            if chat['force_pause'] == 1:
+                continue
+
+            await asyncio.sleep(60)
+            try:
+                full_info = await self(GetFullChannelRequest(channel=chat['tg_chat_id']))
+                channel = full_info.chats[0]
+                if full_info.full_chat.linked_chat_id is not None and full_info.full_chat.linked_chat_id > 0:
+                    self.logger.info("Group {} linked to {}".format(chat['tg_chat_id'], full_info.full_chat.linked_chat_id))
+                    await self.report_to_monitoring("Force pausing channel {} ({}) because linked to channel {}".format(channel.title, channel.id,full_info.full_chat.linked_chat_id))
+                    await self.db.updateChatForcePause(chat['tg_chat_id'], True)
+                elif channel.username is not None and len(channel.username) > 0:
+                    self.logger.info("Group {} has username {}".format(chat['tg_chat_id'], channel.username))
+                    await self.report_to_monitoring("Force pausing channel {} ({}) because it has username {}".format(channel.title, channel.id, channel.username))
+                    await self.db.updateChatForcePause(chat['tg_chat_id'], True)
+            except Exception as ex:
+                await self.report_exception(ex)
+
+    @log_exception_ignore(log=global_logger)
+    async def task_check_invite_links(self):
+        chats = await self.get_all_auth_channels()
+
+        for chat in chats:
+            # No subchat
+            if chat['tg_chat_id'] == 0 or chat['join_link'] is None or chat['join_link'] == '':
+                continue
+
+            await asyncio.sleep(15)
+            try:
+                try:
+                    check = await self(CheckChatInviteRequest(hash=chat['join_link']))
+                    continue
+                except InviteHashInvalidError:
+                    # Expired / invalid
+                    new_link = await self(ExportChatInviteRequest(peer=chat['tg_chat_id']))
+                    self.logger.info('Generated new invite link: {}'.format(new_link))
+                    await self.db.updateInviteLink(chat['tg_chat_id'], new_link=new_link.link)
+
+            except Exception as ex:
+                await self.report_exception(ex)
+
+    @log_exception_ignore(log=global_logger)
+    async def task_fix_twitch_ids(self):
+        try:
+            rows = await self.db.do_query('select * from user where user.tw_id = 0', [])
+            if rows is None or len(rows) == 0:
+                return
+
+            for row in rows:
+                try:
+                    tw_user = await self.api.twitch.get_user_by_name(['name'])
+                    new_id = tw_user['users'][0]['_id']
+                    self.logger.info('Updating Twitch ID for user {} to {}'.format(row['name'], new_id))
+                    await self.db.updateUserTwitchId(row['user_id'], new_id)
+                except Exception as e:
+                    await self.report_exception(e, 'ID fix for {{}} failed'.format(row['name']))
+                    continue
+        except Exception as e:
+            await self.exception_reporter(e, 'task_fix_twitch_ids')
+
+    @log_exception_ignore(log=global_logger)
+    async def task_fix_twitch_names(self):
+        try:
+            rows = await self.db.do_query('select * from user where user.name = ""', [])
+            if rows is None or len(rows) == 0:
+                return
+
+            for row in rows:
+                try:
+                    tw_user = await self.api.twitch.get_user_by_id(row['tw_id'], skip_cache=True)
+                    self.logger.info('Updating Twitch name for user {} to {}'.format(row['tw_id'], tw_user['name']))
+                    await self.db.updateUserTwitchName(['user_id'], tw_user['name'], tw_user['display_name'], tw_user_id=['tw_id'])
+                except Exception as e:
+                    await self.exception_reporter(e, 'Name fix for ID {uid} failed:'.format(uid=row['tw_id']))
+                    continue
+        except Exception as e:
+            await self.exception_reporter(e, 'task_fix_twitch_names')
+
+    @log_exception_ignore(log=global_logger)
+    async def task_delete_old_messages(self):
+        try:
+            await self.db.deleteOldTwitchMessages()
+        except Exception as ex:
+            await self.exception_reporter(ex, 'task_delete_old_messages')
+
+    @log_exception_ignore(log=global_logger)
+    async def task_ping(self):
+        await self.report_to_monitoring('/ping')
+
+    @log_exception_ignore(log=global_logger)
+    async def task_test(self):
+        self.logger.info('This is test task')
+
+    @log_exception_ignore(log=global_logger)
+    async def task_task_error(self):
+        self.logger.info('This is test task with an error')
+        raise Exception("Exception from task_task_error")
