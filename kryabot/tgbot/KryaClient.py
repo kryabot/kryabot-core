@@ -49,7 +49,6 @@ class KryaClient(TelegramClient):
         self.participant_cache = []
         self.in_refresh: bool = False
 
-        self.run_until_disconnected()
         # Path to session file
         path = os.getenv('SECRET_DIR')
         if path is None:
