@@ -1,6 +1,6 @@
-scikit-learn
 scipy
 matplotlib
+scikit-learn
 aiohttp
 websockets
 aiomysql
