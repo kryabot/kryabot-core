@@ -130,7 +130,7 @@ class KryaClient(TelegramClient):
         await self.db.getChannelTgAwards(channel_id, user_id, skip_cache=True)
 
     async def update_data(self):
-        self.logger.info('Updating data')
+        self.logger.debug('Updating data')
 
         await self.init_channels()
         await self.init_special_rights()
@@ -979,7 +979,7 @@ class KryaClient(TelegramClient):
                     await self.report_to_monitoring("Force pausing channel {} ({}) because it has username {}".format(channel.title, channel.id, channel.username))
                     await self.db.updateChatForcePause(chat['tg_chat_id'], True)
             except Exception as ex:
-                await self.report_exception(ex)
+                await self.report_exception(ex, info=chat)
 
     @log_exception_ignore(log=global_logger)
     async def task_check_invite_links(self):
@@ -1000,9 +1000,8 @@ class KryaClient(TelegramClient):
                     new_link = await self(ExportChatInviteRequest(peer=chat['tg_chat_id']))
                     self.logger.info('Generated new invite link: {}'.format(new_link))
                     await self.db.updateInviteLink(chat['tg_chat_id'], new_link=new_link.link)
-
             except Exception as ex:
-                await self.report_exception(ex)
+                await self.report_exception(ex, info=chat)
 
     @log_exception_ignore(log=global_logger)
     async def task_fix_twitch_ids(self):
