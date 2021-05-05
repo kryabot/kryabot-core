@@ -34,7 +34,7 @@ class InstagramListener(Listener):
         self.logger.debug('Checking instagram data')
 
         self.listen_posts()
-        await self.listen_stories()
+        #await self.listen_stories()
 
     def recreate_session_from_firefox(self):
         SESSION_FILE = self.file_dir + "cookies.sqlite"

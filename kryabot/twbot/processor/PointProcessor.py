@@ -140,7 +140,7 @@ class PointProcessor(Processor):
         await self.action_twitch_message(channel, db_user, redemption_data, action)
 
     async def action_twitch_mute_other(self, channel: Channel, db_user, redemption_data, action):
-        if not self.valid_input(channel, redemption_data):
+        if not await self.valid_input(channel, redemption_data):
             return
 
         try:
@@ -183,7 +183,7 @@ class PointProcessor(Processor):
         if not await self.tg_group_exists(channel):
             return
 
-        if not self.valid_input(channel, redemption_data):
+        if not await self.valid_input(channel, redemption_data):
             return
 
         pass
