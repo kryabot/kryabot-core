@@ -16,3 +16,6 @@ echo Checking docker status...
 systemctl status docker | grep "Active:"
 echo Starting hello-world image as test
 sudo docker run hello-world | grep -A 1 "Hello"
+sudo docker volume create kryabot-secret
+sudo docker network create app-tier
+sudo docker login

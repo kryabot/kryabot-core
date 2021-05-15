@@ -962,6 +962,9 @@ class KryaClient(TelegramClient):
         chats = await self.get_all_auth_channels()
 
         for chat in chats:
+            if chat['tg_chat_id'] == 0:
+                continue
+
             # Already paused
             if chat['force_pause'] == 1:
                 continue
