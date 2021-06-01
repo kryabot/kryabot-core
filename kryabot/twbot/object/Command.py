@@ -3,6 +3,7 @@ from typing import Dict
 from datetime import datetime, timedelta
 from random import randint
 
+
 class Command:
     def __init__(self, raw: Dict, updated_at: datetime, logger: Logger):
         self.raw: Dict = None
@@ -18,6 +19,7 @@ class Command:
         self.message: str = None
         self.additional_text: str = None
         self.usages: int = None
+        self.check_type: int = None
 
         self.last_trigger: datetime = None
         self.last_use: datetime = None
@@ -40,6 +42,7 @@ class Command:
         self.additional_text = str(raw['additional_text'] or '')
         self.usages = int(raw['used']) or 0
         self.options = raw['options']
+        self.check_type = int(raw['check_type']) or 0
 
     def used(self)->None:
         self.last_use = datetime.now()

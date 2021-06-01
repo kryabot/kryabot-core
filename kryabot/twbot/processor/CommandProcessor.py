@@ -1,5 +1,6 @@
 import asyncio
 import random
+import re
 from datetime import datetime
 from typing import List, Dict, Union
 
@@ -95,7 +96,7 @@ class CommandProcessor(Processor):
 
         # Custom commands
         self.logger.debug('Searching for command {} in channel {}, access {}'.format(command, context.channel.channel_name, user_level))
-        cmd = self.find_command(context.channel.channel_id, command, user_level)
+        cmd = self.find_command(context.channel.channel_id, context.message, command, user_level)
         if cmd is None:
             self.logger.debug('Command {} not found'.format(command))
             return
@@ -105,12 +106,18 @@ class CommandProcessor(Processor):
         except Exception as e:
             self.logger.exception(e)
 
-    def find_command(self, channel_id: int, command_name: str, user_level: int)->Union[Command, None]:
+    def find_command(self, channel_id: int, message: str, command_name: str, user_level: int)->Union[Command, None]:
         if channel_id not in self.commands:
             return None
 
         for cmd in self.commands[channel_id]:
-            if cmd.command_name.lower() != command_name.lower():
+            if cmd.check_type == 0 and cmd.command_name.lower() != command_name.lower():
+                continue
+            if cmd.check_type == 1 and not message.lower().startswith(cmd.command_name.lower()):
+                continue
+            if cmd.check_type == 2 and not cmd.command_name.lower() in message.lower():
+                continue
+            if cmd.check_type == 10 and not re.match(cmd.command_name, message):
                 continue
 
             self.logger.debug('Found command {}, checking availability'.format(cmd.command_name))
