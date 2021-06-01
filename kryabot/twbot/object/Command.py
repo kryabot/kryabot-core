@@ -101,5 +101,5 @@ class Command:
         roll = randint(0, len(possibilities) - 1)
         return possibilities[roll]
 
-    def get_matches(self, message: str):
-        return self.regex.matches(message)
+    def search(self, message: str):
+        return self.regex.search(message, re.IGNORECASE)
