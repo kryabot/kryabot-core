@@ -1,3 +1,4 @@
+import re
 from logging import Logger
 from typing import Dict
 from datetime import datetime, timedelta
@@ -20,6 +21,7 @@ class Command:
         self.additional_text: str = None
         self.usages: int = None
         self.check_type: int = None
+        self.regex = None
 
         self.last_trigger: datetime = None
         self.last_use: datetime = None
@@ -43,6 +45,7 @@ class Command:
         self.usages = int(raw['used']) or 0
         self.options = raw['options']
         self.check_type = int(raw['check_type']) or 0
+        self.regex = re.compile(self.message)
 
     def used(self)->None:
         self.last_use = datetime.now()
@@ -98,3 +101,5 @@ class Command:
         roll = randint(0, len(possibilities) - 1)
         return possibilities[roll]
 
+    def get_matches(self, message: str):
+        return self.regex.matches(message)

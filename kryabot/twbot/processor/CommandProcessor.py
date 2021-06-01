@@ -1,6 +1,5 @@
 import asyncio
 import random
-import re
 from datetime import datetime
 from typing import List, Dict, Union
 
@@ -117,7 +116,7 @@ class CommandProcessor(Processor):
                 continue
             if cmd.check_type == 2 and not cmd.command_name.lower() in message.lower():
                 continue
-            if cmd.check_type == 10 and not re.match(cmd.command_name, message):
+            if cmd.check_type == 10 and not cmd.get_matches(message):
                 continue
 
             self.logger.debug('Found command {}, checking availability'.format(cmd.command_name))
