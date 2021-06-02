@@ -45,7 +45,7 @@ class Command:
         self.usages = int(raw['used']) or 0
         self.options = raw['options']
         self.check_type = int(raw['check_type']) or 0
-        self.regex = re.compile(self.message)
+        self.regex = re.compile(self.command_name, re.IGNORECASE)
 
     def used(self)->None:
         self.last_use = datetime.now()
@@ -102,4 +102,4 @@ class Command:
         return possibilities[roll]
 
     def search(self, message: str):
-        return self.regex.search(message, re.IGNORECASE)
+        return self.regex.search(message)
