@@ -167,7 +167,7 @@ class CommandProcessor(Processor):
             name = ''
             content = ''
         else:
-            name = context.user.name
+            name = context.user.display_name
             content = context.message
 
         reply_text = await self.replace_keywords(context.channel, command, name, content)
