@@ -45,7 +45,8 @@ class Command:
         self.usages = int(raw['used']) or 0
         self.options = raw['options']
         self.check_type = int(raw['check_type']) or 0
-        self.regex = re.compile(self.command_name, re.IGNORECASE)
+        if self.check_type == 10:
+            self.regex = re.compile(self.command_name, re.IGNORECASE)
 
     def used(self)->None:
         self.last_use = datetime.now()
