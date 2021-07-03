@@ -4,6 +4,7 @@
 SET BUILD_LOG=build.log
 SET DOCKER_REPO=oskaras/kryabot
 SET DOCKER_TAG=latest
+SET COMPOSE_DOCKER_CLI_BUILD=0
 
 call :log "Starting new build at %DATE% %TIME%"
 call :log "Pulling changes from git repo"
