@@ -19,11 +19,7 @@ RUN python --version &&\
 			openssl-dev \
 			musl-dev \
 			make \
-			gcc \
-			g++ \
-			gfortran \
-			openblas-dev \
-			lapack-dev
+			gcc
 	
 	
 COPY requirements.txt .
@@ -46,6 +42,6 @@ EXPOSE 5000
 
 # Start up script
 COPY scripts/dockerstart_irc.sh scripts/dockerstart_spam.sh scripts/dockerstart_telegram.sh scripts/dockerstart_twitch.sh /
-RUN chmod +x scripts/* && chmod +x /dockerstart_irc.sh && chmod +x /dockerstart_spam.sh && chmod +x /dockerstart_telegram.sh && chmod +x /dockerstart_twitch.sh
+RUN chmod +x scripts/* && chmod +x /dockerstart_irc.sh && chmod +x /dockerstart_telegram.sh && chmod +x /dockerstart_twitch.sh
 
 CMD /dockerstart.sh
