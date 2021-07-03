@@ -15,8 +15,7 @@ RUN python --version &&\
 			libffi-dev \
 			openssl-dev \
 			musl-dev \
-			make \
-			gcc
+			make
 	
 	
 COPY requirements.txt .
