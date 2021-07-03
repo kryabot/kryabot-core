@@ -16,7 +16,8 @@ RUN python --version &&\
 			openssl-dev \
 			musl-dev \
 			make \
-			gcc
+			gcc \
+			g++ 
 	
 	
 COPY requirements.txt .
