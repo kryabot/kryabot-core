@@ -110,6 +110,18 @@ class CommandProcessor(Processor):
             return None
 
         for cmd in self.commands[channel_id]:
+            if not cmd.active:
+                self.logger.debug('[{}] Not active command {}'.format(channel_id, cmd.command_name))
+                continue
+
+            if not cmd.can_access(user_level):
+                self.logger.debug('[{}] No access for user level {} to command {}'.format(channel_id, user_level, command_name))
+                continue
+
+            if not cmd.can_use():
+                self.logger.debug('[{}] On cooldown {}'.format(channel_id, cmd.command_name))
+                continue
+
             if cmd.check_type == 0 and cmd.command_name.lower() != command_name.lower():
                 continue
             if cmd.check_type == 1 and not message.lower().startswith(cmd.command_name.lower()):
@@ -118,19 +130,6 @@ class CommandProcessor(Processor):
                 continue
             if cmd.check_type == 10 and not cmd.search(message):
                 continue
-
-            self.logger.debug('Found command {}, checking availability'.format(cmd.command_name))
-            if not cmd.active:
-                self.logger.debug('Not active')
-                return None
-
-            if not cmd.can_access(user_level):
-                self.logger.debug('No access for user level {}'.format(user_level))
-                return None
-
-            if not cmd.can_use():
-                self.logger.debug('On cooldown')
-                return None
 
             cmd.used()
             return cmd

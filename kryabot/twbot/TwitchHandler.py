@@ -174,7 +174,7 @@ class TwitchHandler(Base):
 
         # Treat bits as notice
         if context.has_bits():
-            self.bot_np.process_bits(context)
+            await self.bot_np.process_bits(context)
 
         # Chat Events
         await self.bot_ep.process_message(context)
