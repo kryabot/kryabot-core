@@ -53,7 +53,8 @@ class CommandProcessor(Processor):
                         try:
                             cmd.set(row, update_ts)
                         except Exception as updateEx:
-                            self.logger.exception("Failed to update command {} for channel {}:".format(row, id), updateEx)
+                            self.logger.error("Failed to update command {} for channel {}:".format(row, id))
+                            self.logger.exception(updateEx)
                         exists = True
                         break
 
@@ -61,7 +62,8 @@ class CommandProcessor(Processor):
                     try:
                         self.commands[id].append(Command(row, update_ts, self.logger))
                     except Exception as creationEx:
-                        self.logger.exception("Failed to create command {} for channel {}:".format(row, id), creationEx)
+                        self.logger.error("Failed to create command {} for channel {}:".format(row, id))
+                        self.logger.exception(creationEx)
 
             if channel_id is not None:
                 self.commands[channel_id] = [cmd for cmd in self.commands[channel_id] if not cmd.outdated(update_ts)]
