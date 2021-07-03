@@ -50,12 +50,18 @@ class CommandProcessor(Processor):
                 exists = False
                 for cmd in self.commands[id]:
                     if cmd.command_id == int(row['channel_command_id']):
-                        cmd.set(row, update_ts)
+                        try:
+                            cmd.set(row, update_ts)
+                        except Exception as updateEx:
+                            self.logger.exception("Failed to update command {} for channel {}:".format(row, id), updateEx)
                         exists = True
                         break
 
                 if not exists:
-                    self.commands[id].append(Command(row, update_ts, self.logger))
+                    try:
+                        self.commands[id].append(Command(row, update_ts, self.logger))
+                    except Exception as creationEx:
+                        self.logger.exception("Failed to create command {} for channel {}:".format(row, id), creationEx)
 
             if channel_id is not None:
                 self.commands[channel_id] = [cmd for cmd in self.commands[channel_id] if not cmd.outdated(update_ts)]
