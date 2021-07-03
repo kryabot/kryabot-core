@@ -124,22 +124,22 @@ class CommandProcessor(Processor):
                 continue
 
             if cmd.check_type == 0 and cmd.command_name.lower() != command_name.lower():
-                self.logger.debug("[{}] Request: {} Data: Result: skip0".format(channel_id, command_name, cmd.command_name))
+                self.logger.debug("[{}] Request: {} Data: {} Result: skip0".format(channel_id, command_name, cmd.command_name))
                 continue
             elif cmd.check_type == 1 and not message.lower().startswith(cmd.command_name.lower()):
-                self.logger.debug("[{}] Request: {} Data: Result: skip1".format(channel_id, command_name, cmd.command_name))
+                self.logger.debug("[{}] Request: {} Data: {} Result: skip1".format(channel_id, command_name, cmd.command_name))
                 continue
             elif cmd.check_type == 2 and not cmd.command_name.lower() in message.lower():
-                self.logger.debug("[{}] Request: {} Data: Result: skip2".format(channel_id, command_name, cmd.command_name))
+                self.logger.debug("[{}] Request: {} Data: {} Result: skip2".format(channel_id, command_name, cmd.command_name))
                 continue
             elif cmd.check_type == 10 and not cmd.search(message):
-                self.logger.debug("[{}] Request: {} Data: Result: skip10".format(channel_id, command_name, cmd.command_name))
+                self.logger.debug("[{}] Request: {} Data: {} Result: skip10".format(channel_id, command_name, cmd.command_name))
                 continue
 
             cmd.used()
             return cmd
 
-        self.logger.debug("[] Nothing found for ".format(channel_id, command_name))
+        self.logger.debug("[] Nothing found for {}".format(channel_id, command_name))
         return None
 
     def find_command_trigger(self, channel_id: int)->Union[Command, None]:
