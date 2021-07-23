@@ -864,8 +864,6 @@ class KryaClient(TelegramClient):
         return True
 
     async def on_stream_update(self, data):
-        #await self.report_to_monitoring('<pre>{}<pre>'.format(data))
-
         twitch_id = data['channel_id']
         twitch_name = data['channel_name']
         channel = None
@@ -876,6 +874,9 @@ class KryaClient(TelegramClient):
 
         if channel is None:
             self.logger.info('Skip. User {} has no telegram group for notification'.format(twitch_name))
+            return
+
+        if channel['tg_chat_id'] == 0:
             return
 
         if channel['on_stream'] < 1 or data['start'] != 1:

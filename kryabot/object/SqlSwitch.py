@@ -90,7 +90,7 @@ async def getSql(sqlType):
         'set_subchat_mode': 'UPDATE channel_subchat SET channel_subchat.join_follower_only = %s, channel_subchat.join_sub_only = %s WHERE channel_subchat.tg_chat_id = %s',
         'set_subchat_entrance': 'UPDATE channel_subchat SET channel_subchat.enabled_join = %s WHERE channel_subchat.tg_chat_id = %s',
         'set_subchat_max_warns': 'UPDATE channel_subchat SET channel_subchat.max_warns = %s WHERE channel_subchat.tg_chat_id = %s',
-        'set_subchat_warn_expire': 'UPDATE channel_subchat SET channel_subchat.warn_expire_in = %s WHERE channel_subchat.tg_chat_id = %s',
+        'set_subchat_warn_expire': 'UPDATE channel_subchat SET channel_subchat.warn_expires_in = %s WHERE channel_subchat.tg_chat_id = %s',
         'set_subchat_warn_mute_hours': 'UPDATE channel_subchat SET channel_subchat.warn_mute_h = %s WHERE channel_subchat.tg_chat_id = %s',
         'get_tg_chat_id_by_kb_user_id': 'SELECT channel_subchat.tg_chat_id FROM channel_subchat where channel_subchat.channel_id = getChannelIdByUserId(%s)',
         'get_tg_chat_id_by_channel_id': 'SELECT channel_subchat.tg_chat_id FROM channel_subchat where channel_subchat.channel_id = %s',

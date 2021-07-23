@@ -17,14 +17,19 @@ class BoostyListener(Listener):
         self.logger.debug('Checking boosty data')
 
         for profile in self.profiles:
+            await asyncio.sleep(5)
 
             repeat = True
             offset = None
             while repeat:
                 if offset is not None:
-                    await asyncio.sleep(2)
+                    await asyncio.sleep(5)
+                try:
+                    data = await self.manager.api.boosty.get_user_posts(profile.boosty_username, limit=5, offset=offset)
+                except asyncio.exceptions.TimeoutError as timeoutError:
+                    self.logger.exception(timeoutError)
+                    continue
 
-                data = await self.manager.api.boosty.get_user_posts(profile.boosty_username, limit=5, offset=offset)
                 if 'data' not in data:
                     break
 

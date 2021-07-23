@@ -73,7 +73,6 @@ class Listener:
                     first = False
                     await f(self, *args, **kwargs)
                 except Exception as ex:
-                    self.logger.exception(ex)
                     await self.manager.on_exception(ex)
 
         return inner
