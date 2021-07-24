@@ -24,13 +24,8 @@ class BoostyListener(Listener):
             while repeat:
                 if offset is not None:
                     await asyncio.sleep(5)
-                try:
-                    data = await self.manager.api.boosty.get_user_posts(profile.boosty_username, limit=5, offset=offset)
-                except asyncio.exceptions.TimeoutError as timeoutError:
-                    self.logger.exception(timeoutError)
-                    continue
-
-                if 'data' not in data:
+                data = await self.manager.api.boosty.get_user_posts(profile.boosty_username, limit=5, offset=offset)
+                if data is None or 'data' not in data:
                     break
 
                 if 'extra' not in data and 'offset' not in data['extra']:

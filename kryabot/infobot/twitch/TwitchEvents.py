@@ -113,7 +113,7 @@ class TwitchEvent(Event):
                 self.game_name = resp['data'][0]['name']
         except Exception as ex:
             self.game_name = ""
-            self.profile.logger.info("Received error during fetch of game id: " + self.game_id)
+            self.profile.logger.info("Received error during fetch of game id: {}".format(self.game_id))
             self.profile.logger.exception(ex)
 
 
