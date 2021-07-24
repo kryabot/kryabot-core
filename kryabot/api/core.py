@@ -1,6 +1,6 @@
 import asyncio
 import aiohttp
-from aiohttp import ClientResponseError, ClientConnectorError
+from aiohttp import ClientResponseError, ClientConnectorError, ClientTimeout
 import logging
 from object.BotConfig import BotConfig
 import async_timeout
@@ -15,6 +15,8 @@ class Core:
         if cfg is None:
             cfg = BotConfig()
         self.cfg = cfg
+        self.default_session_timeout = 30
+        self.default_client_timeout = ClientTimeout(total=self.default_session_timeout)
 
     async def get_headers(self, oauth_token=None):
         return {}
@@ -23,27 +25,31 @@ class Core:
         if headers is None:
             headers = await self.get_headers(token)
 
-        async with aiohttp.ClientSession(headers=headers) as session:
-            for i in range(self.max_retries):
-                async with session.get(url, params=params) as response:
-                    # Retry if failed
-                    if response.status >= 500:
-                        await asyncio.sleep(self.initial_backoff * 2 * (i + 1))
-                        continue
+        for i in range(self.max_retries):
+            try:
+                async with aiohttp.ClientSession(headers=headers, timeout=self.default_client_timeout) as session:
+                    async with session.get(url, params=params, async_timeout=self.default_session_timeout) as response:
+                        self.logger.info('[GET] {sta} {url} [{i}]'.format(sta=response.status, url=url, i=i))
+                        # Retry if failed
+                        if response.status >= 500:
+                            await asyncio.sleep(self.initial_backoff * 2 * (i + 1))
+                            continue
 
-                    self.logger.info('[GET] {sta} {url}'.format(sta=response.status, url=url))
+                        if not await self.is_success(response):
+                            continue
 
-                    if not await self.is_success(response):
-                        continue
+                        try:
+                            resp_data = await response.json()
+                        except Exception as err:
+                            resp_data = None
 
-                    try:
-                        resp_data = await response.json()
-                    except Exception as err:
-                        resp_data = None
+                        return resp_data
+            except asyncio.exceptions.TimeoutError:
+                self.logger.info('[GET] {sta} {url} [{i}]'.format(sta='TimeoutError', url=url, i=i))
+                continue
 
-                    return resp_data
-            self.logger.error('All retries failed for {url}'.format(url=url))
-            return None
+        self.logger.error('All retries failed for {url}'.format(url=url))
+        return None
 
     async def make_post_request(self, url, token=None, body=None, headers=None):
         if headers is None:

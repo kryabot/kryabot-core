@@ -107,9 +107,15 @@ class TwitchEvent(Event):
         return 'https://twitch.tv/{}'.format(self.profile.twitch_name)
 
     async def translate(self, api)->None:
-        resp = await api.get_game_info(self.game_id)
-        if resp and 'data' in resp and len(resp['data']) > 0:
-            self.game_name = resp['data'][0]['name']
+        try:
+            resp = await api.get_game_info(self.game_id)
+            if resp and 'data' in resp and len(resp['data']) > 0:
+                self.game_name = resp['data'][0]['name']
+        except Exception as ex:
+            self.game_name = ""
+            self.profile.logger.info("Received error during fetch of game id: " + self.game_id)
+            self.profile.logger.exception(ex)
+
 
     def export(self)->Dict:
         return {"channel_id": self.profile.twitch_id,
