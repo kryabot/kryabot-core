@@ -28,7 +28,7 @@ class Core:
         for i in range(self.max_retries):
             try:
                 async with aiohttp.ClientSession(headers=headers, timeout=self.default_client_timeout) as session:
-                    async with session.get(url, params=params, async_timeout=self.default_session_timeout) as response:
+                    async with session.get(url, params=params) as response:
                         self.logger.info('[GET] {sta} {url} [{i}]'.format(sta=response.status, url=url, i=i))
                         # Retry if failed
                         if response.status >= 500:
