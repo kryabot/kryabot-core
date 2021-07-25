@@ -9,7 +9,10 @@ class Base:
         return var_dict
 
     def stringify(self)->str:
-        return Base.pretty_format(self, 2)
+        try:
+            return Base.pretty_format(self, 2)
+        except RecursionError:
+            return str(self.__dict__)
 
     @staticmethod
     def pretty_format(obj, indent=None):
