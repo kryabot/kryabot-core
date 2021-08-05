@@ -1,13 +1,12 @@
-from telethon.tl.types import PeerChat
+from telethon.utils import get_peer_id
+
 from utils.array import get_first
 from tgbot.commands.common.reminders import reminder_check
 
 
 async def moderate(event, is_edit=False):
-    if isinstance(event.message.to_id, PeerChat):
-        return
-
-    channel = await get_first(await event.client.db.get_auth_subchat(event.message.to_id.channel_id))
+    chat_id: int = int(get_peer_id(event.message.peer_id, add_mark=False))
+    channel = await get_first(await event.client.db.get_auth_subchat(chat_id))
     if channel is None:
         return
 

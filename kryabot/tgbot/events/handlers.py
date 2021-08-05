@@ -1,5 +1,5 @@
 from telethon import events
-from telethon.tl.types import InputMediaUploadedDocument, DocumentAttributeAudio
+from telethon.tl.types import InputMediaUploadedDocument, DocumentAttributeAudio, PeerChat
 from tgbot.events.global_events.common import process_global_events
 from tgbot.commands.commandbuilder import run
 from utils.array import get_first
@@ -23,6 +23,9 @@ async def event_private_message(event: events.NewMessage.Event):
 
 @events.register(events.NewMessage(func=lambda e: e.is_group or e.is_channel))
 async def event_group_message(event: events.NewMessage.Event):
+    if isinstance(event.message.to_id, PeerChat):
+        return
+
     # IF for TEST only
     # if event.message.to_id.channel_id != 1144972862 and event.sender_id != owner_id:
     #     return
@@ -40,6 +43,8 @@ async def event_group_message(event: events.NewMessage.Event):
 
 @events.register(events.MessageEdited(func=lambda e: e.is_group or e.is_channel))
 async def event_group_message_edit(event: events.MessageEdited.Event):
+    if isinstance(event.message.to_id, PeerChat):
+        return
     # IF for TEST only
     # if event.message.to_id.channel_id != 1144972862 and event.sender_id != owner_id:
     #     return

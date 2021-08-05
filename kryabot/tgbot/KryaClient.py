@@ -1,5 +1,5 @@
 from telethon import TelegramClient
-from telethon.errors import UserNotParticipantError, InviteHashInvalidError
+from telethon.errors import UserNotParticipantError, InviteHashInvalidError, InviteHashExpiredError
 from telethon.extensions import html
 from telethon.tl.functions.channels import LeaveChannelRequest, EditBannedRequest, GetParticipantRequest, \
     GetFullChannelRequest
@@ -999,12 +999,13 @@ class KryaClient(TelegramClient):
                 try:
                     check = await self(CheckChatInviteRequest(hash=chat['join_link']))
                     continue
-                except InviteHashInvalidError:
+                except (InviteHashInvalidError, InviteHashExpiredError):
                     # Expired / invalid
                     new_link = await self(ExportChatInviteRequest(peer=chat['tg_chat_id']))
                     self.logger.info('Generated new invite link: {}'.format(new_link))
                     await self.db.updateInviteLink(chat['tg_chat_id'], new_link=new_link.link)
             except Exception as ex:
+                self.logger.exception(ex)
                 await self.report_exception(ex, info=chat)
 
     @log_exception_ignore(log=global_logger)
