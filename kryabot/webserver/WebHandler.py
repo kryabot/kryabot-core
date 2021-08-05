@@ -49,6 +49,7 @@ class WebHandler:
         # Error handlers
         self.app.error_handler.add(ServerError, self.handle_error)
         self.app.error_handler.add(NotFound, self.handle_not_found)
+        self.app.error_handler.add(asyncio.CancelledError, self.handle_cancel)
 
     async def start(self, guard_bot: KryaClient):
         self.guard_bot = guard_bot
@@ -80,6 +81,9 @@ class WebHandler:
         return json({}, status=500)
 
     def handle_not_found(self, request, exception):
+        return json({'status': 404, 'message': self.get_message('404')}, status=404)
+
+    def handle_cancel(self, request, exception):
         return json({'status': 404, 'message': self.get_message('404')}, status=404)
 
     async def todo(self, request: Request):
