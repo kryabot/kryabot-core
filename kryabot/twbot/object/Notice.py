@@ -55,6 +55,12 @@ class Notice:
         self.msg_param_was_gifted = None
         self.msg_param_multimonth_tenure = None
         self.msg_param_multimonth_duration = None
+        # {"badge-info": "subscriber/10", "badges": "vip/1,subscriber/3009,twitchconAmsterdam2020/1", "color": "#FF0000", "display-name": "GetCorgi", "emotes": "", "flags": "", "id": "3ea00ae8-089a-4b81-a1ab-95435824d28f", "login": "getcorgi", "mod": 0, "msg-id": "submysterygift", "msg-param-goal-contribution-type": "SUB_POINTS", "msg-param-goal-current-contributions": 10722, "msg-param-goal-target-contributions": 10500, "msg-param-goal-user-contributions": 10, "msg-param-mass-gift-count": 10, "msg-param-origin-id": "22\\\\s1d\\\\sc3\\\\s59\\\\s99\\\\sb1\\\\s94\\\\sb0\\\\se8\\\\sa3\\\\sa3\\\\s2a\\\\s7d\\\\s26\\\\s40\\\\s5f\\\\s98\\\\s93\\\\s69\\\\s89", "msg-param-sender-count": 721, "msg-param-sub-plan": 1000, "room-id": 34711476, "subscriber": 1, "system-msg": "GetCorgi\\\\sis\\\\sgifting\\\\s10\\\\sTier\\\\s1\\\\sSubs\\\\sto\\\\sJesusAVGN\'s\\\\scommunity!\\\\sThey\'ve\\\\sgifted\\\\sa\\\\stotal\\\\sof\\\\s721\\\\sin\\\\sthe\\\\schannel!", "tmi-sent-ts": 1630605448244, "user-id": 190203376, "user-type": ""}
+        self.msg_param_goal_user_contributions = None
+        self.msg_param_goal_target_contributions = None
+        self.msg_param_goal_current_contributions = None
+        self.msg_param_goal_contribution_type = None
+
 
         self.bits = None
         self.room_id = None
@@ -108,6 +114,10 @@ class Notice:
                            'msg-param-was-gifted',
                            'msg-param-multimonth-tenure',
                            'msg-param-multimonth-duration',
+                           'msg-param-goal-user-contributions',
+                           'msg-param-goal-target-contributions',
+                           'msg-param-goal-current-contributions',
+                           'msg-param-goal-contribution-type',
                            'badge-info',
                            'bits',
                            'room-id',
@@ -167,6 +177,11 @@ class Notice:
         self.msg_param_was_gifted = await self.get_value('msg-param-was-gifted')
         self.msg_param_multimonth_tenure = await self.get_value('msg-param-multimonth-tenure')
         self.msg_param_multimonth_duration = await self.get_value('msg-param-multimonth-duration')
+        self.msg_param_goal_user_contributions = await self.get_value('msg-param-goal-user-contributions')
+        self.msg_param_goal_target_contributions = await self.get_value('msg-param-goal-target-contributions')
+        self.msg_param_goal_current_contributions = await self.get_value('msg-param-goal-current-contributions')
+        self.msg_param_goal_contribution_type = await self.get_value('msg-param-goal-contribution-type')
+
         self.bits = await self.get_value('bits')
         self.room_id = await self.get_value('room-id')
         self.subscriber = await self.get_value('subscriber')
@@ -259,3 +274,26 @@ class Notice:
             return int(await self.get_notice_count2())
         except:
             return 0
+
+    async def get_goal_current(self):
+        try:
+            return int(self.msg_param_goal_current_contributions)
+        except:
+            return 0
+
+    async def get_goal_target(self):
+        try:
+            return int(self.msg_param_goal_target_contributions)
+        except:
+            return 0
+
+    async def get_goal_added(self):
+        try:
+            return int(self.msg_param_goal_user_contributions)
+        except:
+            return 0
+
+    async def get_goal_remaining(self):
+        return (await self.get_goal_target()) - (await self.get_goal_current())
+
+

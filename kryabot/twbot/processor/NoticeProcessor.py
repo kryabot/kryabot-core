@@ -64,6 +64,11 @@ class NoticeProcessor(Processor):
         answer = answer.replace('#user#', await notice.get_user_name())
         answer = answer.replace('#giftreceiver#', await notice.get_gift_receiver())
         answer = answer.replace('#count#', await notice.get_notice_count())
+        answer = answer.replace('#goal_current#', await notice.get_goal_current())
+        answer = answer.replace('#goal_target#', await notice.get_goal_target())
+        answer = answer.replace('#goal_remaining#', await notice.get_goal_remaining())
+        answer = answer.replace('#goal_added#', await notice.get_goal_added())
+
         return answer
 
     async def get_base_response(self, channel_id: int, notice_type_id: int, count: int)->str:
