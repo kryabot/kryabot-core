@@ -60,14 +60,14 @@ class NoticeProcessor(Processor):
             self.logger.exception(ex)
 
     async def replace_keywords(self, answer, notice):
-        answer = answer.replace('#promo#', await avoid_none(notice.msg_param_promo_name))
-        answer = answer.replace('#user#', await notice.get_user_name())
-        answer = answer.replace('#giftreceiver#', await notice.get_gift_receiver())
-        answer = answer.replace('#count#', await notice.get_notice_count())
-        answer = answer.replace('#goal_current#', await notice.get_goal_current())
-        answer = answer.replace('#goal_target#', await notice.get_goal_target())
-        answer = answer.replace('#goal_remaining#', await notice.get_goal_remaining())
-        answer = answer.replace('#goal_added#', await notice.get_goal_added())
+        answer = self.replace_keyword(answer, '#promo#', await avoid_none(notice.msg_param_promo_name))
+        answer = self.replace_keyword(answer, '#user#', await notice.get_user_name())
+        answer = self.replace_keyword(answer, '#giftreceiver#', await notice.get_gift_receiver())
+        answer = self.replace_keyword(answer, '#count#', await notice.get_notice_count())
+        answer = self.replace_keyword(answer, '#goal_current#', await notice.get_goal_current())
+        answer = self.replace_keyword(answer, '#goal_target#', await notice.get_goal_target())
+        answer = self.replace_keyword(answer, '#goal_remaining#', await notice.get_goal_remaining())
+        answer = self.replace_keyword(answer, '#goal_added#', await notice.get_goal_added())
 
         return answer
 
@@ -93,3 +93,8 @@ class NoticeProcessor(Processor):
 
         self.logger.error('Received unknown notice type: {}'.format(notice_name))
         return None
+
+    def replace_keyword(self, answer, keyword, value):
+        if keyword in answer:
+            return answer.replace(keyword, str(value))
+        return answer
