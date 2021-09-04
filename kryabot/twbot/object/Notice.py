@@ -60,6 +60,8 @@ class Notice:
         self.msg_param_goal_target_contributions = None
         self.msg_param_goal_current_contributions = None
         self.msg_param_goal_contribution_type = None
+        self.msg_param_gift_theme = None
+        self.msg_param_goal_description = None
 
 
         self.bits = None
@@ -118,6 +120,8 @@ class Notice:
                            'msg-param-goal-target-contributions',
                            'msg-param-goal-current-contributions',
                            'msg-param-goal-contribution-type',
+                           'msg-param-goal-description',
+                           'msg-param-gift-theme',
                            'badge-info',
                            'bits',
                            'room-id',
@@ -181,6 +185,8 @@ class Notice:
         self.msg_param_goal_target_contributions = await self.get_value('msg-param-goal-target-contributions')
         self.msg_param_goal_current_contributions = await self.get_value('msg-param-goal-current-contributions')
         self.msg_param_goal_contribution_type = await self.get_value('msg-param-goal-contribution-type')
+        self.msg_param_goal_description = await self.get_value('msg-param-goal-description')
+        self.msg_param_gift_theme = await self.get_value('msg-param-gift-theme')
 
         self.bits = await self.get_value('bits')
         self.room_id = await self.get_value('room-id')
