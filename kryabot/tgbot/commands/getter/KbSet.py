@@ -9,6 +9,7 @@ class KbSet(BaseCommand):
 
     def __init__(self, event, parsed):
         super().__init__(event, parsed, KbSet.access_level)
+        self.must_be_reply = True
 
     async def process(self):
         await self.fetch_data()
@@ -22,7 +23,6 @@ class KbSet(BaseCommand):
             await self.reply_fail(self.get_translation('KB_NO_KEYWORD'))
             return
 
-        set_text = await self.get_text_after_command()
         if len(keyword.strip()) > 100:
             await self.reply_fail(self.get_translation('KB_KEYWORD_TOO_LONG').format(maxsym=100))
             return
@@ -37,12 +37,8 @@ class KbSet(BaseCommand):
             await self.reply_fail(self.get_translation('KB_DUPLICATE_KEYWORD'))
             return
 
-        set_message = self.event.message
-
-        # Reply to media
-        if self.event.message.is_reply:
-            set_message = await self.event.message.get_reply_message()
-            set_text = set_message.message
+        set_message = await self.event.message.get_reply_message()
+        set_text = set_message.message
 
         cached_id = 0
         if set_message.media:
