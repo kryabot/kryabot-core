@@ -217,9 +217,10 @@ class TwitchHandler(Base):
         count1 = await note.get_notice_count_int()
         count2 = await note.get_notice_count_int2()
 
+        self.logger.info(context.tags)
         target_id = 0
         if note.msg_id == 'subgift':
-            self.logger.info(context.tags)
+            #self.logger.info(context.tags)
             # target_id is person who sent subgift
             target_id = db_info['user_id']
             db_user_receiver = await self.db.getUserRecordByTwitchId(note.msg_param_recipient_id)
