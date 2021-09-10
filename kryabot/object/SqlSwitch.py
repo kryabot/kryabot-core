@@ -163,4 +163,5 @@ async def getSql(sqlType):
         'get_channel_currency': 'SELECT ct.currency_key, tgi.amt FROM tg_group_inventory tgi LEFT JOIN currency_type ct ON tgi.currency_id = ct.currency_type_id WHERE tgi.channel_id = %s and ct.active = 1 and ct.public = 1',
         'add_currency_to_channel': 'CALL addCurrencyToChannel(%s, %s, %s)',
         'update_subchat_forced_pause': 'UPDATE channel_subchat SET channel_subchat.force_pause = %s WHERE channel_subchat.tg_chat_id = %s',
+        'register_profile_twitch': 'registerNewTwitchProfile(%s)',
     }.get(sqlType, 'unknown_sql_type')

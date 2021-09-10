@@ -3,6 +3,7 @@ from datetime import datetime
 from logging import Logger
 
 from infobot.Profile import Profile
+from infobot.UpdateBuilder import InfoBotUpdate
 from object.Database import Database
 from object.ApiHelper import ApiHelper
 
@@ -18,7 +19,7 @@ class Listener:
         self.db: Database = manager.db if manager else None
         self.period: int = 30
         self.manager = manager
-        self.update_topic: str = 'all'
+        self.update_type = InfoBotUpdate
         self.profiles = None
 
     async def start(self)->None:
@@ -55,10 +56,9 @@ class Listener:
         await asyncio.sleep(sleep_time)
 
     async def on_update(self, data):
-        if data['topic'] != 'all' and data['topic'] != self.update_topic:
-            return
-
-        self.update_data()
+        if isinstance(data, self.update_type):
+            self.logger.info("Received update: {}".format(data.to_json()))
+            self.update_data()
 
     @classmethod
     def repeatable(cls, f):

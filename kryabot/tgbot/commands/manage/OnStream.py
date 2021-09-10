@@ -1,8 +1,10 @@
 from telethon.tl.types import PeerChannel
+import asyncio
 
 from tgbot.commands.UserAccess import UserAccess
 from tgbot.commands.base import BaseCommand
-import asyncio
+from infobot import UpdateBuilder
+from utils import redis_key
 
 
 class OnStream(BaseCommand):
@@ -26,12 +28,12 @@ class OnStream(BaseCommand):
         sender_id = self.event.message.sender_id
 
         main_text = self.get_translation('CMD_ON_STREAM_OPTIONS').format(onstream=self.channel['on_stream'])
+        answer = wait_answer
 
         try:
             async with self.client.conversation(channel_entity) as conv:
                 question = await conv.send_message(main_text)
 
-                answer = wait_answer
                 while answer > max_value or answer < min_value:
                     resp = await conv.get_reply(message=question)
                     if resp.sender_id != sender_id:
@@ -45,3 +47,8 @@ class OnStream(BaseCommand):
                 await self.reply_success(self.get_translation('CMD_ON_STREAM_SUCCESS'))
         except asyncio.TimeoutError as timeout:
             await self.reply_fail(self.get_translation('CMD_CONV_TIMEOUT'))
+
+        if answer > 0:
+            await self.db.registerTwitchProfile(self.channel['user_id'])
+            message = UpdateBuilder.TwitchUpdate(UpdateBuilder.UpdateAction.UPDATE, self.channel['user_id'])
+            await self.db.redis.publish_event(redis_key.get_infobot_update_profile_topic(), message.to_json())

@@ -211,7 +211,8 @@ class TwitchHandler(Base):
         if context.user.name is None:
             context.user.name = await note.get_user_name()
 
-        await self.bot_np.process(context=context, notice=note)
+        if note.can_react():
+            await self.bot_np.process(context=context, notice=note)
 
         count1 = await note.get_notice_count_int()
         count2 = await note.get_notice_count_int2()

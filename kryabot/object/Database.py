@@ -668,6 +668,9 @@ class Database:
     async def updateInviteLink(self, tg_chat_id, new_link):
         await self.query('update_invite_link', [new_link, tg_chat_id])
 
+    async def registerTwitchProfile(self, user_id):
+        await self.query('register_profile_twitch', [user_id])
+
     async def get_list_values_full(self, list_name):
         return await self.query('get_active_list_values', [list_name])
 

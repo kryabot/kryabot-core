@@ -172,3 +172,11 @@ def get_general_startup(system: str):
 
 def get_halloween_update_topic():
     return 'globalevent.halloween.update'
+
+
+def get_infobot_update_links_topic():
+    return 'infobot.update_links'
+
+
+def get_infobot_update_profile_topic():
+    return 'infobot.update_profile'

@@ -1,6 +1,7 @@
 import asyncio
 from typing import List
 
+from infobot.UpdateBuilder import BoostyUpdate
 from infobot.Listener import Listener
 from infobot.boosty.BoostyEvents import BoostyEvent
 from infobot.boosty.BoostyProfile import BoostyProfile
@@ -11,6 +12,7 @@ class BoostyListener(Listener):
         super().__init__(manager)
         self.period = 600
         self.profiles: List[BoostyProfile] = []
+        self.update_type = BoostyUpdate
 
     @Listener.repeatable
     async def listen(self):

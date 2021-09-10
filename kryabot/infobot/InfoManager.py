@@ -15,11 +15,13 @@ from infobot.twitter.TwitterListener import TwitterListener
 from infobot.vk.VkListener import VkListener
 from infobot.wasd.WasdListener import WasdListener
 from infobot.youtube.YoutubeListener import YoutubeListener
+from infobot import UpdateBuilder
 from object.ApiHelper import ApiHelper
 from object.BotConfig import BotConfig
 from object.Database import Database
 from object.Pinger import Pinger
 from object.System import System
+from utils import redis_key
 
 
 class InfoManager:
@@ -53,7 +55,7 @@ class InfoManager:
         self.loop.create_task(self.db.redis.start_listener(self.subscribe))
         self.loop.create_task(Pinger(System.INFOMANAGER, self.logger, self.db.redis).run_task())
 
-        await self.update()
+        await self.update(None)
         await self.start_services()
 
         for listener in self.listeners:
@@ -82,9 +84,11 @@ class InfoManager:
             self.logger.error(event.stringify())
 
     async def subscribe(self):
-        await self.db.redis.subscribe_event('infobot.update', self.on_update)
+        await self.db.redis.subscribe_event(redis_key.get_infobot_update_links_topic(), self.on_link_update)
+        await self.db.redis.subscribe_event(redis_key.get_infobot_update_profile_topic(), self.on_profile_update)
 
-    async def update(self):
+    async def update(self, message):
+        # TODO: implement update logic based on message value, avoid recreating links from scratch each time
         targets = await self.db.getAllActiveInfoBots()
         links = await self.db.getAllInfoBotLinks()
 
@@ -97,11 +101,13 @@ class InfoManager:
                     l = TargetLink(link, t)
                     self.links.append(l)
 
-    async def on_update(self, message):
-        await self.update()
+    async def on_link_update(self, message):
+        await self.update(message)
 
+    async def on_profile_update(self, message):
+        update_object = UpdateBuilder.InfoBotUpdate.from_json(message)
         for listener in self.listeners:
-            await listener.on_update(message)
+            await listener.on_update(update_object)
 
     async def on_exception(self, ex: Exception, info: str=''):
         self.logger.error(info)
