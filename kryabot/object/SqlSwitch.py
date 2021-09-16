@@ -5,7 +5,6 @@ async def getSql(sqlType):
         'create_channel': 'INSERT INTO channel (channel_name) VALUES (%s)',
         'find_channel': 'SELECT * FROM channel WHERE channel_name = %s',
         'create_user': 'INSERT INTO user (tw_id, name, dname) VALUES (%s, %s, %s)',
-        'update_user_name': 'UPDATE user SET user.name = %s, user.dname = %s WHERE user.tw_id = %s',
         'find_user_by_tw_id': 'SELECT * FROM user WHERE tw_id = %s',
         'update_user_admin': 'UPDATE user SET is_admin = %s WHERE user_id = %s',
         'find_admins': 'SELECT user.name FROM user WHERE user.is_admin = TRUE',

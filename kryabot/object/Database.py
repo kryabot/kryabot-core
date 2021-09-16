@@ -153,9 +153,6 @@ class Database:
             await self.redis.set_parsed_value_by_key(cache_key, data, expire=redis_key.ttl_day)
         return data
 
-    async def updateTwitchUserName(self, twitch_id, username, display_name):
-        await self.query('update_user_name', [username, display_name, twitch_id])
-
     async def updateUserAdmin(self, user_id, is_admin):
         return await self.query('update_user_admin', [is_admin, user_id])
 
