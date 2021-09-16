@@ -266,7 +266,7 @@ class TwitchHandler(Base):
                 else:
                     user = users
 
-                if user['name'] != user_name or user['dname'] != user_display_name:
+                if user['name'] != user_name and user_name is not None or user['dname'] != user_display_name:
                     self.logger.info('Updating user names, from [{} {}] to [{} {}]'.format(user['name'], user['dname'], user_name, user_display_name))
                     await self.db.updateTwitchUserName(author_twitch_id, user_name, user_display_name)
                 return user

@@ -485,6 +485,7 @@ class WebsocketConnection:
             message = None
 
         if action == 'RECONNECT':
+            log.info("Received RECONNECT request...")
             # TODO Disconnection/Reconnection Logic.
             return
 
@@ -517,7 +518,7 @@ class WebsocketConnection:
                 self._channel_cache[channel.name]['bot'] = user
 
         elif action == 'USERNOTICE':
-            user = User(author=tags['login'], channel=channel, tags=tags, ws=self._websocket)
+            user = User(author=tags.get('login'), channel=channel, tags=tags, ws=self._websocket)
             await self._dispatch('raw_usernotice', tags)
 
             await self._dispatch('custom_raw_usernotice', message)
