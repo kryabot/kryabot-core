@@ -57,6 +57,7 @@ class WebHandler:
     async def start(self, guard_bot: KryaClient):
         self.guard_bot = guard_bot
         self.register_routes()
+        ResponseAction.Response.redis = self.guard_bot.db.redis
 
         self.loop.create_task(Pinger(System.WEBSERVER, self.logger, guard_bot.db.redis).run_task())
 
