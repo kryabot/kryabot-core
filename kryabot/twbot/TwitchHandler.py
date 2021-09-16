@@ -269,6 +269,7 @@ class TwitchHandler(Base):
                 if user['name'] != user_name and user_name is not None or user['dname'] != user_display_name:
                     self.logger.info('Updating user names, from [{} {}] to [{} {}]'.format(user['name'], user['dname'], user_name, user_display_name))
                     await self.db.updateTwitchUserName(author_twitch_id, user_name, user_display_name)
+                    await self.db.getUserRecordByTwitchId(author_twitch_id, skip_cache=True)
                 return user
             except Exception as e:
                 current_try += 1
