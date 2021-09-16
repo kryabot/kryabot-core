@@ -138,8 +138,8 @@ class Database:
     async def getChannel(self, channel_name):
         return await self.query('find_channel', [channel_name])
 
-    async def createUserRecord(self, twitch_id, username):
-        return await self.query('create_user', [twitch_id, username])
+    async def createUserRecord(self, twitch_id, username, display_name):
+        return await self.query('create_user', [twitch_id, username, display_name])
 
     async def getUserRecordByTwitchId(self, twitch_id, skip_cache=False):
         cache_key = redis_key.get_kb_user(twitch_id=twitch_id)
@@ -152,6 +152,9 @@ class Database:
             data = await self.query('find_user_by_tw_id', [twitch_id])
             await self.redis.set_parsed_value_by_key(cache_key, data, expire=redis_key.ttl_day)
         return data
+
+    async def updateTwitchUserName(self, user_id, username, display_name):
+        await self.query('update_user_name', [username, display_name, user_id])
 
     async def updateUserAdmin(self, user_id, is_admin):
         return await self.query('update_user_admin', [is_admin, user_id])

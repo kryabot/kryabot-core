@@ -9,6 +9,7 @@ from object.BotConfig import BotConfig
 from object.Pinger import Pinger
 from object.System import System
 from tgbot.KryaClient import KryaClient
+from twbot import ResponseAction
 from webserver.common import get_value, get_param_value
 from webserver.decorators import authorized, user
 import utils.redis_key as redis_key
@@ -43,6 +44,8 @@ class WebHandler:
         self.app.add_route(self.endpoint_twitch_unsubscribe_event, '/twitch/report_unsub', methods=['GET'])
         self.app.add_route(self.endpoint_twitch_unlink, '/twitch/tg_unlink', methods=['POST'])
         self.app.add_route(self.endpoint_twitch_stream_update, 'twitch/stream_update', methods=['POST'])
+        self.app.add_route(self.endpoint_twitch_action_timeout, '/twitch/actions/timeout', methods=['POST'])
+        self.app.add_route(self.endpoint_twitch_action_unban, '/twitch/actions/unban', methods=['POST'])
 
         self.app.add_route(self.endpoint_sync, '/sync', methods=['GET'])
 
@@ -213,4 +216,40 @@ class WebHandler:
             return self.response_bad_input()
 
         await self.guard_bot.sync_router(user_id, topic)
+        return self.response_success()
+
+    @authorized()
+    @user()
+    async def endpoint_twitch_action_timeout(self, request: Request, user_id: int):
+        body = request.json
+        if body is None:
+            return self.response_bad_input()
+
+        users = get_value('users', body)
+        duration = get_value('duration', body)
+        reason = get_value('reason', body)
+        channel = get_value('channel', body)
+        if users is None or users == [] or duration is None or reason is None or not isinstance(duration, int):
+            return self.response_bad_input()
+
+        for username in users:
+            await ResponseAction.ResponseTimeout.send(channel_name=channel, user=username, duration=duration, reason=reason)
+
+        return self.response_success()
+
+    @authorized()
+    @user()
+    async def endpoint_twitch_action_unban(self, request: Request, user_id: int):
+        body = request.json
+        if body is None:
+            return self.response_bad_input()
+
+        users = get_value('users', body)
+        channel = get_value('channel', body)
+        if users is None or users == []:
+            return self.response_bad_input()
+
+        for username in users:
+            await ResponseAction.ResponseUnban.send(channel_name=channel, user=username)
+
         return self.response_success()

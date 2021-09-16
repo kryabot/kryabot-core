@@ -161,7 +161,7 @@ class TwitchHandler(Base):
         if context is None or context.channel is None:
             return
 
-        db_info = await self.get_db_user(context.user.twitch_id, context.user.name, context.user.name)
+        db_info = await self.get_db_user(context.user.twitch_id, context.user.name, context.user.display_name)
         if db_info is None:
             self.logger.warning('Failed to get DB info for user: {}'.format(body))
             return
@@ -195,7 +195,7 @@ class TwitchHandler(Base):
         if context is None or context.channel is None:
             return
 
-        db_info = await self.get_db_user(context.user.twitch_id, context.user.name, context.user.name)
+        db_info = await self.get_db_user(context.user.twitch_id, context.user.name, context.user.display_name)
         if db_info is None:
             self.logger.warning('Failed to get DB info for user: {}'.format(body))
             return
@@ -225,7 +225,7 @@ class TwitchHandler(Base):
             target_id = db_info['user_id']
             db_user_receiver = await self.db.getUserRecordByTwitchId(note.msg_param_recipient_id)
             if len(db_user_receiver) == 0:
-                await self.db.createUserRecord(note.msg_param_recipient_id, note.msg_param_recipient_user_name)
+                await self.db.createUserRecord(note.msg_param_recipient_id, note.msg_param_recipient_user_name, note.msg_param_recipient_display_name)
                 db_user_receiver = await self.db.getUserRecordByTwitchId(note.msg_param_recipient_id)
             db_info = db_user_receiver[0]
 
@@ -258,13 +258,18 @@ class TwitchHandler(Base):
 
         while True:
             try:
+                user = None
                 users = await get_first(await self.db.getUserRecordByTwitchId(author_twitch_id))
                 if users is None or users == [] or users == {}:
-                    await self.db.createUserRecord(author_twitch_id, user_name)
-                    users = await get_first(await self.db.getUserRecordByTwitchId(author_twitch_id, skip_cache=True))
-                    return users
+                    await self.db.createUserRecord(author_twitch_id, user_name, user_display_name)
+                    user = await get_first(await self.db.getUserRecordByTwitchId(author_twitch_id, skip_cache=True))
                 else:
-                    return users
+                    user = users
+
+                if user['name'] != user_name or user['dname'] != user_display_name:
+                    self.logger.info('Updating user names, from [{} {}] to [{} {}]'.format(user['name'], user['dname'], user_name, user_display_name))
+                    await self.db.updateTwitchUserName(author_twitch_id, user_name, user_display_name)
+                return user
             except Exception as e:
                 current_try += 1
                 if current_try >= max_tries:
@@ -379,10 +384,10 @@ class TwitchHandler(Base):
             return
 
         # Find user data
-        db_user = await self.get_db_user(user['id'], user['login'], user['login'])
+        db_user = await self.get_db_user(user['id'], user['login'], user['display_name'])
         if db_user is None:
             await asyncio.sleep(3)
-            db_user = await self.get_db_user(user['id'], user['login'], user['login'])
+            db_user = await self.get_db_user(user['id'], user['login'], user['display_name'])
             if db_user is None:
                 await channel.reply('@{} i failed to do redeption action for user {}. Please proceed manually.'.format(channel.channel_name, user['login']))
                 self.logger.error('Failed to complete redemption, user not found. id: {} login: {}'.format(user['id'], user['login']))
