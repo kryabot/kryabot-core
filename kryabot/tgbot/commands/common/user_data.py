@@ -235,11 +235,12 @@ async def fill_twitch_follow_info(user_data, client, channel):
     try:
         follow_info = await client.api.twitch.check_channel_following(channel['tw_id'], user_data['tw_id'])
         if follow_info and follow_info['total'] == 1:
-            created_dt = parse(follow_info['followed_at'].replace('Z', ''))
+            followed_at = follow_info['data'][0]['followed_at']
+            created_dt = parse(followed_at.replace('Z', ''))
             dt_diff = datetime.utcnow() - created_dt
             if dt_diff.seconds > 0:
                 user_data['is_follower'] = True
-                user_data['follow_date'] = follow_info['followed_at'].split('T')[0]
+                user_data['follow_date'] = followed_at.split('T')[0]
                 user_data['follow_text'] = await get_datetime_diff_text(datetime.utcnow(), created_dt)
     except Exception as err:
         await client.exception_reporter(err, 'Checking follow info of user {} in channel {}'.format(user_data['tw_id'], channel['tw_id']))
