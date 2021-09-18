@@ -272,7 +272,7 @@ async def fill_twitch_sub_info(user_data, client, channel):
                     months += i
 
             user_data['sub_months'] = months
-            user_data['sub_tier'] = sub_data['sub_plan']
+            user_data['sub_tier'] = sub_data['tier']
             user_data['is_gifted'] = sub_info['notice_type'] == 'subgift'
 
         sub_months_cache = await client.db.get_twitch_sub_count_from_cache(channel['tw_id'], user_data['tw_id'])
