@@ -29,8 +29,8 @@ class TelegramInvite(CommandBase):
             self.logger.info('User {} adding telegram vip to {}'.format(self.context.user.name, target_nick))
 
             try:
-                twitch_user_by_name = await self.api.twitch.get_user_by_name(target_nick)
-                author_twitch_id = twitch_user_by_name['users'][0]['_id']
+                twitch_user_by_name = await self.api.twitch.get_users(usernames=[target_nick])
+                author_twitch_id = int(twitch_user_by_name['data'][0]['id'])
             except Exception as ex:
                 await ResponseAction.ResponseMessage.send(self.context.channel.name, '{} i could not find user by your provided nickname ({})'.format(self.context.user.name, target_nick))
                 return

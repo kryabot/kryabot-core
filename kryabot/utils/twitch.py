@@ -20,11 +20,11 @@ async def sub_check(req_channel, requestor, db, api):
     req_channel = await refresh_channel_token_no_client(req_channel, db, api)
 
     if requestor['tw_id'] == 0:
-        twitch_user = await api.twitch.get_user_by_name(requestor['name'])
-        if twitch_user is None or len(twitch_user['users']) == 0:
+        twitch_user = await api.twitch.get_users(usernames=[requestor['name']])
+        if twitch_user is None or len(twitch_user['data']) == 0:
             return None, "deleted_twitch_account"
-        await db.updateUserTwitchId(requestor['user_id'], twitch_user['users'][0]['_id'])
-        user_twitch_id = twitch_user['users'][0]['_id']
+        await db.updateUserTwitchId(requestor['user_id'], int(twitch_user['data'][0]['id']))
+        user_twitch_id = int(twitch_user['data'][0]['id'])
     else:
         user_twitch_id = requestor['tw_id']
 

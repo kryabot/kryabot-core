@@ -185,14 +185,13 @@ class EventProcessor(Processor):
         idx = randint(0, len(list) - 1)
         return list[idx]
 
-
     async def is_follower(self, channel_id, username)-> bool:
         try:
-            user_data = await self.api.twitch.get_user_by_name(username)
-            follower_check = await self.api.twitch.check_channel_following(channel_id, user_data['users'][0]['_id'])
-            return True
+            user_data = await self.api.twitch.get_users(usernames=[username])
+            response = await self.api.twitch.check_channel_following(channel_id, user_data['data'][0]['id'])
+            return response and response['total'] == 1
         except Exception as e:
-            # 404 is returned if not follower
+            self.logger.exception(e)
             return False
 
     async def cancel_event(self, context: MessageContext):

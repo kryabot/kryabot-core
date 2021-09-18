@@ -243,8 +243,8 @@ class TwitchHandler(Base):
         author_twitch_id = int(user_twitch_id)
         try:
             if author_twitch_id is None or author_twitch_id == 0:
-                twitch_user_by_name = await self.api.twitch.get_user_by_name(user_name)
-                author_twitch_id = twitch_user_by_name['users'][0]['_id']
+                twitch_user_by_name = await self.api.twitch.get_users(usernames=[user_name])
+                author_twitch_id = int(twitch_user_by_name['data'][0]['id'])
 
                 if author_twitch_id is None or author_twitch_id == 0:
                     return

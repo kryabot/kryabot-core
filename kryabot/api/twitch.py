@@ -15,7 +15,7 @@ def app_auth():
         async def decorated_function(self, *args, **kwargs):
             try:
                 return await f(self, *args, **kwargs)
-            except ExpiredAuthToken as ex:
+            except ExpiredAuthToken:
                 await get_active_app_token(self, forced=True)
                 return await f(self, *args, **kwargs)
         return decorated_function
@@ -28,7 +28,6 @@ class Twitch(Core):
         self.client_id = self.cfg.getTwitchConfig()['API_KEY']
         self.client_secret = self.cfg.getTwitchConfig()['SECRET']
         self.token_url = 'https://id.twitch.tv/oauth2/token'
-        self.base_url = 'https://api.twitch.tv/kraken/'
         self.helix_url = 'https://api.twitch.tv/helix/'
         self.webhooks_url = 'https://api.twitch.tv/helix/webhooks/hub'
         self.remote_url = self.cfg.getKbApiConfig()['URL']
@@ -64,44 +63,81 @@ class Twitch(Core):
 
         return headers
 
-    async def get_user_by_name(self, username, skip_cache=False):
-        cache_key = redis_key.get_api_tw_user_by_name(username)
-        data = None
+    async def get_users(self, ids: [int]=None, usernames: [str]=None, skip_cache: bool=False):
+        if ids is None and usernames is None:
+            raise ValueError('Bad input - missing ids or usernames value')
 
-        if self.redis is not None and not skip_cache:
-            data = await self.redis.get_parsed_value_by_key(cache_key)
+        response = {'data': []}
+        params = []
 
-        if data is None:
-            url = '{base}users?login={uname}'.format(base=self.base_url, uname=username)
-            data = await self.make_get_request(url)
-            if self.redis is not None:
-                await self.redis.set_parsed_value_by_key(cache_key, data, expire=redis_key.ttl_half_day)
+        # Check ID list
+        if ids is not None and len(ids) > 0:
+            for id in ids:
+                data = None
+                if self.redis is not None and not skip_cache:
+                    data = await self.redis.get_parsed_value_by_key(redis_key.get_api_tw_user_by_id(id))
 
-        return data
+                if data is None:
+                    params.append(('id', id))
+                else:
+                    response['data'].append(data)
 
-    async def get_user_by_id(self, user_id, skip_cache=False):
-        cache_key = redis_key.get_api_tw_user_by_id(user_id)
-        data = None
+        # Check username list
+        if usernames is not None and len(usernames) > 0:
+            for username in usernames:
+                data = None
+                if self.redis is not None and not skip_cache:
+                    data = await self.redis.get_parsed_value_by_key(redis_key.get_api_tw_user_by_name(username))
 
-        if self.redis is not None and not skip_cache:
-            data = await self.redis.get_parsed_value_by_key(cache_key)
+                if data is None:
+                    params.append(('login', username))
+                else:
+                    response['data'].append(data)
 
-        if data is None:
-            url = '{base}users/{id}'.format(base=self.base_url, id=user_id)
-            data = await self.make_get_request(url)
-            if self.redis is not None:
-                await self.redis.set_parsed_value_by_key(cache_key, data, expire=redis_key.ttl_half_day)
+        if len(params) > 100:
+            raise ValueError('Cannot request more than 100 entries at once (current size={})'.format(len(params)))
 
-        return data
+        # After checking cache, we still have requests to do
+        if len(params) > 0:
+            url = '{helix}users'.format(helix=self.helix_url)
+            headers = await self.get_json_headers(add_auth=False)
+            twitch_response = await self.make_get_request(url, headers=headers, params=params)
+            if twitch_response is not None and 'data' in twitch_response:
+                for item in twitch_response['data']:
+                    # Add to cache
+                    if self.redis is not None:
+                        await self.redis.set_parsed_value_by_key(redis_key.get_api_tw_user_by_id(item['id']), item, expire=redis_key.ttl_half_day)
+                        await self.redis.set_parsed_value_by_key(redis_key.get_api_tw_user_by_name(item['login']), item, expire=redis_key.ttl_half_day)
+
+                    # Add to return value
+                    response['data'].append(item)
+
+        return response
 
     async def check_channel_following(self, channel_id, user_id):
-        url = '{base}users/{uid}/follows/channels/{cid}'.format(base=self.base_url, uid=user_id, cid=channel_id)
+        url = '{helix}users/follows?from_id={uid}&to_id={cid}'.format(helix=self.helix_url, uid=user_id, cid=channel_id)
         return await self.make_get_request(url)
 
-    # OAuth required
-    async def check_channel_subscribtion(self, token, channel_id, user_id):
-        url = '{base}channels/{cid}/subscriptions/{uid}'.format(base=self.base_url, uid=user_id, cid=channel_id)
-        return await self.make_get_request(url, token)
+    # Oauth bearer required
+    async def get_channel_subs(self, token: str, channel_id: int, users: [int]=None, after: int=None, first: int=None):
+        params = []
+        params.append(('broadcaster_id', str(channel_id)))
+
+        if users:
+            if len(users) > 100:
+                raise ValueError("Cannot request more than 100 users! (current size={})".format(len(users)))
+
+            for user in users:
+                params.append(('user_id', str(user)))
+
+        if after:
+            params.append(('after', after))
+        if first:
+            params.append(('first', first))
+
+        url = '{helix}subscriptions'.format(helix=self.helix_url)
+        headers = await self.get_json_headers(bearer_token=token)
+        return await self.make_get_request(url, headers=headers, params=params)
 
     async def webhook_subscribe(self, topic, user_id, channel_name, enable=True, lease_seconds=864000):
         topic_url = await self.get_webhook_topic_url(topic)
@@ -190,11 +226,6 @@ class Twitch(Core):
 
         if language is not None:
             url = '{eurl}&language={lang}'.format(eurl=url, lang=language)
-
-        return await self.make_get_request(url)
-
-    async def get_stream_info_by_id(self, twitch_user_id):
-        url = '{base}streams?user_id={tuid}'.format(base=self.helix_url, tuid=twitch_user_id)
 
         return await self.make_get_request(url)
 

@@ -32,32 +32,17 @@ class ApiHelper:
     # Twitch ids
     async def sub_check(self, auth_token, channel_id, user_id):
         try:
-            response = await self.twitch.check_channel_subscribtion(token=auth_token, channel_id=channel_id, user_id=user_id)
-            return response, None
+            response = await self.twitch.get_channel_subs(token=auth_token, channel_id=channel_id, users=[user_id])
+            if response and 'data' in response and len(response['data']) > 0:
+                return response, None
+            else:
+                return None, self.sub_check_false
         except Exception as e:
             self.twitch.logger.error(str(e))
-            if str(e).startswith('404'):
-                # 404 means not a sub
-                return None, self.sub_check_false
-            else:
-                # report any other unexpected error (unauthorized or forbidden etc)
-                if self.reporter is not None:
-                    await self.reporter(e, 'Checking sub data for user {} in channel {}'.format(user_id, channel_id))
+            # report any other unexpected error (unauthorized or forbidden etc)
+            if self.reporter is not None:
+                await self.reporter(e, 'Checking sub data for user {} in channel {}'.format(user_id, channel_id))
             return None, str(e)
-
-    # If only need yes/no
-    async def is_sub(self, auth_token, channel_id, user_id):
-        response, error = await self.sub_check(auth_token, channel_id, user_id)
-
-        if error is None and response is not None:
-            return True
-
-        if error is not None and error == self.sub_check_false:
-            return False
-
-        # Auth problems
-        self.twitch.logger.critical(error)
-        return None
 
     async def get_vk_song(self, vk_user_id):
         response = await self.vk.get_song(vk_user_id)

@@ -212,14 +212,15 @@ async def fill_twitch_info(user_data, client, channel):
 
 async def fill_twitch_user_info(user_data, client):
     try:
-        twitch_user = await client.api.twitch.get_user_by_id(user_data['tw_id'])
+        twitch_user = await client.api.twitch.get_users(ids=[user_data['tw_id']])
+        twitch_user = twitch_user['data'][0]
 
-        if user_data['display_name'] != twitch_user['display_name'] or user_data['name'] != twitch_user['name']:
-            client.logger.info('[{}] Changing from [{} {}] to [{} {}]'.format(user_data['tw_id'], user_data['name'], user_data['display_name'], twitch_user['name'], twitch_user['display_name']))
-            await client.db.updateUserTwitchName(user_data['kb_id'], twitch_user['name'], twitch_user['display_name'], tg_user_id=user_data['tg_id'], tw_user_id=user_data['tw_id'])
+        if user_data['display_name'] != twitch_user['display_name'] or user_data['name'] != twitch_user['login']:
+            client.logger.info('[{}] Changing from [{} {}] to [{} {}]'.format(user_data['tw_id'], user_data['name'], user_data['display_name'], twitch_user['login'], twitch_user['display_name']))
+            await client.db.updateUserTwitchName(user_data['kb_id'], twitch_user['login'], twitch_user['display_name'], tg_user_id=user_data['tg_id'], tw_user_id=user_data['tw_id'])
 
         user_data['twitch_user'] = twitch_user
-        user_data['name'] = twitch_user['name']
+        user_data['name'] = twitch_user['login']
         user_data['display_name'] = twitch_user['display_name']
         user_data['created_at'] = twitch_user['created_at']
         user_data['twitch_user_exists'] = True

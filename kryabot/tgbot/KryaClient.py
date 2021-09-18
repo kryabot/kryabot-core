@@ -1011,37 +1011,55 @@ class KryaClient(TelegramClient):
     @log_exception_ignore(log=global_logger)
     async def task_fix_twitch_ids(self):
         try:
-            rows = await self.db.do_query('select * from user where user.tw_id = 0', [])
+            sql = "select * from user where user.tw_id = 0 and user.name != ''"
+            rows = await self.db.do_query(sql, [])
             if rows is None or len(rows) == 0:
                 return
 
-            for row in rows:
-                try:
-                    tw_user = await self.api.twitch.get_user_by_name(['name'])
-                    new_id = tw_user['users'][0]['_id']
-                    self.logger.info('Updating Twitch ID for user {} to {}'.format(row['name'], new_id))
-                    await self.db.updateUserTwitchId(row['user_id'], new_id)
-                except Exception as e:
-                    await self.report_exception(e, 'ID fix for {{}} failed'.format(row['name']))
-                    continue
+            params = [int(user['name']) for user in rows]
+            if len(params) == 0:
+                return
+
+            parts = split_array_into_parts(params, 100)
+            for part in parts:
+                self.logger.info('Fixing Twitch ID for users: {}'.format(part))
+                users = await self.api.twitch.get_users(usernames=part, skip_cache=True)
+                for twitch_user in users['data']:
+                    kb_user = next(filter(lambda row: str(row['name']) == str(twitch_user['login']), rows))
+                    self.logger.info('Updating Twitch ID for user {} to {}'.format(kb_user['name'], twitch_user['id']))
+                    await self.db.updateUserTwitchId(kb_user['user_id'], int(twitch_user['id']))
+
+            rows = await self.db.do_query(sql, [])
+            if rows and len(rows) > 0:
+                self.logger.info('After fixing Twitch IDs, {} users still not fixed: {}'.format(len(rows), [int(user['user_id']) for user in rows]))
         except Exception as e:
             await self.exception_reporter(e, 'task_fix_twitch_ids')
 
     @log_exception_ignore(log=global_logger)
     async def task_fix_twitch_names(self):
         try:
-            rows = await self.db.do_query('select * from user where user.name = ""', [])
+            sql = "select * from user where user.name = ''"
+            rows = await self.db.do_query(sql, [])
             if rows is None or len(rows) == 0:
                 return
 
-            for row in rows:
-                try:
-                    tw_user = await self.api.twitch.get_user_by_id(row['tw_id'], skip_cache=True)
-                    self.logger.info('Updating Twitch name for user {} to {}'.format(row['tw_id'], tw_user['name']))
-                    await self.db.updateUserTwitchName(['user_id'], tw_user['name'], tw_user['display_name'], tw_user_id=['tw_id'])
-                except Exception as e:
-                    await self.exception_reporter(e, 'Name fix for ID {uid} failed:'.format(uid=row['tw_id']))
-                    continue
+            params = [int(user['tw_id']) for user in rows]
+            if len(params) == 0:
+                return
+
+            parts = split_array_into_parts(params, 100)
+            for part in parts:
+                self.logger.info('Fixing Twitch Names for users: {}'.format(part))
+                users = await self.api.twitch.get_users(ids=part, skip_cache=True)
+
+                for user in users['data']:
+                    kb_user = next(filter(lambda row: int(row['tw_id']) == int(user['id']), rows))
+                    self.logger.info('Updating Twitch name for user {} to {}'.format(kb_user['tw_id'], user['login']))
+                    await self.db.updateUserTwitchName(kb_user['user_id'], user['login'], user['display_name'], tw_user_id=int(user['id']))
+
+            rows = await self.db.do_query(sql, [])
+            if rows and len(rows) > 0:
+                self.logger.info('After fixing Twitch names, {} users still not fixed: {}'.format(len(rows), [int(user['user_id']) for user in rows]))
         except Exception as e:
             await self.exception_reporter(e, 'task_fix_twitch_names')
 

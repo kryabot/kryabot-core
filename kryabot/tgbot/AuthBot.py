@@ -8,20 +8,18 @@ from object.ApiHelper import ApiHelper
 from object.Pinger import Pinger
 from object.System import System
 from object.Translator import Translator
+from tgbot.constants import TG_GROUP_MONITORING_ID
 from utils.twitch import get_active_oauth_data
 import logging
 import base64
 import asyncio
 import os
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime
 from urllib import parse
 
-monitoring_id = 1255287898
-super_admins = [766888597]
 
-
-@events.register(events.NewMessage(pattern='/ping'))
+@events.register(events.NewMessage(pattern='/ping', chats=[TG_GROUP_MONITORING_ID]))
 async def pong(event):
     event.client.last_ping = datetime.now()
     await event.reply('pong')
@@ -37,7 +35,7 @@ async def start(event):
         await event.client.exception_reporter(ex, 'Start event')
 
 
-@events.register(events.NewMessage(pattern='/reloadtranslation', chats=[monitoring_id]))
+@events.register(events.NewMessage(pattern='/reloadtranslation', chats=[TG_GROUP_MONITORING_ID]))
 async def reloadtranslations(event):
     await event.client.reload_translations()
     await event.reply('Done')
@@ -81,7 +79,7 @@ class AuthBot(TelegramClient):
         await self.report_to_monitoring(message='Error: {}: {}\n\n{}\n\n<pre>{}</pre>'.format(type(err).__name__, err, info, ''.join(traceback.format_tb(err.__traceback__))))
 
     async def report_to_monitoring(self, message):
-        await self.send_message(monitoring_id, message)
+        await self.send_message(TG_GROUP_MONITORING_ID, message)
 
     async def process_start(self, event):
         sender = await event.get_sender()
@@ -157,9 +155,10 @@ class AuthBot(TelegramClient):
 
         try:
             if requestor[0]['tw_id'] == 0:
-                twitch_user_by_name = await self.api.twitch.get_user_by_name(requestor[0]['name'])
-                await self.db.updateUserTwitchId(requestor[0]['user_id'], twitch_user_by_name['users'][0]['_id'])
-                requestor[0]['tw_id'] = twitch_user_by_name['users'][0]['_id']
+                twitch_user_by_name = await self.api.twitch.get_users(usernames=[requestor[0]['name']], skip_cache=True)
+                twitch_user_by_name = twitch_user_by_name['data'][0]
+                await self.db.updateUserTwitchId(requestor[0]['user_id'], int(twitch_user_by_name['id']))
+                requestor[0]['tw_id'] = int(twitch_user_by_name['id'])
         except Exception as e:
             self.logger.error('Failed to upate tw_id for {uname}: {err}'.format(uname=requestor[0]['name'], err=str(e)))
             pass
@@ -239,10 +238,11 @@ class AuthBot(TelegramClient):
                     return
 
         try:
-            twitch_user = await self.api.twitch.get_user_by_id(requestor[0]['tw_id'])
+            twitch_user = await self.api.twitch.get_users(ids=[requestor[0]['tw_id']])
+            twitch_user = twitch_user['data'][0]
             twitch_display_name = twitch_user['display_name']
         except Exception as e:
-            twitch_display_name = requestor[0]['name']
+            twitch_display_name = requestor[0]['dname'] if requestor[0]['dname'] is not None and len(requestor[0]['dname']) > 0 else requestor[0]['name']
 
         # Success
         reply = self.format_translation(currentChannel['channel_name'], twitch_display_name, 'AUTH_JOIN_SUCCESS')
