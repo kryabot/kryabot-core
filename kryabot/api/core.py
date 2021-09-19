@@ -117,14 +117,18 @@ class Core:
         try:
             response.raise_for_status()
         except ClientConnectorError as e:
-            self.logger.error('[GET] {reason}'.format(reason=str(e)))
+            self.logger.error('[{method}] {reason}'.format(reason=str(e), method=response.method))
             if e.host == 'api.twitch.tv':
                 await asyncio.sleep(30)
             else:
                 await asyncio.sleep(10)
             return False
         except ClientResponseError as e:
-            self.logger.error('[GET] {reason}'.format(reason=e.message))
+            try:
+                body = response.json()
+            except:
+                body = ''
+            self.logger.error('[{method}] {reason} {body}'.format(reason=e.message, method=e.request_info.method, body=body))
             raise e
 
         return True

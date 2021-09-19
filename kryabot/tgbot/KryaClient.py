@@ -1161,7 +1161,6 @@ class KryaClient(TelegramClient):
                     response = await self.api.twitch.get_channel_follows(channel_id=channel['tw_id'], users=[twitch_id], token=channel['token'])
                     if response and 'data' in response and len(response['data']) > 0:
                         twitch_follows += response['data']
-                        await asyncio.sleep(0.5)
                 except ClientResponseError as err:
                     self.logger.exception(err)
                     raise err
