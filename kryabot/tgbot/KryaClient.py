@@ -540,7 +540,7 @@ class KryaClient(TelegramClient):
                 report += '\n{label}: {val}'.format(val=summary['subs'], label=self.translator.getLangTranslation(lang, 'UR_SUBS'))
                 report += '\n{label}: {val}'.format(val=(summary['non_subs']), label=self.translator.getLangTranslation(lang, 'UR_NON_SUBS'))
                 if summary['follows'] > 0:
-                    report += '\n{label}: {val}'.format(val=summary['follows'] ,label=self.translator.getLangTranslation(lang, 'UR_FOLLOWS'))
+                    report += '\n{label}: {val}'.format(val=summary['follows'], label=self.translator.getLangTranslation(lang, 'UR_FOLLOWS'))
                 if summary['non_verified'] > 0:
                     report += '\n{label}: {val}'.format(val=summary['non_verified'], label=self.translator.getLangTranslation(lang, 'UR_NON_VERIFIED'))
                 if summary['deleted'] > 0:
@@ -1129,8 +1129,6 @@ class KryaClient(TelegramClient):
 
         telegram_ids = [user.id for user in participants]
         kb_users = await self.db.getUsersByTgId(telegram_ids)
-        self.logger.info(kb_users)
-        self.logger.info(special_rights)
         twitch_ids = [user['tw_id'] for user in kb_users]
         twitch_ids_parts = split_array_into_parts(twitch_ids, 90)
         twitch_subs = []
