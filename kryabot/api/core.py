@@ -10,7 +10,7 @@ import io
 class Core:
     def __init__(self, cfg=None):
         self.logger = logging.getLogger('krya.api')
-        self.max_retries = 3
+        self.max_retries = 5
         self.initial_backoff = 0.5
         if cfg is None:
             cfg = BotConfig()
@@ -29,9 +29,15 @@ class Core:
             try:
                 async with aiohttp.ClientSession(headers=headers, timeout=self.default_client_timeout) as session:
                     async with session.get(url, params=params) as response:
-                        self.logger.info('[GET] {sta} {url} ({params}) [{i}]'.format(sta=response.status, url=url, i=i, params=params))
+                        rate_limit = response.headers.get('Ratelimit-Limit', None)
+                        rate_remaining = response.headers.get('Ratelimit-Remaining', None)
+                        if rate_limit and rate_remaining:
+                            rate_info = 'RateLimits({}/{})'.format(rate_remaining, rate_limit)
+
+                        self.logger.info('[GET] {sta} {url} ({params}) {rates} [retries: {i}]'.format(sta=response.status, url=url, i=i, params=params, rates=rate_info))
+
                         # Retry if failed
-                        if response.status >= 500:
+                        if response.status >= 500 or response.status == 429:
                             await asyncio.sleep(self.initial_backoff * 2 * (i + 1))
                             continue
 
