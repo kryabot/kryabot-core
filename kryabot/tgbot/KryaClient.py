@@ -528,10 +528,11 @@ class KryaClient(TelegramClient):
 
     @log_exception_ignore(log=global_logger, reporter=reporter)
     async def run_user_report(self, channel, manual=False):
-        channel = await refresh_channel_token(client=self, channel=channel, force_refresh=True)
+        # channel = await refresh_channel_token(client=self, channel=channel, force_refresh=True)
         data = await self.get_group_participant_full_data(channel, need_follows=channel['join_followers_only'] == 1, kick_not_verified=not manual and channel['auto_kick'] == 1)
         lang = channel['bot_lang']
         summary = data['summary']
+        self.logger.info("Summary for channel {}: {}".format(channel['channel_id'], summary))
 
         if manual is True or channel['show_report'] == 1:
             async with self.action(channel['tg_chat_id'], 'document'):
@@ -1095,6 +1096,7 @@ class KryaClient(TelegramClient):
         raise Exception("Exception from task_task_error")
 
     async def get_group_participant_full_data(self, channel, need_subs=True, need_follows=True, kick_not_verified=True):
+        self.logger.info('Collecting full data for channel {}'.format(channel['channel_id']))
         # Return value is data
         data = {'users': [], 'summary': {}}
 
@@ -1178,7 +1180,7 @@ class KryaClient(TelegramClient):
             is_sudo = next(filter(lambda right: right['user_id'] == kb_user['user_id'] and right['right_type'] == 'SUDO', special_rights), None) if kb_user else None
             tg_admin = next(filter(lambda admin: admin.id == user.id, group_admins), None)
 
-            if bot_admin and kick_not_verified and kb_user is None and tg_admin is None:
+            if bot_admin and (kick_not_verified and kb_user is None and tg_admin is None and not user.bot or user.deleted):
                 await self.kick_user(channel_entity, user, channel['ban_time'])
                 summary['kicked'] += 1
                 continue
