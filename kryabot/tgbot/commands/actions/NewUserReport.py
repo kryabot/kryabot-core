@@ -18,4 +18,7 @@ class NewUserReport(BaseCommand):
         data = await self.client.get_group_participant_full_data(self.channel, need_follows=False)
         self.logger.info(data['summary'])
         self.logger.info(data['users'])
+
+        for user in data['users']:
+            self.logger.info(user['tg'].last_name)
         await self.reply_success()
