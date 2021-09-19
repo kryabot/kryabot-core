@@ -1116,6 +1116,7 @@ class KryaClient(TelegramClient):
                  'non_subs': 0,
                  'whitelists': 0,
                  'blacklists': 0,
+                 'sudos': 0,
                  'is_authorised': 1,
                  'next_mk': None,
                  'bot_admin': bot_admin}
@@ -1202,6 +1203,12 @@ class KryaClient(TelegramClient):
                         summary['subs'] += 1
                     if tw_follow:
                         summary['followers'] += 1
+                    if is_blacklisted:
+                        summary['blacklists'] += 1
+                    if is_whitelisted:
+                        summary['whitelists'] += 1
+                    if is_sudo:
+                        summary['sudos'] += 1
                 else:
                     summary['non_verified'] += 1
 
