@@ -125,7 +125,7 @@ class Core:
             return False
         except ClientResponseError as e:
             try:
-                body = response.json()
+                body = await response.json()
             except:
                 body = ''
             self.logger.error('[{method}] {reason} {body}'.format(reason=e.message, method=e.request_info.method, body=body))
