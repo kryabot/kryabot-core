@@ -15,6 +15,7 @@ class NewUserReport(BaseCommand):
         if not (await self.can_process()):
             return
 
-        data = await self.client.get_group_participant_full_data(self.channel)
+        data = await self.client.get_group_participant_full_data(self.channel, need_follows=False)
         self.logger.info(data['summary'])
+        self.logger.info(data['users'])
         await self.reply_success()
