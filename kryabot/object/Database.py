@@ -241,6 +241,20 @@ class Database:
             await self.redis.set_parsed_value_by_key(cache_key, data, expire=redis_key.ttl_hour)
         return data
 
+    async def getUsersByTgId(self, tg_users: [int]):
+        if tg_users is None or len(tg_users) == 0:
+            raise ValueError('tg_users must have atleast one entry!')
+
+        param_placeholders = ','.join(['%s'] * len(tg_users))
+        sql = await getSql('get_users_by_tg_id')
+        sql = sql % param_placeholders
+        response = await self.do_query(sql, tg_users)
+        if response:
+            for item in response:
+                await self.redis.set_parsed_value_by_key(redis_key.get_kb_user_by_tg_id(tg_id=item['tg_id']), [item], expire=redis_key.ttl_hour)
+        return response
+
+
     async def saveChatInfoByHash(self, chat_id, chat_name, hash):
         return await self.query('save_chat_info_by_hash', [chat_id, chat_name, hash])
 

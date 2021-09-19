@@ -24,3 +24,4 @@ from tgbot.commands.actions.SpawnBoss import SpawnBoss
 from tgbot.commands.actions.SpawnBox import SpawnBox
 from tgbot.commands.actions.SpawnLove import SpawnLove
 from tgbot.commands.actions.SpawnSnowing import SpawnSnowing
+from tgbot.commands.actions.NewUserReport import NewUserReport

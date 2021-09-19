@@ -17,8 +17,6 @@ async def refresh_channel_token(client, channel, force_refresh=False):
 
 
 async def sub_check(req_channel, requestor, db, api):
-    req_channel = await refresh_channel_token_no_client(req_channel, db, api)
-
     if requestor['tw_id'] == 0:
         twitch_user = await api.twitch.get_users(usernames=[requestor['name']])
         if twitch_user is None or len(twitch_user['data']) == 0:
@@ -28,34 +26,7 @@ async def sub_check(req_channel, requestor, db, api):
     else:
         user_twitch_id = requestor['tw_id']
 
-    current_try = 0
-    max_tries = 3
-
-    sub_data = None
-    sub_error = None
-
-    while True:
-        current_try += 1
-        if current_try > max_tries:
-            break
-
-        if current_try > 1:
-            await asyncio.sleep(current_try)
-
-        if current_try == 2:
-            req_channel = await refresh_channel_token_no_client(req_channel, db, api)
-
-        if current_try > 2:
-            req_channel = await refresh_channel_token_no_client(req_channel, db, api, force_refresh=True)
-
-        sub_data, sub_error = await api.sub_check(req_channel['token'], req_channel['tw_id'], user_twitch_id)
-        if sub_error is not None and (sub_error.startswith('401') or 'unauthorized' in sub_error.lower()):
-            api.logger.error('Skip because of unauthorized')
-            continue
-
-        break
-
-    return sub_data, sub_error
+    return await sub_check_many(req_channel, [user_twitch_id], db, api)
 
 
 async def get_active_oauth_data(kb_user_id, db, api, force_refresh=False, sec_diff=30):
@@ -126,3 +97,34 @@ async def get_active_app_token(api, forced=False)->str:
         await api.redis.set_value_by_key(cache_key, token, expires_in - redis_key.ttl_day)
 
     return token
+
+
+async def sub_check_many(req_channel, users, db, api):
+    req_channel = await refresh_channel_token_no_client(req_channel, db, api)
+    current_try = 0
+    max_tries = 3
+    sub_data = None
+    sub_error = None
+
+    while True:
+        current_try += 1
+        if current_try > max_tries:
+            break
+
+        if current_try > 1:
+            await asyncio.sleep(current_try)
+
+        if current_try == 2:
+            req_channel = await refresh_channel_token_no_client(req_channel, db, api)
+
+        if current_try > 2:
+            req_channel = await refresh_channel_token_no_client(req_channel, db, api, force_refresh=True)
+
+        sub_data, sub_error = await api.sub_check(req_channel['token'], req_channel['tw_id'], users)
+        if sub_error is not None and (sub_error.startswith('401') or 'unauthorized' in sub_error.lower()):
+            api.logger.error('Skip because of unauthorized')
+            continue
+
+        break
+
+    return sub_data, sub_error

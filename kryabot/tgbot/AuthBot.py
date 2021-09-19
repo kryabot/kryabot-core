@@ -104,8 +104,13 @@ class AuthBot(TelegramClient):
             self.logger.error('Decode failed for: ' + str(input_data) + ' error: ' + str(e))
             return
 
-        if params['code'] is None or params['code'] == '':
+        if 'code' not in params or params['code'] is None or params['code'] == '':
             self.logger.info('{}: {}'.format(sender_string, 'Hash has no code parameter'))
+            await event.reply(self.format_translation('', '', 'AUTH_BAD_HASH'))
+            return
+
+        if 'id' not in params or params['id'] is None or params['id'] == '':
+            self.logger.info('{}: {}'.format(sender_string, 'Hash has no id parameter'))
             await event.reply(self.format_translation('', '', 'AUTH_BAD_HASH'))
             return
 
@@ -196,16 +201,16 @@ class AuthBot(TelegramClient):
         if (not skip_checks) and currentChannel['join_follower_only'] == 1:
             try:
                 follower_info = await self.api.twitch.check_channel_following(currentChannel['tw_id'], requestor[0]['tw_id'])
-            except Exception as e:
-                self.logger.error(str(e))
-                if '404' in str(e):
+                if follower_info and 'data' in follower_info and len(follower_info['data']) > 0:
+                    pass
+                else:
                     await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_NOT_FOLLOWER'))
                     self.logger.info('Result: not_follower, failed to follower status')
-                    return
-                else:
-                    await event.reply(self.format_translation(currentChannel['channel_name'], requestor[0]['name'], 'AUTH_SYS_ERR'))
-                    self.logger.info('Result: sys_err, failed to check sub status')
-                    return
+            except Exception as e:
+                self.logger.error(str(e))
+                await event.reply(self.format_translation(currentChannel['channel_name'], requestor[0]['name'], 'AUTH_SYS_ERR'))
+                self.logger.info('Result: sys_err, failed to check sub status')
+                return
 
         if (not skip_checks) and currentChannel['join_sub_only'] == 1:
             currentChannel = await self.refresh_channel(currentChannel)

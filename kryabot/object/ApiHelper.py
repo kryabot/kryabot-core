@@ -30,9 +30,9 @@ class ApiHelper:
         self.redis = None
 
     # Twitch ids
-    async def sub_check(self, auth_token, channel_id, user_id):
+    async def sub_check(self, auth_token, channel_id, users):
         try:
-            response = await self.twitch.get_channel_subs(token=auth_token, channel_id=channel_id, users=[user_id])
+            response = await self.twitch.get_channel_subs(token=auth_token, channel_id=channel_id, users=users)
             if response and 'data' in response and len(response['data']) > 0:
                 return response, None
             else:
@@ -41,7 +41,7 @@ class ApiHelper:
             self.twitch.logger.error(str(e))
             # report any other unexpected error (unauthorized or forbidden etc)
             if self.reporter is not None:
-                await self.reporter(e, 'Checking sub data for user {} in channel {}'.format(user_id, channel_id))
+                await self.reporter(e, 'Checking sub data for user {} in channel {}'.format(users, channel_id))
             return None, str(e)
 
     async def get_vk_song(self, vk_user_id):

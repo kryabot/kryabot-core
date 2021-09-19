@@ -38,6 +38,7 @@ async def getSql(sqlType):
         'get_setting': 'SELECT setting_key, setting_value FROM setting WHERE type = "BOT" AND setting_key=%s',
         'save_bot_refresh_token': 'UPDATE auth SET auth.token = %s, auth.expires_at = CURRENT_TIMESTAMP + interval %s second, auth.refresh_token = %s where auth.type = "BOT" and auth.user_id = %s',
         'get_user_by_tg_id': 'select user.user_id, user.name, user.dname, user.tw_id, user.is_admin, user.supporter, user.soc_vk, user.soc_inst, user.soc_ut, user.allow_soc from user where user_id = (select request.user_id from request where request.request_id = (select response.request_id from response where response.tg_id = %s))',
+        'get_users_by_tg_id': 'SELECT u.user_id, u.name, u.dname, u.tw_id, u.is_admin, u.supporter, u.soc_vk, u.soc_inst, u.soc_ut, u.allow_soc, resp.tg_id from response resp left join request req on req.request_id = resp.request_id LEFT JOIN user u ON u.user_id = req.user_id where resp.tg_id in (%s);',
         'save_chat_info_by_hash': 'UPDATE channel_subchat SET channel_subchat.tg_chat_id = %s, channel_subchat.tg_chat_name = %s WHERE channel_subchat.join_link like %s',
         'save_chat_info_after_join': 'UPDATE channel_subchat SET channel_subchat.tg_chat_id = %s, channel_subchat.tg_chat_name = %s, channel_subchat.join_link = %s WHERE channel_subchat.channel_subchat_id = %s',
         'update_invite_link': 'UPDATE channel_subchat SET channel_subchat.join_link = %s WHERE channel_subchat.channel_subchat_id = %s',

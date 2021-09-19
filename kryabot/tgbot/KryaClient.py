@@ -1,3 +1,4 @@
+from aiohttp import ClientResponseError
 from telethon import TelegramClient
 from telethon.errors import UserNotParticipantError, InviteHashInvalidError, InviteHashExpiredError
 from telethon.extensions import html
@@ -24,7 +25,8 @@ from utils.formatting import format_html_user_mention
 from utils.decorators.exception import log_exception_ignore
 from utils.value_check import avoid_none, is_empty_string, map_kick_setting
 from utils.array import split_array_into_parts
-from utils.twitch import refresh_channel_token, sub_check, get_active_oauth_data
+from utils.twitch import refresh_channel_token, sub_check, get_active_oauth_data, sub_check_many, \
+    refresh_channel_token_no_client
 from tgbot.commands.commandbuilder import update_command_list
 from tgbot.constants import TG_GROUP_MONITORING_ID, TG_SUPER_ADMINS
 from utils.date_diff import get_datetime_diff_text
@@ -349,15 +351,14 @@ class KryaClient(TelegramClient):
                             if channel['join_follower_only'] and kickNonFollower and not user_whitelisted and not(user in channel_admins):
                                 try:
                                     follower_info = await self.api.twitch.check_channel_following(channel['tw_id'], requestor[0]['tw_id'])
-                                except Exception as e:
-                                    if '404' in str(e):
+                                    if follower_info and follower_info['total'] == 1:
                                         kicked_total += 1
                                         kicked_non_follow += 1
                                         kick_array.append('{} (Not follower: {})'.format(user_string, requestor[0]['name']))
                                         self.logger.info(('[Non-follower] Kicking: ' + user_string).encode())
                                         await self.kick_user(channel_entity, user, channel['ban_time'])
-                                    else:
-                                        await self.report_to_monitoring('Failed to check followage on user join for {uname}: {err}'.format(uname=requestor[0]['name'], err=str(e)))
+                                except Exception as e:
+                                    await self.report_to_monitoring('Failed to check followage on user join for {uname}: {err}'.format(uname=requestor[0]['name'], err=str(e)))
                                     break
 
                             sub, sub_err = await sub_check(channel, requestor[0], self.db, self.api)
@@ -367,6 +368,11 @@ class KryaClient(TelegramClient):
                                 channel = await refresh_channel_token(self, channel, True)
                                 verified -= 1
                                 continue
+
+                            if sub and len(sub['data']) > 0:
+                                sub = sub['data'][0]
+                            else:
+                                sub = None
 
                             # Not a sub
                             if channel['join_sub_only'] and sub is None and kickNonSub and not user_whitelisted and not(user in channel_admins):
@@ -379,7 +385,7 @@ class KryaClient(TelegramClient):
 
                             if sub is not None:
                                 subs = subs + 1
-                                sub_type = sub['sub_plan']
+                                sub_type = sub['tier']
                             else:
                                 sub_type = 'No'
 
@@ -1082,3 +1088,120 @@ class KryaClient(TelegramClient):
     async def task_task_error(self):
         self.logger.info('This is test task with an error')
         raise Exception("Exception from task_task_error")
+
+    async def get_group_participant_full_data(self, channel, need_subs=True, need_follows=True):
+        # Return value is data
+        data = {'users': [], 'summary': {}}
+
+        channel_entity = await self.get_entity(PeerChannel(channel['tg_chat_id']))
+        participants = await self.get_participants(channel_entity)
+        special_rights = await self.db.get_all_tg_chat_special_rights(channel_id=channel['channel_id'])
+
+        group_admins = []
+        bot_admin = False
+
+        async for user in self.iter_participants(channel_entity, filter=ChannelParticipantsAdmins):
+            group_admins.append(user)
+            if user.id == self.me.id:
+                bot_admin = True
+
+        is_authorized = True
+        summary = {
+                 'total': 0,
+                 'bots': 0,
+                 'deleted': 0,
+                 'non_verified': 0,
+                 'subs': 0,
+                 'non_subs': 0,
+                 'whitelists': 0,
+                 'blacklists': 0,
+                 'is_authorised': 1,
+                 'next_mk': None,
+                 'bot_admin': bot_admin}
+
+        telegram_ids = [user.id for user in participants]
+        kb_users = await self.db.getUsersByTgId(telegram_ids)
+        twitch_ids = [user['tw_id'] for user in kb_users]
+        twitch_ids_parts = split_array_into_parts(twitch_ids, 90)
+        twitch_subs = []
+        twitch_follows = []
+
+        if need_subs:
+            for twitch_ids_part in twitch_ids_parts:
+                if not is_authorized:
+                    continue
+
+                try:
+                    response, errors = await sub_check_many(channel, twitch_ids_part, self.db, self.api)
+                    if errors:
+                        raise Exception(errors)
+                    if response and 'data' in response and len(response['data']) > 0:
+                        twitch_subs += response['data']
+                except Exception as err:
+                    self.logger.exception(err)
+                    if 'unauthorized' in str(err).lower():
+                        is_authorized = False
+                        continue
+
+                    # TODO: handle more stuff to increase stability
+                    raise err
+
+        # Clear if only part of information was received
+        if not is_authorized:
+            twitch_subs = []
+
+        if need_follows and is_authorized:
+            channel = await refresh_channel_token_no_client(channel, self.db, self.api)
+            for twitch_id in twitch_ids:
+                try:
+                    response = await self.api.twitch.get_channel_follows(channel_id=channel['tw_id'], users=[twitch_id], token=channel['token'])
+                    if response and 'data' in response and len(response['data']) > 0:
+                        twitch_follows += response['data']
+                        await asyncio.sleep(1)
+                except ClientResponseError as err:
+                    self.logger.exception(err)
+                    raise err
+
+        for user in participants:
+            kb_user = next(filter(lambda kb: kb['tg_id'] == user.id, kb_users), None)
+            tw_sub = next(filter(lambda tw: int(tw['id']) == int(kb_user['tw_id']), twitch_subs), None) if kb_user else None
+            tw_follow = next(filter(lambda tw: int(tw['from_id']) == int(kb_user['tw_id']), twitch_follows), None) if kb_user else None
+            is_whitelisted = next(filter(lambda right: right['user_id'] == kb_user['user_id'] and right['right_type'] == 'WHITELIST', special_rights), None) if kb_user else None
+            is_blacklisted = next(filter(lambda right: right['user_id'] == kb_user['user_id'] and right['right_type'] == 'BLACKLIST', special_rights), None) if kb_user else None
+            is_sudo = next(filter(lambda right: right['user_id'] == kb_user['user_id'] and right['right_type'] == 'SUDO', special_rights), None) if kb_user else None
+            tg_admin = next(filter(lambda admin: admin.id == user.id, group_admins), None)
+
+            user_summary = {
+                'tg': user,
+                'tg_admin': tg_admin,
+                'kb': kb_user,
+                'twitch': {
+                    'sub': tw_sub,
+                    'follow': tw_follow,
+                },
+                'is_deleted': user.deleted,
+                'is_bot': user.bot,
+                'is_whitelist': is_whitelisted,
+                'is_blacklist': is_blacklisted,
+                'is_sudo': is_sudo
+            }
+
+            summary['total'] += 1
+            if not kb_user and not user.bot and not user.deleted:
+                summary['non_verified'] += 1
+            if tw_sub:
+                summary['subs'] += 1
+            if user.bot:
+                summary['bots'] += 1
+            if user.deleted:
+                summary['deleted'] += 1
+
+            data['users'].append(user_summary)
+
+        summary['is_authorised'] = is_authorized
+        summary['non_subs'] = summary['total'] - summary['subs'] - summary['bots'] - summary['deleted']
+        if channel['auto_mass_kick'] and channel['auto_mass_kick'] > 0:
+            summary['next_mk'] = channel['last_auto_kick'] + timedelta(days=channel['auto_mass_kick'])
+
+        data['summary'] = summary
+        return data

@@ -118,8 +118,30 @@ class Twitch(Core):
         url = '{helix}users/follows?from_id={uid}&to_id={cid}'.format(helix=self.helix_url, uid=user_id, cid=channel_id)
         return await self.make_get_request(url)
 
+    async def get_channel_follows(self, channel_id: int, users: [int]=None, token: str=None, first: int=20, after=None):
+        params = []
+        params.append(('to_id', str(channel_id)))
+
+        if users:
+            if len(users) > 99:
+                raise ValueError("Cannot request more than 100 users! (current size={})".format(len(users)))
+
+            first = len(users)
+            for user in users:
+                params.append(('from_id', str(user)))
+
+        if after:
+            params.append(('after', after))
+        if first:
+            params.append(('first', str(first)))
+
+
+        url = '{helix}users/follows'.format(helix=self.helix_url)
+        headers = await self.get_json_headers(bearer_token=token) if token else None
+        return await self.make_get_request(url, params=params, headers=headers)
+
     # Oauth bearer required
-    async def get_channel_subs(self, token: str, channel_id: int, users: [int]=None, after: int=None, first: int=None):
+    async def get_channel_subs(self, token: str, channel_id: int, users: [int]=None, after=None, first: int=20):
         params = []
         params.append(('broadcaster_id', str(channel_id)))
 
@@ -127,13 +149,14 @@ class Twitch(Core):
             if len(users) > 100:
                 raise ValueError("Cannot request more than 100 users! (current size={})".format(len(users)))
 
+            first = len(users)
             for user in users:
                 params.append(('user_id', str(user)))
 
         if after:
             params.append(('after', after))
         if first:
-            params.append(('first', first))
+            params.append(('first', str(first)))
 
         url = '{helix}subscriptions'.format(helix=self.helix_url)
         headers = await self.get_json_headers(bearer_token=token)

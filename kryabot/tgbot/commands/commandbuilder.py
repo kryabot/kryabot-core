@@ -90,6 +90,7 @@ command_list.append(SpawnBoss)
 command_list.append(SpawnBox)
 command_list.append(SpawnLove)
 command_list.append(SpawnSnowing)
+command_list.append(NewUserReport)
 
 
 async def build(command_name, event, parsed):
