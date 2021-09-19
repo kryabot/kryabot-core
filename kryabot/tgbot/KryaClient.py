@@ -526,7 +526,7 @@ class KryaClient(TelegramClient):
 
         return has_whitelist, has_blacklist, blacklist_comment
 
-    #@log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=global_logger, reporter=reporter)
     async def run_user_report(self, channel, manual=False):
         channel = await refresh_channel_token(client=self, channel=channel, force_refresh=True)
         data = await self.get_group_participant_full_data(channel, need_follows=channel['join_follower_only'] == 1, kick_not_verified=not manual and channel['auto_kick'] == 1)
@@ -540,8 +540,8 @@ class KryaClient(TelegramClient):
                 report += '\n\n{label}: {val}'.format(val=summary['total'], label=self.translator.getLangTranslation(lang, 'UR_TOTAL'))
                 report += '\n{label}: {val}'.format(val=summary['subs'], label=self.translator.getLangTranslation(lang, 'UR_SUBS'))
                 report += '\n{label}: {val}'.format(val=(summary['non_subs']), label=self.translator.getLangTranslation(lang, 'UR_NON_SUBS'))
-                if summary['follows'] > 0:
-                    report += '\n{label}: {val}'.format(val=summary['follows'], label=self.translator.getLangTranslation(lang, 'UR_FOLLOWS'))
+                if summary['followers'] > 0:
+                    report += '\n{label}: {val}'.format(val=summary['followers'], label=self.translator.getLangTranslation(lang, 'UR_FOLLOWS'))
                 if summary['non_verified'] > 0:
                     report += '\n{label}: {val}'.format(val=summary['non_verified'], label=self.translator.getLangTranslation(lang, 'UR_NON_VERIFIED'))
                 if summary['deleted'] > 0:
