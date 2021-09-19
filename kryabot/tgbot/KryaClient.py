@@ -1123,6 +1123,7 @@ class KryaClient(TelegramClient):
         telegram_ids = [user.id for user in participants]
         kb_users = await self.db.getUsersByTgId(telegram_ids)
         self.logger.info(kb_users)
+        self.logger.info(special_rights)
         twitch_ids = [user['tw_id'] for user in kb_users]
         twitch_ids_parts = split_array_into_parts(twitch_ids, 90)
         twitch_subs = []
