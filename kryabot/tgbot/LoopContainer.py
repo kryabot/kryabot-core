@@ -144,7 +144,7 @@ class LoopContainer:
                         continue
 
                     try:
-                        await self.guard_bot.run_channel_refresh(channel, False, None, silent=True)
+                        await self.guard_bot.run_channel_refresh_new(channel, False, None, silent=True)
                     except Exception as ex:
                         await self.guard_bot.exception_reporter(ex, 'TG member updater task for {}'.format(channel['channel_name']))
 
@@ -192,7 +192,7 @@ class LoopContainer:
                             params.append({'key': 'not_follower', 'enabled': channel['join_follower_only']})
                             params.append({'key': 'not_active', 'enabled': 1})
                             try:
-                                await self.guard_bot.run_channel_refresh(channel, True, params)
+                                await self.guard_bot.run_channel_refresh_new(channel, True, params)
                                 next_date = datetime(now.year, now.month, now.day, 20, 00)
                                 await self.guard_bot.db.updateAutoMassKickTs(channel['channel_subchat_id'], next_date)
                             except Exception as err:

@@ -229,7 +229,7 @@ class KryaClient(TelegramClient):
             self.logger.info('Skipping channel {} refresh because current status is WAIT'.format(channel['tg_chat_id']))
             return
 
-        await self.run_channel_refresh(channel, is_kick, params)
+        await self.run_channel_refresh_new(channel, is_kick, params)
 
     async def run_channel_refresh_new(self, channel, kick, params, silent=False, dry_run=False):
         self.logger.info('Task: Refresh group members Channel: {}'.format(channel['channel_name']))
@@ -240,7 +240,7 @@ class KryaClient(TelegramClient):
         channel_entity = await self.get_entity(PeerChannel(channel['tg_chat_id']))
 
         data = await self.get_group_participant_full_data(channel, need_follows=channel['join_follower_only'] == 1, kick_not_verified=False, kick_deleted=False)
-        allowed_to_kick = False if dry_run else channel['auto_kick']
+        allowed_to_kick = False if dry_run or silent else channel['auto_kick']
         if len(data['users']) == 0:
             await self.report_to_monitoring(report + '\nStatus: Failed\nReason: Empty telegram chat')
             return
@@ -423,7 +423,6 @@ class KryaClient(TelegramClient):
         if not dry_run:
             await self.db.get_auth_subchat(channel['tg_chat_id'], skip_cache=True)
             await self.update_data()
-
 
     @log_exception_ignore(log=global_logger, reporter=reporter)
     async def run_channel_refresh(self, channel, kick, params, silent=False):

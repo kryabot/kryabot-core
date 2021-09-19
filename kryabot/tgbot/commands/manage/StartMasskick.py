@@ -52,7 +52,7 @@ class StartMasskick(BaseCommand):
                         params.append({'key': 'not_sub', 'enabled': self.channel['join_sub_only']})
                         params.append({'key': 'not_follower', 'enabled': self.channel['join_follower_only']})
                         params.append({'key': 'not_active', 'enabled': 1})
-                        self.client.loop.create_task(self.client.run_channel_refresh(self.channel, True, params))
+                        self.client.loop.create_task(self.client.run_channel_refresh_new(self.channel, True, params))
                         await self.reply_success('OK')
                     else:
                         await conv.send_message('you disappointed me...', reply_to=resp2.id)
