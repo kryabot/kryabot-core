@@ -555,7 +555,7 @@ class KryaClient(TelegramClient):
                 if summary['blacklists'] > 0:
                     report += '\n{label}: {val}'.format(val=summary['blacklists'], label=self.translator.getLangTranslation(lang, 'UR_BANNED'))
                 if summary['sudos'] > 0:
-                    report += '\n{label}: {val}'.format(val=summary['blacklists'], label=self.translator.getLangTranslation(lang, 'UR_SUDO'))
+                    report += '\n{label}: {val}'.format(val=summary['sudos'], label=self.translator.getLangTranslation(lang, 'UR_SUDO'))
 
                 if summary['is_authorised'] == 0:
                     report += '\n\n<b>{}</b>'.format(self.translator.getLangTranslation(lang, 'UR_SUB_CHECK_FAILED'))
