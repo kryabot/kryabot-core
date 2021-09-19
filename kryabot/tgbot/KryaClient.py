@@ -528,8 +528,8 @@ class KryaClient(TelegramClient):
 
     #@log_exception_ignore(log=global_logger, reporter=reporter)
     async def run_user_report(self, channel, manual=False):
-        # channel = await refresh_channel_token(client=self, channel=channel, force_refresh=True)
-        data = await self.get_group_participant_full_data(channel, need_follows=channel['join_followers_only'] == 1, kick_not_verified=not manual and channel['auto_kick'] == 1)
+        channel = await refresh_channel_token(client=self, channel=channel, force_refresh=True)
+        data = await self.get_group_participant_full_data(channel, need_follows=channel['join_follower_only'] == 1, kick_not_verified=not manual and channel['auto_kick'] == 1)
         lang = channel['bot_lang']
         summary = data['summary']
         self.logger.info("Summary for channel {}: {}".format(channel['channel_id'], summary))
