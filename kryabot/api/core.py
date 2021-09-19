@@ -31,6 +31,7 @@ class Core:
                     async with session.get(url, params=params) as response:
                         rate_limit = response.headers.get('Ratelimit-Limit', None)
                         rate_remaining = response.headers.get('Ratelimit-Remaining', None)
+                        rate_info = ''
                         if rate_limit and rate_remaining:
                             rate_info = 'RateLimits({}/{})'.format(rate_remaining, rate_limit)
 
