@@ -5,7 +5,8 @@ from telethon.extensions import html
 from telethon.tl.functions.channels import LeaveChannelRequest, EditBannedRequest, GetParticipantRequest, \
     GetFullChannelRequest
 from telethon.tl.types import PeerUser, PeerChannel, InputStickerSetID, \
-    ChatInviteAlready, ChatInvite, ChatBannedRights, ChannelParticipantsAdmins, InputPeerChannel, ChatInvitePeek
+    ChatInviteAlready, ChatInvite, ChatBannedRights, ChannelParticipantsAdmins, InputPeerChannel, ChatInvitePeek, \
+    DocumentAttributeFilename
 from telethon.tl.functions.messages import ImportChatInviteRequest, GetAllStickersRequest, GetStickerSetRequest, \
     CheckChatInviteRequest, ExportChatInviteRequest
 import os
@@ -405,7 +406,7 @@ class KryaClient(TelegramClient):
                 if kicked_non_sub > 0:
                     kick_report += '\nNot subscriber: {}'.format(kicked_non_sub)
 
-                await self.send_message(channel['tg_chat_id'], kick_report)
+                await self.send_file(channel['tg_chat_id'], file='\n'.join(kick_array).encode(), caption=kick_report, attributes=[DocumentAttributeFilename('MassKickReport')])
             else:
                 await self.send_message(channel['tg_chat_id'], '🙄 Nothing to kick!')
 
