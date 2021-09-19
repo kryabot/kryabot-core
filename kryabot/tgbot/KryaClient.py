@@ -529,34 +529,39 @@ class KryaClient(TelegramClient):
     @log_exception_ignore(log=global_logger, reporter=reporter)
     async def run_user_report(self, channel, manual=False):
         channel = await refresh_channel_token(client=self, channel=channel, force_refresh=True)
-        data = await self.get_user_report_data(channel)
+        data = await self.get_group_participant_full_data(channel, need_follows=channel['join_followers_only'] == 1, kick_not_verified=not manual and channel['auto_kick'] == 1)
         lang = channel['bot_lang']
+        summary = data['summary']
 
         if manual is True or channel['show_report'] == 1:
             async with self.action(channel['tg_chat_id'], 'document'):
                 report = self.translator.getLangTranslation(lang, 'UR_TITLE')
-                report += '\n\n{label}: {val}'.format(val=data['total'], label=self.translator.getLangTranslation(lang, 'UR_TOTAL'))
-                report += '\n{label}: {val}'.format(val=data['subs'], label=self.translator.getLangTranslation(lang, 'UR_SUBS'))
-                report += '\n{label}: {val}'.format(val=(data['non_subs']), label=self.translator.getLangTranslation(lang, 'UR_NON_SUBS'))
-                if data['non_verified'] > 0:
-                    report += '\n{label}: {val}'.format(val=data['non_verified'], label=self.translator.getLangTranslation(lang, 'UR_NON_VERIFIED'))
-                if data['deleted'] > 0:
-                    report += '\n{label}: {val}'.format(val=data['deleted'], label=self.translator.getLangTranslation(lang, 'UR_TG_DELETED'))
-                if data['bots'] > 0:
-                    report += '\n{label}: {val}'.format(val=data['bots'], label=self.translator.getLangTranslation(lang, 'UR_BOTS'))
-                if data['kicked'] > 0:
-                    report += '\n{label}: {val}'.format(val=data['kicked'], label=self.translator.getLangTranslation(lang, 'UR_KICKED'))
+                report += '\n\n{label}: {val}'.format(val=summary['total'], label=self.translator.getLangTranslation(lang, 'UR_TOTAL'))
+                report += '\n{label}: {val}'.format(val=summary['subs'], label=self.translator.getLangTranslation(lang, 'UR_SUBS'))
+                report += '\n{label}: {val}'.format(val=(summary['non_subs']), label=self.translator.getLangTranslation(lang, 'UR_NON_SUBS'))
+                if summary['follows'] > 0:
+                    report += '\n{label}: {val}'.format(val=summary['follows'] ,label=self.translator.getLangTranslation(lang, 'UR_FOLLOWS'))
+                if summary['non_verified'] > 0:
+                    report += '\n{label}: {val}'.format(val=summary['non_verified'], label=self.translator.getLangTranslation(lang, 'UR_NON_VERIFIED'))
+                if summary['deleted'] > 0:
+                    report += '\n{label}: {val}'.format(val=summary['deleted'], label=self.translator.getLangTranslation(lang, 'UR_TG_DELETED'))
+                if summary['bots'] > 0:
+                    report += '\n{label}: {val}'.format(val=summary['bots'], label=self.translator.getLangTranslation(lang, 'UR_BOTS'))
+                if summary['kicked'] > 0:
+                    report += '\n{label}: {val}'.format(val=summary['kicked'], label=self.translator.getLangTranslation(lang, 'UR_KICKED'))
 
-                if data['whitelists'] > 0:
-                    report += '\n{label}: {val}'.format(val=data['whitelists'], label=self.translator.getLangTranslation(lang, 'UR_VIP'))
-                if data['blacklists'] > 0:
-                    report += '\n{label}: {val}'.format(val=data['blacklists'], label=self.translator.getLangTranslation(lang, 'UR_BANNED'))
+                if summary['whitelists'] > 0:
+                    report += '\n{label}: {val}'.format(val=summary['whitelists'], label=self.translator.getLangTranslation(lang, 'UR_VIP'))
+                if summary['blacklists'] > 0:
+                    report += '\n{label}: {val}'.format(val=summary['blacklists'], label=self.translator.getLangTranslation(lang, 'UR_BANNED'))
+                if summary['sudos'] > 0:
+                    report += '\n{label}: {val}'.format(val=summary['blacklists'], label=self.translator.getLangTranslation(lang, 'UR_SUDO'))
 
-                if data['is_authorised'] == 0:
+                if summary['is_authorised'] == 0:
                     report += '\n\n<b>{}</b>'.format(self.translator.getLangTranslation(lang, 'UR_SUB_CHECK_FAILED'))
 
-                if data['next_mk'] and data['next_mk'] > datetime.now():
-                    formatted = await get_datetime_diff_text(data['next_mk'], datetime.now())
+                if summary['next_mk'] and summary['next_mk'] > datetime.now():
+                    formatted = await get_datetime_diff_text(summary['next_mk'], datetime.now())
                     report += '\n\n{} {}!'.format(self.translator.getLangTranslation(lang, 'CMD_NEXT_IN'), formatted)
 
                 report += '\n\n'
@@ -573,81 +578,81 @@ class KryaClient(TelegramClient):
             await self.db.save_tg_stats_msg(channel_id=channel['channel_id'], when_dt=when_y, counter=data_chat['message'])
             await self.db.save_tg_stats_join(channel_id=channel['channel_id'], when_dt=when_y, counter=data_chat['join'])
             await self.db.save_tg_stats_kick(channel_id=channel['channel_id'], when_dt=when_y, counter=data_chat['kick'])
-            await self.db.save_tg_stats_sub(channel_id=channel['channel_id'], when_dt=when_now, counter=data['subs'])
-            await self.db.save_tg_stats_nonsub(channel_id=channel['channel_id'], when_dt=when_now, counter=data['non_subs'])
-            await self.db.save_tg_stats_wls(channel_id=channel['channel_id'], when_dt=when_now, counter=data['whitelists'])
-            await self.db.save_tg_stats_bls(channel_id=channel['channel_id'], when_dt=when_now, counter=data['blacklists'])
-            await self.db.save_tg_stats_bots(channel_id=channel['channel_id'], when_dt=when_now, counter=data['bots'])
-            await self.db.save_tg_stats_total(channel_id=channel['channel_id'], when_dt=when_now, counter=data['total'])
+            await self.db.save_tg_stats_sub(channel_id=channel['channel_id'], when_dt=when_now, counter=summary['subs'])
+            await self.db.save_tg_stats_nonsub(channel_id=channel['channel_id'], when_dt=when_now, counter=summary['non_subs'])
+            await self.db.save_tg_stats_wls(channel_id=channel['channel_id'], when_dt=when_now, counter=summary['whitelists'])
+            await self.db.save_tg_stats_bls(channel_id=channel['channel_id'], when_dt=when_now, counter=summary['blacklists'])
+            await self.db.save_tg_stats_bots(channel_id=channel['channel_id'], when_dt=when_now, counter=summary['bots'])
+            await self.db.save_tg_stats_total(channel_id=channel['channel_id'], when_dt=when_now, counter=summary['total'])
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
-    async def get_user_report_data(self, channel):
-        channel_entity = await self.get_entity(PeerChannel(channel['tg_chat_id']))
-        participants = await self.get_participants(channel_entity)
-
-        channel_admins = []
-        bot_admin = False
-
-        async for user in self.iter_participants(channel_entity, filter=ChannelParticipantsAdmins):
-            channel_admins.append(user)
-            if user.id == self.me.id:
-                bot_admin = True
-
-        is_authotised = True
-        channel_user_data = {'total': 0,
-                             'bots': 0,
-                             'deleted': 0,
-                             'non_verified': 0,
-                             'subs': 0,
-                             'non_subs': 0,
-                             'kicked': 0,
-                             'whitelists': 0,
-                             'blacklists': 0,
-                             'is_authorised': 1,
-                             'next_mk': None}
-
-        for user in participants:
-            await asyncio.sleep(0.5)
-            channel_user_data['total'] += 1
-
-            if user.bot:
-                channel_user_data['bots'] += 1
-            else:
-                if await is_empty_string(user.first_name) and \
-                        await is_empty_string(user.last_name) and \
-                        await is_empty_string(user.username):
-                    channel_user_data['deleted'] += 1
-
-                requestor = await self.db.getUserByTgChatId(user.id)
-                if len(requestor) == 0:
-                    channel_user_data['non_verified'] += 1
-                    if bot_admin is True and channel['auto_kick'] == 1 and await self.is_whitelisted(None, user.id, channel) is False and not(user in channel_admins):
-                        channel_user_data['kicked'] += 1
-                        await self.kick_user(channel_entity, user, channel['ban_time'])
-                    continue
-
-                if is_authotised:
-                    is_sub = await self.api.is_sub_v2(channel, requestor[0], self.db)
-                    if is_sub is None:
-                        is_authotised = False
-                        channel_user_data['is_authorised'] = 0
-                    elif is_sub is True:
-                        is_authotised = True
-                        channel_user_data['is_authorised'] = 1
-                        channel_user_data['subs'] += 1
-
-        special_rights = await self.db.get_tg_chat_special_rights(channel_id=channel['channel_id'])
-        for right in special_rights:
-            if right['channel_id'] == channel['channel_id']:
-                channel_user_data['whitelists'] += 1 if right['right_type'] == 'WHITELIST' else 0
-                channel_user_data['blacklists'] += 1 if right['right_type'] == 'BLACKLIST' else 0
-
-        channel_user_data['non_subs'] = channel_user_data['total'] - channel_user_data['bots'] - channel_user_data['subs']
-
-        if channel['auto_mass_kick'] and channel['auto_mass_kick'] > 0:
-            channel_user_data['next_mk'] = channel['last_auto_kick'] + timedelta(days=channel['auto_mass_kick'])
-
-        return channel_user_data
+    # @log_exception_ignore(log=global_logger, reporter=reporter)
+    # async def get_user_report_data(self, channel):
+    #     channel_entity = await self.get_entity(PeerChannel(channel['tg_chat_id']))
+    #     participants = await self.get_participants(channel_entity)
+    #
+    #     channel_admins = []
+    #     bot_admin = False
+    #
+    #     async for user in self.iter_participants(channel_entity, filter=ChannelParticipantsAdmins):
+    #         channel_admins.append(user)
+    #         if user.id == self.me.id:
+    #             bot_admin = True
+    #
+    #     is_authotised = True
+    #     channel_user_data = {'total': 0,
+    #                          'bots': 0,
+    #                          'deleted': 0,
+    #                          'non_verified': 0,
+    #                          'subs': 0,
+    #                          'non_subs': 0,
+    #                          'kicked': 0,
+    #                          'whitelists': 0,
+    #                          'blacklists': 0,
+    #                          'is_authorised': 1,
+    #                          'next_mk': None}
+    #
+    #     for user in participants:
+    #         await asyncio.sleep(0.5)
+    #         channel_user_data['total'] += 1
+    #
+    #         if user.bot:
+    #             channel_user_data['bots'] += 1
+    #         else:
+    #             if await is_empty_string(user.first_name) and \
+    #                     await is_empty_string(user.last_name) and \
+    #                     await is_empty_string(user.username):
+    #                 channel_user_data['deleted'] += 1
+    #
+    #             requestor = await self.db.getUserByTgChatId(user.id)
+    #             if len(requestor) == 0:
+    #                 channel_user_data['non_verified'] += 1
+    #                 if bot_admin is True and channel['auto_kick'] == 1 and await self.is_whitelisted(None, user.id, channel) is False and not(user in channel_admins):
+    #                     channel_user_data['kicked'] += 1
+    #                     await self.kick_user(channel_entity, user, channel['ban_time'])
+    #                 continue
+    #
+    #             if is_authotised:
+    #                 is_sub = await self.api.is_sub_v2(channel, requestor[0], self.db)
+    #                 if is_sub is None:
+    #                     is_authotised = False
+    #                     channel_user_data['is_authorised'] = 0
+    #                 elif is_sub is True:
+    #                     is_authotised = True
+    #                     channel_user_data['is_authorised'] = 1
+    #                     channel_user_data['subs'] += 1
+    #
+    #     special_rights = await self.db.get_tg_chat_special_rights(channel_id=channel['channel_id'])
+    #     for right in special_rights:
+    #         if right['channel_id'] == channel['channel_id']:
+    #             channel_user_data['whitelists'] += 1 if right['right_type'] == 'WHITELIST' else 0
+    #             channel_user_data['blacklists'] += 1 if right['right_type'] == 'BLACKLIST' else 0
+    #
+    #     channel_user_data['non_subs'] = channel_user_data['total'] - channel_user_data['bots'] - channel_user_data['subs']
+    #
+    #     if channel['auto_mass_kick'] and channel['auto_mass_kick'] > 0:
+    #         channel_user_data['next_mk'] = channel['last_auto_kick'] + timedelta(days=channel['auto_mass_kick'])
+    #
+    #     return channel_user_data
 
     async def get_sticker_set(self, pack_name):
         for pack in (await self(GetAllStickersRequest(0))).sets:
@@ -1089,7 +1094,7 @@ class KryaClient(TelegramClient):
         self.logger.info('This is test task with an error')
         raise Exception("Exception from task_task_error")
 
-    async def get_group_participant_full_data(self, channel, need_subs=True, need_follows=True):
+    async def get_group_participant_full_data(self, channel, need_subs=True, need_follows=True, kick_not_verified=True):
         # Return value is data
         data = {'users': [], 'summary': {}}
 
@@ -1116,6 +1121,7 @@ class KryaClient(TelegramClient):
                  'non_subs': 0,
                  'whitelists': 0,
                  'blacklists': 0,
+                 'kicked': 0,
                  'sudos': 0,
                  'is_authorised': 1,
                  'next_mk': None,
@@ -1173,6 +1179,11 @@ class KryaClient(TelegramClient):
             is_blacklisted = next(filter(lambda right: right['user_id'] == kb_user['user_id'] and right['right_type'] == 'BLACKLIST', special_rights), None) if kb_user else None
             is_sudo = next(filter(lambda right: right['user_id'] == kb_user['user_id'] and right['right_type'] == 'SUDO', special_rights), None) if kb_user else None
             tg_admin = next(filter(lambda admin: admin.id == user.id, group_admins), None)
+
+            if bot_admin and kick_not_verified and kb_user is None and tg_admin is None:
+                await self.kick_user(channel_entity, user, channel['ban_time'])
+                summary['kicked'] += 1
+                continue
 
             user_summary = {
                 'tg': user,
