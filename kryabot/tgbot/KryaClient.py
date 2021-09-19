@@ -1121,6 +1121,7 @@ class KryaClient(TelegramClient):
 
         telegram_ids = [user.id for user in participants]
         kb_users = await self.db.getUsersByTgId(telegram_ids)
+        self.logger.info(kb_users)
         twitch_ids = [user['tw_id'] for user in kb_users]
         twitch_ids_parts = split_array_into_parts(twitch_ids, 90)
         twitch_subs = []
@@ -1163,7 +1164,7 @@ class KryaClient(TelegramClient):
                     raise err
 
         for user in participants:
-            kb_user = next(filter(lambda kb: kb['tg_id'] == user.id, kb_users), None)
+            kb_user = next(filter(lambda kb: int(kb['tg_id']) == int(user.id), kb_users), None)
             tw_sub = next(filter(lambda tw: int(tw['id']) == int(kb_user['tw_id']), twitch_subs), None) if kb_user else None
             tw_follow = next(filter(lambda tw: int(tw['from_id']) == int(kb_user['tw_id']), twitch_follows), None) if kb_user else None
             is_whitelisted = next(filter(lambda right: right['user_id'] == kb_user['user_id'] and right['right_type'] == 'WHITELIST', special_rights), None) if kb_user else None
