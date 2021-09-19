@@ -29,7 +29,7 @@ class Core:
             try:
                 async with aiohttp.ClientSession(headers=headers, timeout=self.default_client_timeout) as session:
                     async with session.get(url, params=params) as response:
-                        self.logger.info('[GET] {sta} {url} [{i}]'.format(sta=response.status, url=url, i=i))
+                        self.logger.info('[GET] {sta} {url} ({params}) [{i}]'.format(sta=response.status, url=url, i=i, params=params))
                         # Retry if failed
                         if response.status >= 500:
                             await asyncio.sleep(self.initial_backoff * 2 * (i + 1))

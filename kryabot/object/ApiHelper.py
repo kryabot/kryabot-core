@@ -33,10 +33,7 @@ class ApiHelper:
     async def sub_check(self, auth_token, channel_id, users):
         try:
             response = await self.twitch.get_channel_subs(token=auth_token, channel_id=channel_id, users=users)
-            if response and 'data' in response and len(response['data']) > 0:
-                return response, None
-            else:
-                return None, self.sub_check_false
+            return response, None
         except Exception as e:
             self.twitch.logger.error(str(e))
             # report any other unexpected error (unauthorized or forbidden etc)
@@ -57,8 +54,8 @@ class ApiHelper:
 
     async def is_sub_v2(self, channel, user, db):
         response, error = await sub_check(channel, user, db, self)
-        if error is None and response is not None:
-            return True
+        if error is None and response is not None and 'data' in response:
+            return len(response['data']) > 0
 
         # Not sub
         if error is not None and error == self.sub_check_false:
@@ -77,8 +74,8 @@ class ApiHelper:
 
     async def is_sub_v3(self, channel, user, db):
         response, error = await sub_check(channel, user, db, self)
-        if error is None and response is not None:
-            return True, response, error
+        if error is None and response is not None and 'data' in response:
+            return len(response['data']) > 0, response, error
 
         # Not sub
         if error is not None and error == self.sub_check_false:
