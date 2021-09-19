@@ -1167,7 +1167,7 @@ class KryaClient(TelegramClient):
 
         for user in participants:
             kb_user = next(filter(lambda kb: int(kb['tg_id']) == int(user.id), kb_users), None)
-            tw_sub = next(filter(lambda tw: int(tw['id']) == int(kb_user['tw_id']), twitch_subs), None) if kb_user else None
+            tw_sub = next(filter(lambda tw: int(tw['user_id']) == int(kb_user['tw_id']), twitch_subs), None) if kb_user else None
             tw_follow = next(filter(lambda tw: int(tw['from_id']) == int(kb_user['tw_id']), twitch_follows), None) if kb_user else None
             is_whitelisted = next(filter(lambda right: right['user_id'] == kb_user['user_id'] and right['right_type'] == 'WHITELIST', special_rights), None) if kb_user else None
             is_blacklisted = next(filter(lambda right: right['user_id'] == kb_user['user_id'] and right['right_type'] == 'BLACKLIST', special_rights), None) if kb_user else None
