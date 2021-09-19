@@ -960,6 +960,9 @@ class KryaClient(TelegramClient):
     async def event_user_statistics(self):
         await self.update_data()
         for channel in (await self.db.get_auth_subchats()):
+            if channel['tg_chat_id'] == 0:
+                continue
+
             try:
                 await self.report_to_monitoring('[Daily] Starting daily user report for channel {}'.format(channel['channel_name']), avoid_err=True)
                 await self.run_user_report(channel=channel)
