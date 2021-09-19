@@ -1112,6 +1112,7 @@ class KryaClient(TelegramClient):
                  'deleted': 0,
                  'non_verified': 0,
                  'subs': 0,
+                 'followers': 0,
                  'non_subs': 0,
                  'whitelists': 0,
                  'blacklists': 0,
@@ -1188,14 +1189,20 @@ class KryaClient(TelegramClient):
             }
 
             summary['total'] += 1
-            if not kb_user and not user.bot and not user.deleted:
-                summary['non_verified'] += 1
-            if tw_sub:
-                summary['subs'] += 1
             if user.bot:
                 summary['bots'] += 1
-            if user.deleted:
+            elif user.deleted:
                 summary['deleted'] += 1
+            else:
+                # Not bot and not deleted
+                if kb_user:
+                    # Verified user
+                    if tw_sub:
+                        summary['subs'] += 1
+                    if tw_follow:
+                        summary['followers'] += 1
+                else:
+                    summary['non_verified'] += 1
 
             data['users'].append(user_summary)
 
