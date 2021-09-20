@@ -37,15 +37,7 @@ class Twitch(Core):
         self.webhook_secret = 'supermegasecret'
 
     async def get_headers(self, oauth_token=None):
-        headers = {
-            'Accept': 'application/vnd.twitchtv.v5+json',
-            'Client-ID': self.client_id
-        }
-
-        if oauth_token:
-            headers['Authorization'] = 'OAuth {}'.format(oauth_token)
-
-        return headers
+        return self.get_json_headers(oauth_token=oauth_token)
 
     async def get_json_headers(self, oauth_token=None, bearer_token=None, add_auth=True):
         headers = {

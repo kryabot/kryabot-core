@@ -406,7 +406,7 @@ class KryaClient(TelegramClient):
                 if kicked_non_sub > 0:
                     kick_report += '\nNot subscriber: {}'.format(kicked_non_sub)
 
-                await self.send_file(channel['tg_chat_id'], file='\n'.join(kick_array).encode(), caption=kick_report, attributes=[DocumentAttributeFilename('MassKickReport')])
+                await self.send_file(channel['tg_chat_id'], file='\n'.join(kick_array).encode(), caption=kick_report, attributes=[DocumentAttributeFilename('MassKickReport.txt')])
             else:
                 await self.send_message(channel['tg_chat_id'], '🙄 Nothing to kick!')
 
