@@ -99,6 +99,26 @@ class Core:
             self.logger.error('All retries failed for {url}'.format(url=url))
             return None
 
+    async def make_delete_request_data(self, url, token=None, body=None, headers=None, params=None):
+        if headers is None:
+            headers = await self.get_headers(token)
+
+        async with aiohttp.ClientSession(headers=headers) as session:
+            for i in range(self.max_retries):
+                async with session.delete(url, data=body, params=params) as response:
+                    # Retry if failed
+                    if response.status >= 500:
+                        await asyncio.sleep(self.initial_backoff * 2 * ( i + 1 ))
+                        continue
+
+                    self.logger.info('[DELETE] {sta} {url}'.format(sta=response.status, url=url))
+                    if not await self.is_success(response):
+                        continue
+
+                    return await response.json(content_type=None)
+            self.logger.error('All retries failed for {url}'.format(url=url))
+            return None
+
     async def download_file_io(self, url, token=None, body=None, headers=None):
         if headers is None:
             headers = await self.get_headers(token)

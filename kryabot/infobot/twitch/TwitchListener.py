@@ -71,4 +71,6 @@ class TwitchListener(Listener):
         return TwitchProfile(*args, **kwargs)
 
     async def handle_new_profile(self, profile: TwitchProfile):
-        await self.subscribe_profile(profile)
+        # await self.subscribe_profile(profile)
+        # TODO: implement new EventSub
+        pass
