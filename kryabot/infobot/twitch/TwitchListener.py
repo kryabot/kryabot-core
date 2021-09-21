@@ -55,8 +55,9 @@ class TwitchListener(Listener):
                 await asyncio.sleep(2)
 
     async def subscribe_profile(self, profile: TwitchProfile)->None:
-        self.logger.info('Refreshing stream webhook for {}'.format(profile.twitch_name))
-        await self.manager.api.twitch.webhook_subscribe_stream(profile.twitch_id, profile.twitch_name)
+        pass
+        # self.logger.info('Refreshing stream webhook for {}'.format(profile.twitch_name))
+        # await self.manager.api.twitch.webhook_subscribe_stream(profile.twitch_id, profile.twitch_name)
 
     async def update_data(self, start: bool = False):
         try:
@@ -71,6 +72,4 @@ class TwitchListener(Listener):
         return TwitchProfile(*args, **kwargs)
 
     async def handle_new_profile(self, profile: TwitchProfile):
-        # await self.subscribe_profile(profile)
-        # TODO: implement new EventSub
-        pass
+        await self.subscribe_profile(profile)
