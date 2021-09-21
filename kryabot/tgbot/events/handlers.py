@@ -24,6 +24,7 @@ async def event_private_message(event: events.NewMessage.Event):
 @events.register(events.NewMessage(func=lambda e: e.is_group or e.is_channel))
 async def event_group_message(event: events.NewMessage.Event):
     if isinstance(event.message.to_id, PeerChat):
+        event.client.logger.info("PeerChat Unsupported chat type {}".format(event.message.to_id))
         return
 
     # IF for TEST only
