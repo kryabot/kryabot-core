@@ -95,11 +95,16 @@ class TwitchEvents(Core):
 
     async def create_many(self, broadcaster_id: str, topics: [EventSubType]):
         response = []
-        for topic in topics:
-            resp = await self.create(broadcaster_id, topic)
-            response.append(resp)
+        error = []
 
-        return response
+        for topic in topics:
+            try:
+                resp = await self.create(broadcaster_id, topic)
+                response.append(resp['data'][0])
+            except Exception as ex:
+                error.append(ex)
+
+        return response, error
 
     @app_auth()
     async def create(self, broadcaster_id: str, topic: EventSubType, version: int=1):

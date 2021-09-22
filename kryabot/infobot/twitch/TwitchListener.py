@@ -45,26 +45,38 @@ class TwitchListener(Listener):
     async def subscribe_all(self)->None:
         current_on = await self.manager.api.twitch_events.get_all(topic=EventSubType.STREAM_ONLINE)
         current_off = await self.manager.api.twitch_events.get_all(topic=EventSubType.STREAM_OFFLINE)
+        current_updates = await self.manager.api.twitch_events.get_all(topic=EventSubType.CHANNEL_UPDATE)
 
         for profile in self.profiles:
             exists_on = next(filter(lambda event: int(event['condition']['broadcaster_user_id']) == int(profile.twitch_id), current_on['data']), None)
             exists_off = next(filter(lambda event: int(event['condition']['broadcaster_user_id']) == int(profile.twitch_id), current_off['data']), None)
-            await self.subscribe_profile(profile, stream_on=exists_on is None, stream_off=exists_off is None)
+            exists_update = next(filter(lambda event: int(event['condition']['broadcaster_user_id']) == int(profile.twitch_id), current_updates['data']), None)
+            await self.subscribe_profile(profile, stream_on=exists_on is None, stream_off=exists_off is None, stream_updates=exists_update is None)
 
-    async def subscribe_profile(self, profile: TwitchProfile, stream_on: bool=True, stream_off: bool=True)->None:
+    async def subscribe_profile(self, profile: TwitchProfile, stream_on: bool=True, stream_off: bool=True, stream_updates: bool=True)->None:
+        topics = []
+
         if stream_on:
-            try:
-                response = await self.manager.api.twitch_events.create(profile.twitch_id,
-                                                                       topic=EventSubType.STREAM_ONLINE)
-            except Exception as ex:
-                self.logger.exception(ex)
+            topics.append(EventSubType.STREAM_ONLINE)
 
         if stream_off:
-            try:
-                response = await self.manager.api.twitch_events.create(profile.twitch_id,
-                                                                       topic=EventSubType.STREAM_OFFLINE)
-            except Exception as ex:
-                self.logger.exception(ex)
+            topics.append(EventSubType.STREAM_OFFLINE)
+
+        if stream_updates:
+            topics.append(EventSubType.CHANNEL_UPDATE)
+
+        if not topics:
+            return
+
+        try:
+            self.logger.info('Subscribing events for profile {} {}'.format(profile.twitch_id, profile.twitch_name))
+            response, errors = await self.manager.api.twitch_events.create_many(profile.twitch_id, topics=topics)
+            if errors:
+                for error in errors:
+                    self.logger.exception(error)
+        except Exception as ex:
+            self.logger.exception(ex)
+
 
     async def update_data(self, start: bool = False):
         try:
