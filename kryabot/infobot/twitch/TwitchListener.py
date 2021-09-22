@@ -1,7 +1,6 @@
-import asyncio
 from typing import List
-from streamlink import Streamlink
 
+from api.twitch_events import EventSubType
 from infobot.UpdateBuilder import TwitchUpdate
 from infobot.Listener import Listener
 from infobot.twitch.TwitchEvents import TwitchEvent
@@ -15,19 +14,15 @@ class TwitchListener(Listener):
         self.period = 500000
         self.profiles: List[TwitchProfile] = []
         self.last_subscribe = None
-        self.streamlink_session = Streamlink()
-        self.streamlink_session.set_plugin_option("twitch", "disable-ads", True)
-        self.streamlink_session.set_plugin_option("twitch", "disable-reruns", True)
         self.update_type = TwitchUpdate
 
     async def start(self):
         await super().start()
+        await self.subscribe_all()
         self.period = 3
 
     @Listener.repeatable
     async def listen(self):
-        await self.subscribe_all()
-
         while True:
             data = await self.manager.db.redis.get_one_from_list_parsed(redis_key.get_streams_data())
             if data is None:
@@ -48,16 +43,28 @@ class TwitchListener(Listener):
                     await self.manager.db.redis.publish_event(redis_key.get_streams_forward_data(), event.export())
 
     async def subscribe_all(self)->None:
-        for profile in self.profiles:
-            if profile.need_resubscribe():
-                await self.subscribe_profile(profile)
-                profile.subscribed()
-                await asyncio.sleep(2)
+        current_on = await self.manager.api.twitch_events.get_all(topic=EventSubType.STREAM_ONLINE)
+        current_off = await self.manager.api.twitch_events.get_all(topic=EventSubType.STREAM_OFFLINE)
 
-    async def subscribe_profile(self, profile: TwitchProfile)->None:
-        pass
-        # self.logger.info('Refreshing stream webhook for {}'.format(profile.twitch_name))
-        # await self.manager.api.twitch.webhook_subscribe_stream(profile.twitch_id, profile.twitch_name)
+        for profile in self.profiles:
+            exists_on = next(filter(lambda event: int(event['condition']['broadcaster_user_id']) == int(profile.twitch_id), current_on['data']), None)
+            exists_off = next(filter(lambda event: int(event['condition']['broadcaster_user_id']) == int(profile.twitch_id), current_off['data']), None)
+            await self.subscribe_profile(profile, stream_on=exists_on is None, stream_off=exists_off is None)
+
+    async def subscribe_profile(self, profile: TwitchProfile, stream_on: bool=True, stream_off: bool=True)->None:
+        if stream_on:
+            try:
+                response = await self.manager.api.twitch_events.create(profile.twitch_id,
+                                                                       topic=EventSubType.STREAM_ONLINE)
+            except Exception as ex:
+                self.logger.exception(ex)
+
+        if stream_off:
+            try:
+                response = await self.manager.api.twitch_events.create(profile.twitch_id,
+                                                                       topic=EventSubType.STREAM_OFFLINE)
+            except Exception as ex:
+                self.logger.exception(ex)
 
     async def update_data(self, start: bool = False):
         try:

@@ -2,6 +2,7 @@ from api.betterttv import Betterttv
 from api.boosty import Boosty
 from api.frankerfacez import Frankerfacez
 from api.instagram import Instagram
+from api.twitch_events import TwitchEvents
 from api.vk import VK
 from api.twitch import Twitch
 from api.guardbot import GuardBot
@@ -18,6 +19,7 @@ class ApiHelper:
 
         self.vk = VK(cfg=cfg)
         self.twitch = Twitch(redis=redis, cfg=cfg)
+        self.twitch_events = TwitchEvents(redis=redis, cfg=cfg)
         self.guardbot = GuardBot(cfg=cfg)
         self.gc = GoogleCloud(cfg=cfg)
         self.boosty = Boosty(cfg=cfg)

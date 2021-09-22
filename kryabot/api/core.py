@@ -133,11 +133,15 @@ class Core:
         return file
 
     async def is_success(self, response)->bool:
+        try:
+            body = await response.json()
+        except:
+            body = ''
 
         try:
             response.raise_for_status()
         except ClientConnectorError as e:
-            self.logger.error('[{method}] {reason}'.format(reason=str(e), method=response.method))
+            self.logger.error('[{method}] {reason} {body}'.format(reason=str(e), method=response.method, body=body))
             if e.host == 'api.twitch.tv':
                 await asyncio.sleep(30)
             else:

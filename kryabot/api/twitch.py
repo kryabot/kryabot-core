@@ -1,6 +1,5 @@
 import asyncio
 import functools
-from enum import Enum
 
 from aiohttp import ClientResponseError
 
@@ -8,43 +7,6 @@ from api.core import Core
 from exceptions.twitch import ExpiredAuthToken
 from utils.twitch import get_active_app_token
 import utils.redis_key as redis_key
-
-
-class EventSubType(Enum):
-    CHANNEL_UPDATE = 'channel.update'
-    CHANNEL_FOLLOW = 'channel.follow'
-    CHANNEL_SUBSCRIBE = 'channel.subscribe'
-    CHANNEL_SUBSCRIBE_END = 'channel.subscription.end'
-    CHANNEL_SUBSCRIBE_GIFT = 'channel.subscription.gift'
-    CHANNEL_SUBSCRIBE_MESSAGE = 'channel.subscription.message'
-    CHANNEL_CHEER = 'channel.cheer'
-    CHANNEL_RAID = 'channel.raid'
-    CHANNEL_BAN = 'channel.ban'
-    CHANNEL_UNBAN = 'channel.unban'
-    CHANNEL_MOD_ADD = '	channel.moderator.add'
-    CHANNEL_MOD_REMOVE = 'channel.moderator.remove'
-    CHANNEL_POINTS_UPDATE = 'channel.channel_points_custom_reward.update'
-    CHANNEL_POINTS_REMOVE = 'channel.channel_points_custom_reward.remove'
-    CHANNEL_POINTS_REDEMPTION_UPDATE = 'channel.channel_points_custom_reward_redemption.update'
-    CHANNEL_POINTS_REDEMPTION_NEW = 'channel.channel_points_custom_reward_redemption.add'
-    CHANNEL_POLL_BEGIN = 'channel.poll.begin'
-    CHANNEL_POLL_PROCESS = 'channel.poll.progress'
-    CHANNEL_POLL_END = 'channel.poll.end'
-    CHANNEL_PREDICTION_BEGIN = 'channel.prediction.begin'
-    CHANNEL_PREDICTION_PROCESS = '	channel.prediction.progress'
-    CHANNEL_PREDICTION_LOCK = 'channel.prediction.lock'
-    CHANNEL_PREDICTION_END = 'channel.prediction.end'
-    CHANNEL_GOAL_BEGIN = 'channel.goal.begin'
-    CHANNEL_GOAL_PROGRESS = 'channel.goal.progress'
-    CHANNEL_GOAL_END = 'channel.goal.end'
-    CHANNEL_HYPE_TRAIN_BEGIN = 'channel.hype_train.begin'
-    CHANNEL_HYPE_TRAIN_PROGRESS = 'channel.hype_train.progress'
-    CHANNEL_HYPE_TRAIN_END = 'channel.hype_train.end'
-    STREAM_ONLINE = 'stream.online'
-    STREAM_OFFLINE = 'stream.offline'
-    AUTH_GRANTED = 'user.authorization.grant'
-    AUTH_REVOKED = 'user.authorization.revoke'
-    USER_UPDATE = 'user.update'
 
 
 def app_auth():
@@ -354,39 +316,3 @@ class Twitch(Core):
                 raise ExpiredAuthToken(e)
             else:
                 raise e
-
-    async def eventsub_create_many(self, broadcaster_id: str, topics: [EventSubType], token: str=None):
-        response = []
-        for topic in topics:
-            resp = await self.eventsub_create(broadcaster_id, topic, token)
-            response.append(resp)
-
-        return response
-
-    async def eventsub_create(self, broadcaster_id: str, topic: EventSubType, token: str=None, version: int=1):
-        headers = await self.get_json_headers(bearer_token='lblhw91mu74cc1cj1ltauhb9fyriin')
-        body = {
-            'type': topic.value,
-            'version': version,
-            'condition': {'broadcaster_user_id': broadcaster_id},
-            'transport': {
-                'method': 'webhook',
-                'callback': 'https://api2.krya.dev/public/callback/twitch_events',
-                'secret': self.webhook_secret
-            }
-        }
-
-        return await self.make_post_request(self.events_url, body=body, headers=headers)
-
-    async def eventsub_delete(self, message_id: str, ):
-        params = [('id', message_id)]
-        headers = await self.get_json_headers(bearer_token='lblhw91mu74cc1cj1ltauhb9fyriin')
-        return await self.make_delete_request_data(self.events_url, params=params, headers=headers)
-
-    async def eventsub_get(self, status=None):
-        params = []
-        if status:
-            params.append(('status', status))
-
-        headers = await self.get_json_headers(bearer_token='lblhw91mu74cc1cj1ltauhb9fyriin')
-        return await self.make_get_request(self.events_url, headers=headers)

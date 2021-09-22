@@ -47,6 +47,8 @@ class WebHandler:
         self.app.add_route(self.endpoint_twitch_action_timeout, '/twitch/actions/timeout', methods=['POST'])
         self.app.add_route(self.endpoint_twitch_action_unban, '/twitch/actions/unban', methods=['POST'])
 
+        self.app.add_route(self.endpoint_twitch_eventsub, '/twitch/event/handle', methods=['POST'])
+
         self.app.add_route(self.endpoint_sync, '/sync', methods=['GET'])
 
         # Error handlers
@@ -253,4 +255,9 @@ class WebHandler:
         for username in users:
             await ResponseAction.ResponseUnban.send(channel_name=channel, user=username)
 
+        return self.response_success()
+
+    @authorized()
+    async def endpoint_twitch_eventsub(self, request: Request):
+        await self.guard_bot.api.twitch_events.handle_event(event=request.body)
         return self.response_success()

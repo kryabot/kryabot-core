@@ -18,5 +18,4 @@ hachoir
 sanic
 instaloader
 Unidecode
-streamlink
 aioschedule
