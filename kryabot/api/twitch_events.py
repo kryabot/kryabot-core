@@ -198,6 +198,8 @@ class TwitchEvents(Core):
             page = await self.get(status, topic, after)
             if page and 'cursor' in page['pagination']:
                 after = page['pagination']['cursor']
+            else:
+                after = None
             if response:
                 response['data'] += page['data']
             else:
