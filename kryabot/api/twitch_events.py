@@ -7,6 +7,7 @@ from api.core import Core
 from api.twitch import app_auth
 from exceptions.twitch import ExpiredAuthToken
 from object.Base import Base
+from utils.json_parser import json_to_dict
 from utils.twitch import get_active_app_token
 import utils.redis_key as redis_key
 
@@ -234,8 +235,9 @@ class TwitchEvents(Core):
         topic = EventSubType(event['subscription']['type'])
         broadcaster_id = int(event['subscription']['condition']['broadcaster_user_id'])
 
+        converted_event = json_to_dict(event)
         if topic.eq(EventSubType.STREAM_ONLINE) or topic.eq(EventSubType.STREAM_OFFLINE):
-            await self.redis.push_list_to_right(redis_key.get_streams_data(), event)
+            await self.redis.push_list_to_right(redis_key.get_streams_data(), converted_event)
         elif topic.eq(EventSubType.CHANNEL_UPDATE):
-            await self.redis.push_list_to_right(redis_key.get_streams_data(), event)
+            await self.redis.push_list_to_right(redis_key.get_streams_data(), converted_event)
             await self.redis.set_parsed_value_by_key(redis_key.get_twitch_channel_update(broadcaster_id), event['event'], expire=redis_key.ttl_week)
