@@ -434,7 +434,7 @@ class TwitchHandler(Base):
                 continue
 
             current_scopes = auth[0]['scope'].split(' ')
-            channel_events = set(filter(lambda row: int(row['condition']['broadcaster_user_id']) == int(channel.tw_id), current_events['data']))
+            channel_events = list(filter(lambda row: int(row['condition']['broadcaster_user_id']) == int(channel.tw_id), current_events['data']))
 
             for topic in required_topics:
                 have_scope = False
