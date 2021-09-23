@@ -11,7 +11,7 @@ import utils.redis_key as redis_key
 class TwitchListener(Listener):
     def __init__(self, manager):
         super().__init__(manager)
-        self.period = 500000
+        self.period = 3
         self.profiles: List[TwitchProfile] = []
         self.last_subscribe = None
         self.update_type = TwitchUpdate
@@ -29,18 +29,37 @@ class TwitchListener(Listener):
                 break
 
             self.logger.info(data)
+            broadcaster_id = int(data['subscription']['condition']['broadcaster_user_id'])
+            topic = EventSubType(data['subscription']['type'])
 
-            for prof in self.profiles:
-                if prof.twitch_id == data['twitch_id']:
-                    event = TwitchEvent(prof, data['data'])
-                    await event.translate(self.manager.api.twitch)
-                    await event.profile.store_to_cache(self.manager.db.redis)
-                    # Publish event to Info bot
-                    self.loop.create_task(self.manager.event(event))
+            profile = next(filter(lambda p: p.twitch_id == broadcaster_id, self.profiles), None)
+            if not profile:
+                self.logger.info('Received event for Twitch ID {} but profile not found'.format(broadcaster_id))
 
-                    self.logger.info('Export data: {}'.format(event.export()))
-                    # Publish event to Twitch/Telegram bot
-                    await self.manager.db.redis.publish_event(redis_key.get_streams_forward_data(), event.export())
+            if topic.eq(EventSubType.STREAM_ONLINE) or topic.eq(EventSubType.STREAM_OFFLINE):
+                # START Or FINISH
+                event = TwitchEvent(profile, data)
+                await event.profile.store_to_cache(self.manager.db.redis)
+                # TODO: verify if cache is enough or need to use API to get correct stream data
+                stream_data = await self.manager.db.redis.get_parsed_value_by_key(redis_key.get_twitch_channel_update(broadcaster_id))
+            else:
+                # UPDATE
+                stream_data = data['event']
+                event = profile.last_event
+                # TODO: build event again if none and stream is online (api call)
+
+            if not event or event.is_down():
+                self.logger.info('Skipping update for {}'.format(profile.twitch_name))
+                continue
+
+            event.parse_stream_data(stream_data)
+
+            # Publish event to Info bot
+            self.loop.create_task(self.manager.event(event))
+
+            self.logger.info('Export data: {}'.format(event.export()))
+            # Publish event to Twitch/Telegram bot
+            await self.manager.db.redis.publish_event(redis_key.get_streams_forward_data(), event.export())
 
     async def subscribe_all(self)->None:
         current_on = await self.manager.api.twitch_events.get_all(topic=EventSubType.STREAM_ONLINE)
@@ -77,8 +96,9 @@ class TwitchListener(Listener):
         except Exception as ex:
             self.logger.exception(ex)
 
-
     async def update_data(self, start: bool = False):
+        self.logger.info('Updating twitch listener data')
+
         try:
             profiles = await self.db.getTwitchProfiles()
             history = await self.db.getTwitchHistory()

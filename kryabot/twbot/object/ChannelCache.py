@@ -50,3 +50,10 @@ class ChannelCache(Base):
     @staticmethod
     def get_all():
         return ChannelCache.get_instance().channels
+
+    @staticmethod
+    def iter():
+        channels = ChannelCache.get_instance().get_all()
+        keys = channels.keys()
+        for key in keys:
+            yield channels[key]

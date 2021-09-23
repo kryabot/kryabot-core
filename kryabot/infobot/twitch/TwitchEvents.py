@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List, Dict
 
+from api.twitch_events import EventSubType
 from infobot.Event import Event
 from infobot.twitch.TwitchProfile import TwitchProfile
 
@@ -24,63 +25,49 @@ class TwitchEvent(Event):
         self.raw = data
 
         if data:
-            self.parse(data[0])
+            self.parse(data['event'])
 
         self.updated_data = []
-        self.down: bool = self.is_down() or False
-        self.start: bool = self.is_start() and not self.down or False
-        self.update: bool = self.is_update() and not self.down or False
-        self.recovery: bool = self.is_recovery() and not self.down or False
         self.profile.last_event = self
-        self.profile.last_stream_start: datetime = self.started_at
+        if self.is_start():
+            self.profile.last_stream_start: datetime = self.started_at
         if self.is_down():
             self.profile.last_stream_finish: datetime = datetime.utcnow()
 
     def parse(self, data):
-        self.title = self.get_attr(data, 'title', '')
-        self.game_id = self.parse_game_id(self.get_attr(data, 'game_id', ''))
         self.started_at = self.get_attr(data, 'started_at')
-        self.online = int(self.get_attr(data, 'viewer_count', 0))
-        self.url = str(self.get_attr(data, 'thumbnail_url', ''))
-        self.language = str(self.get_attr(data, 'language', ''))
-        self.communities = self.get_attr(data, 'community_ids')
-        self.type = str(self.get_attr(data, 'type'))
+        self.type = str(self.get_attr(data, 'type', ''))
         self.twitch_event_id = str(self.get_attr(data, 'id'))
-        self.tags = self.get_attr(data, 'tag_ids', [])
 
-    # Separate parser method needed for game_id value because
-    # sometimes Twitch returns empty string and python can not convert it by int(),
-    # exception is thrown.
-    def parse_game_id(self, game_id: str)->int:
-        if game_id == '':
-            return 0
-        return int(game_id)
+    def parse_stream_data(self, data):
+        self.updated_data = []
+
+        title = self.get_attr(data, 'title')
+        language = self.get_attr(data, 'language')
+        game_id = self.get_attr(data, 'category_id')
+        game_name = self.get_attr(data, 'category_name')
+
+        if self.title and self.title != title:
+            self.updated_data.append({'title': title})
+            self.title = title
+        if self.language and self.language != language:
+            self.updated_data.append({'language': language})
+            self.language = language
+        if self.game_id and self.game_id != game_id:
+            self.updated_data.append({'game_id': game_id})
+            self.game_id = game_id
+        if self.game_name and self.game_name != game_name:
+            self.updated_data.append({'game_name': game_name})
+            self.game_name = game_name
 
     def is_start(self)->bool:
-        return self.started_at is not None
+        return self.raw['subscription']['type'] == EventSubType.STREAM_ONLINE.key and not self.updated_data
 
     def is_update(self)->bool:
-        updated = self.started_at and self.profile.last_stream_start == self.started_at
-
-        if updated and self.profile.last_event:
-            self.updated_data = []
-
-            if self.title != self.profile.last_event.title:
-                self.updated_data.append({'title': self.title})
-
-            if self.game_id != self.profile.last_event.game_id:
-                self.updated_data.append({'game': self.game_id})
-
-            if self.communities != self.profile.last_event.communities:
-                self.updated_data.append({'communities': self.communities})
-
-            if self.type != self.profile.last_event.type:
-                self.updated_data.append({'type': self.type})
-
-        return updated
+        return self.is_start() and self.updated_data
 
     def is_down(self)->bool:
-        return not self.raw
+        return self.raw['subscription']['type'] == EventSubType.STREAM_OFFLINE.key
 
     def is_recovery(self)->bool:
         if self.profile.last_stream_finish is None:
@@ -93,10 +80,10 @@ class TwitchEvent(Event):
         return False
 
     def get_formatted_image_url(self):
-        if self.down:
+        if self.is_down():
             return None
 
-        custom_url = self.url.format(width=1280, height=720)
+        custom_url = 'https://static-cdn.jtvnw.net/previews-ttv/live_user_{}-1080x720.jpg'.format(self.raw['event']['broadcaster_user_login'])
         custom_url += '?id={tmp_id}{seed}'.format(tmp_id=self.twitch_event_id, seed=str(int(datetime.now().timestamp())))
         return custom_url
 
@@ -106,27 +93,16 @@ class TwitchEvent(Event):
     def get_channel_url(self):
         return 'https://twitch.tv/{}'.format(self.profile.twitch_name)
 
-    async def translate(self, api)->None:
-        try:
-            resp = await api.get_game_info(self.game_id)
-            if resp and 'data' in resp and len(resp['data']) > 0:
-                self.game_name = resp['data'][0]['name']
-        except Exception as ex:
-            self.game_name = ""
-            self.profile.logger.info("Received error during fetch of game id: {}".format(self.game_id))
-            self.profile.logger.exception(ex)
-
-
     def export(self)->Dict:
         return {"channel_id": self.profile.twitch_id,
                 "channel_name": self.profile.twitch_name,
                 "channel_url": self.get_channel_url(),
                 "started_at": self.started_at,
                 "title": self.title,
-                "recovery": self.recovery,
-                "start": self.start and not self.update,
-                "update": self.update,
-                "down": self.down,
+                "recovery": self.is_recovery(),
+                "start": self.is_start(),
+                "update": self.is_update(),
+                "down": self.is_down(),
                 "game_id": self.game_id,
                 "game_name": self.game_name,
                 "img_url": self.get_formatted_image_url(),

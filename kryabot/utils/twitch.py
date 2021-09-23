@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from utils import redis_key
 import asyncio
 
+
 async def refresh_channel_token_no_client(channel, db, api, force_refresh=False):
     new_data = await get_active_oauth_data(channel['user_id'], db, api, force_refresh=force_refresh)
     channel = await db.get_auth_subchat(channel['tg_chat_id'])
@@ -46,12 +47,6 @@ async def get_active_oauth_data(kb_user_id, db, api, force_refresh=False, sec_di
 
             # Update in db
             await db.saveBotAuth(kb_user_id, resp['access_token'], resp['refresh_token'], resp['expires_in'])
-
-            # Resubscribe, err is thrown due to empty body
-            try:
-                await api.twitch.webhook_subscribe_subscribtion(user['tw_id'], resp['access_token'])
-            except Exception as err:
-                pass
 
             try:
                 data = {"token": resp['access_token'], "tw_id": user['tw_id'], "scope": resp['scope']}

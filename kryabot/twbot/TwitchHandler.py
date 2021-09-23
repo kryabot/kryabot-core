@@ -3,6 +3,7 @@ import logging
 from typing import List, Dict
 from datetime import datetime
 
+from api.twitch_events import EventSubType, EventSubStatus
 from object.ApiHelper import ApiHelper
 from object.Base import Base
 from object.BotConfig import BotConfig
@@ -24,6 +25,7 @@ from utils.array import split_array_into_parts, get_first
 from utils import redis_key
 from utils import schedule
 from utils.json_parser import json_to_dict
+from utils.twitch import get_active_oauth_data
 
 
 class TwitchHandler(Base):
@@ -124,8 +126,10 @@ class TwitchHandler(Base):
 
         listener = self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
         triggers = schedule.schedule_task_periodically(5, self.timed_task_processor, logger=self.logger)
+        events_checker = schedule.schedule_task_periodically(redis_key.ttl_day, self.schedule_eventsub_register, logger=self.logger)
         ping = self.loop.create_task(Pinger(System.KRYABOT_TWITCH, self.logger, self.db.redis).run_task())
 
+        self.tasks.append(events_checker)
         self.tasks.append(triggers)
         self.tasks.append(listener)
         self.tasks.append(ping)
@@ -399,3 +403,67 @@ class TwitchHandler(Base):
             await self.bot_pp.process(channel, db_user, redemption_data)
         except Exception as ex:
             self.logger.exception(ex)
+
+    async def schedule_eventsub_register(self)->None:
+        required_topics = [
+            EventSubType.CHANNEL_SUBSCRIBE,
+            EventSubType.CHANNEL_SUBSCRIBE_END,
+            EventSubType.CHANNEL_SUBSCRIBE_GIFT,
+            EventSubType.CHANNEL_SUBSCRIBE_MESSAGE,
+            EventSubType.CHANNEL_RAID,
+            EventSubType.CHANNEL_GOAL_BEGIN,
+            EventSubType.CHANNEL_GOAL_END,
+            EventSubType.CHANNEL_GOAL_PROGRES,
+            EventSubType.CHANNEL_POLL_BEGIN,
+            EventSubType.CHANNEL_POLL_PROGRESS,
+            EventSubType.CHANNEL_POLL_END,
+            EventSubType.AUTH_GRANTED,
+            EventSubType.AUTH_REVOKED,
+            EventSubType.CHANNEL_POINTS_REDEMPTION_NEW,
+            EventSubType.CHANNEL_POINTS_REDEMPTION_UPDATE,
+            EventSubType.CHANNEL_HYPE_TRAIN_BEGIN,
+            EventSubType.CHANNEL_HYPE_TRAIN_PROGRESS,
+            EventSubType.CHANNEL_HYPE_TRAIN_END
+        ]
+
+        current_events = await self.api.twitch_events.get_all()
+        for channel in ChannelCache.iter():
+            auth = await self.db.getBotAuthByUserId(channel.user_id)
+            if not auth:
+                self.logger.info("Skipping eventsub check for user {} due to missing auth".format(channel.name))
+                continue
+
+            current_scopes = auth[0]['scope'].split(' ')
+            channel_events = set(filter(lambda row: int(row['condition']['broadcaster_id']) == int(channel.tw_id), current_events))
+
+            for topic in required_topics:
+                have_scope = False
+                if topic.scopes:
+                    # Topic requires scopes in auth
+                    for req_scope in topic.scopes:
+                        if req_scope in current_scopes:
+                            have_scope = True
+                else:
+                    have_scope = True
+
+                if not have_scope:
+                    self.logger.info("[{}] Skipping topic ${} creation due to missing scope".format(channel.tw_id, topic.key))
+                    continue
+
+                topic_event = next(filter(lambda row: row['type'] == topic.key, channel_events), None)
+                if topic_event:
+                    # topic was already registered, check status
+                    status = EventSubStatus(topic_event['status'])
+                    if status != EventSubStatus.ENABLED:
+                        self.logger.info("[{}] Deleting not enabled event: {}".format(channel.tw_id, topic_event))
+                        await self.api.twitch_events.delete(message_id=topic_event['id'])
+                    else:
+                        # status is enabled, we can skip to next topic
+                        continue
+
+                self.logger.info("[{}] Creating topic ${}".format(channel.tw_id, topic.key))
+                try:
+                    resp = await self.api.twitch_events.create(channel.tw_id, topic)
+                except Exception as ex:
+                    self.logger.exception(ex)
+

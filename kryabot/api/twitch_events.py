@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Dict
 
 from aiohttp import ClientResponseError
 
@@ -7,43 +8,56 @@ from api.twitch import app_auth
 from exceptions.twitch import ExpiredAuthToken
 from object.Base import Base
 from utils.twitch import get_active_app_token
+import utils.redis_key as redis_key
 
 
 class EventSubType(Enum):
     CHANNEL_UPDATE = 'channel.update'
     CHANNEL_FOLLOW = 'channel.follow'
-    CHANNEL_SUBSCRIBE = 'channel.subscribe'
-    CHANNEL_SUBSCRIBE_END = 'channel.subscription.end'
-    CHANNEL_SUBSCRIBE_GIFT = 'channel.subscription.gift'
-    CHANNEL_SUBSCRIBE_MESSAGE = 'channel.subscription.message'
-    CHANNEL_CHEER = 'channel.cheer'
+    CHANNEL_SUBSCRIBE = 'channel.subscribe', ['channel:read:subscriptions']
+    CHANNEL_SUBSCRIBE_END = 'channel.subscription.end', ['channel:read:subscriptions']
+    CHANNEL_SUBSCRIBE_GIFT = 'channel.subscription.gift', ['channel:read:subscriptions']
+    CHANNEL_SUBSCRIBE_MESSAGE = 'channel.subscription.message', ['channel:read:subscriptions']
+    CHANNEL_CHEER = 'channel.cheer', ['bits:read']
     CHANNEL_RAID = 'channel.raid'
-    CHANNEL_BAN = 'channel.ban'
-    CHANNEL_UNBAN = 'channel.unban'
-    CHANNEL_MOD_ADD = '	channel.moderator.add'
-    CHANNEL_MOD_REMOVE = 'channel.moderator.remove'
-    CHANNEL_POINTS_UPDATE = 'channel.channel_points_custom_reward.update'
-    CHANNEL_POINTS_REMOVE = 'channel.channel_points_custom_reward.remove'
-    CHANNEL_POINTS_REDEMPTION_UPDATE = 'channel.channel_points_custom_reward_redemption.update'
-    CHANNEL_POINTS_REDEMPTION_NEW = 'channel.channel_points_custom_reward_redemption.add'
-    CHANNEL_POLL_BEGIN = 'channel.poll.begin'
-    CHANNEL_POLL_PROCESS = 'channel.poll.progress'
-    CHANNEL_POLL_END = 'channel.poll.end'
-    CHANNEL_PREDICTION_BEGIN = 'channel.prediction.begin'
-    CHANNEL_PREDICTION_PROCESS = '	channel.prediction.progress'
-    CHANNEL_PREDICTION_LOCK = 'channel.prediction.lock'
-    CHANNEL_PREDICTION_END = 'channel.prediction.end'
-    CHANNEL_GOAL_BEGIN = 'channel.goal.begin'
-    CHANNEL_GOAL_PROGRESS = 'channel.goal.progress'
-    CHANNEL_GOAL_END = 'channel.goal.end'
-    CHANNEL_HYPE_TRAIN_BEGIN = 'channel.hype_train.begin'
-    CHANNEL_HYPE_TRAIN_PROGRESS = 'channel.hype_train.progress'
-    CHANNEL_HYPE_TRAIN_END = 'channel.hype_train.end'
+    CHANNEL_BAN = 'channel.ban', ['channel:moderate']
+    CHANNEL_UNBAN = 'channel.unban', ['channel:moderate']
+    CHANNEL_MOD_ADD = 'channel.moderator.add', ['channel:moderate']
+    CHANNEL_MOD_REMOVE = 'channel.moderator.remove', ['channel:moderate']
+    CHANNEL_POINTS_UPDATE = 'channel.channel_points_custom_reward.update', ['channel:read:redemptions', 'channel:manage:redemptions']
+    CHANNEL_POINTS_REMOVE = 'channel.channel_points_custom_reward.remove', ['channel:read:redemptions', 'channel:manage:redemptions']
+    CHANNEL_POINTS_REDEMPTION_UPDATE = 'channel.channel_points_custom_reward_redemption.update', ['channel:read:redemptions', 'channel:manage:redemptions']
+    CHANNEL_POINTS_REDEMPTION_NEW = 'channel.channel_points_custom_reward_redemption.add', ['channel:read:redemptions', 'channel:manage:redemptions']
+    CHANNEL_POLL_BEGIN = 'channel.poll.begin', ['channel:read:polls', 'channel:manage:polls']
+    CHANNEL_POLL_PROGRESS = 'channel.poll.progress', ['channel:read:polls', 'channel:manage:polls']
+    CHANNEL_POLL_END = 'channel.poll.end', ['channel:read:polls', 'channel:manage:polls']
+    CHANNEL_PREDICTION_BEGIN = 'channel.prediction.begin', ['channel:read:predictions', 'channel:manage:predictions']
+    CHANNEL_PREDICTION_PROCESS = 'channel.prediction.progress', ['channel:read:predictions', 'channel:manage:predictions']
+    CHANNEL_PREDICTION_LOCK = 'channel.prediction.lock', ['channel:read:predictions', 'channel:manage:predictions']
+    CHANNEL_PREDICTION_END = 'channel.prediction.end', ['channel:read:predictions', 'channel:manage:predictions']
+    CHANNEL_GOAL_BEGIN = 'channel.goal.begin', ['channel:read:goals']
+    CHANNEL_GOAL_PROGRESS = 'channel.goal.progress', ['channel:read:goals']
+    CHANNEL_GOAL_END = 'channel.goal.end', ['channel:read:goals']
+    CHANNEL_HYPE_TRAIN_BEGIN = 'channel.hype_train.begin', ['channel:read:hype_train']
+    CHANNEL_HYPE_TRAIN_PROGRESS = 'channel.hype_train.progress', ['channel:read:hype_train']
+    CHANNEL_HYPE_TRAIN_END = 'channel.hype_train.end', ['channel:read:hype_train']
     STREAM_ONLINE = 'stream.online'
     STREAM_OFFLINE = 'stream.offline'
     AUTH_GRANTED = 'user.authorization.grant'
     AUTH_REVOKED = 'user.authorization.revoke'
     USER_UPDATE = 'user.update'
+
+    def __init__(self, key, scopes=None):
+        self.key = key
+        self.scopes = scopes
+
+    def __new__(cls, key, scopes=None):
+        obj = object.__new__(cls)
+        obj._value_ = key
+        return obj
+
+    def eq(self, expected)->bool:
+        return expected == self
 
 
 class EventSubStatus(Enum):
@@ -210,5 +224,18 @@ class TwitchEvents(Core):
     async def handle_event(self, event):
         self.logger.info(event)
 
+        status = EventSubStatus(event['subscription']['status'])
+        if status == EventSubStatus.ENABLED:
+            await self.handle_active_event(event)
 
-        # db.redis.push_list_to_right(redis_key.get_streams_data(), request.body)
+        # TODO: handle other statuses
+
+    async def handle_active_event(self, event):
+        topic = EventSubType(event['subscription']['type'])
+        broadcaster_id = int(event['subscription']['condition']['broadcaster_user_id'])
+
+        if topic.eq(EventSubType.STREAM_ONLINE) or topic.eq(EventSubType.STREAM_OFFLINE):
+            await self.redis.push_list_to_right(redis_key.get_streams_data(), event)
+        elif topic.eq(EventSubType.CHANNEL_UPDATE):
+            await self.redis.push_list_to_right(redis_key.get_streams_data(), event)
+            await self.redis.set_parsed_value_by_key(redis_key.get_twitch_channel_update(broadcaster_id), event['event'], expire=redis_key.ttl_week)

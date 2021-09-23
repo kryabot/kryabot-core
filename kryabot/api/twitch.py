@@ -155,60 +155,6 @@ class Twitch(Core):
         headers = await self.get_json_headers(bearer_token=token)
         return await self.make_get_request(url, headers=headers, params=params)
 
-    async def webhook_subscribe(self, topic, user_id, channel_name, enable=True, lease_seconds=864000):
-        topic_url = await self.get_webhook_topic_url(topic)
-        topic_url = '{url}?user_id={id}'.format(url=topic_url, id=user_id)
-
-        headers = await self.get_json_headers()
-        body = {
-            'hub.mode': await self.get_mode(enable),
-            'hub.topic': topic_url,
-            'hub.callback': self.remote_stream_endpoint + '?channel=' + str(user_id) + '&topic=' + topic,
-            'hub.lease_seconds': lease_seconds,
-            'hub.secret': self.webhook_secret
-        }
-
-        return await self.make_post_request(url=self.webhooks_url, body=body, headers=headers)
-
-    async def webhook_subscribe_stream(self, user_id, channel_name, enable=True):
-        return await self.webhook_subscribe('streams', user_id, channel_name, enable)
-
-    async def webhook_subscribe_subscribtion(self, user_id, token, enable=True, lease_seconds=864000):
-        topic = 'subscriptions'
-        topic_url = await self.get_webhook_topic_url(topic)
-        topic_url = '{url}?broadcaster_id={id}&first=1'.format(url=topic_url, id=user_id)
-
-        headers = await self.get_json_headers(bearer_token=token)
-        body = {
-            'hub.mode': await self.get_mode(enable),
-            'hub.topic': topic_url,
-            'hub.callback': '{}?topic={}&channel={}'.format(self.remote_sub_endpoint, topic, user_id),
-            'hub.lease_seconds': lease_seconds,
-            'hub.secret': self.webhook_secret
-        }
-
-        return await self.make_post_request(url=self.webhooks_url, body=body, headers=headers)
-
-    async def get_mode(self, type):
-        if type is None or type == True:
-            return 'subscribe'
-        return 'unsubscribe'
-
-    async def get_webhook_topic_url(self, topicname):
-        if topicname == 'follows':
-            return 'https://api.twitch.tv/helix/users/follows'
-        if topicname == 'streams':
-            return 'https://api.twitch.tv/helix/streams'
-        if topicname == 'user':
-            return 'https://api.twitch.tv/helix/users'
-        if topicname == 'game':
-            return 'https://api.twitch.tv/helix/analytics/games'
-        if topicname == 'extention':
-            return 'https://api.twitch.tv/helix/analytics/extensions'
-        if topicname == 'subscriptions':
-            return 'https://api.twitch.tv/helix/subscriptions/events'
-        return None
-
     async def refresh_token(self, refresh_token):
         headers = await self.get_json_headers(add_auth=False)
         body = {
