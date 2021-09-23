@@ -413,7 +413,7 @@ class TwitchHandler(Base):
             EventSubType.CHANNEL_RAID,
             EventSubType.CHANNEL_GOAL_BEGIN,
             EventSubType.CHANNEL_GOAL_END,
-            EventSubType.CHANNEL_GOAL_PROGRES,
+            EventSubType.CHANNEL_GOAL_PROGRESS,
             EventSubType.CHANNEL_POLL_BEGIN,
             EventSubType.CHANNEL_POLL_PROGRESS,
             EventSubType.CHANNEL_POLL_END,
