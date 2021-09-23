@@ -49,16 +49,17 @@ class TwitchEvent(Event):
 
         if self.title and self.title != title:
             self.updated_data.append({'title': title})
-            self.title = title
         if self.language and self.language != language:
             self.updated_data.append({'language': language})
-            self.language = language
         if self.game_id and self.game_id != game_id:
             self.updated_data.append({'game_id': game_id})
-            self.game_id = game_id
         if self.game_name and self.game_name != game_name:
             self.updated_data.append({'game_name': game_name})
-            self.game_name = game_name
+
+        self.title = title
+        self.language = language
+        self.game_id = game_id
+        self.game_name = game_name
 
     def is_start(self)->bool:
         return self.raw['subscription']['type'] == EventSubType.STREAM_ONLINE.key and not self.updated_data
