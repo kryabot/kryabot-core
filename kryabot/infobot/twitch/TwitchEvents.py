@@ -110,3 +110,19 @@ class TwitchEvent(Event):
                 "event_id": self.twitch_event_id,
                 "online": self.online,
                 "updated_data": self.updated_data}
+
+    @property
+    def start(self)->bool:
+        return self.is_start()
+
+    @property
+    def down(self)->bool:
+        return self.is_down()
+
+    @property
+    def update(self)->bool:
+        return self.is_update()
+
+    @property
+    def recovery(self)->bool:
+        return self.is_recovery()
