@@ -93,8 +93,7 @@ class TwitchEvents(Core):
             'Client-ID': self.client_id
         }
 
-        #bearer_token = await get_active_app_token(self)
-        bearer_token = 'lblhw91mu74cc1cj1ltauhb9fyriin'
+        bearer_token = await get_active_app_token(self)
         headers['Authorization'] = 'Bearer {}'.format(bearer_token)
 
         return headers

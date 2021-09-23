@@ -36,23 +36,26 @@ class TwitchListener(Listener):
             if not profile:
                 self.logger.info('Received event for Twitch ID {} but profile not found'.format(broadcaster_id))
 
+            live = False
+            stream_data = await self.manager.api.twitch.get_stream_info_by_ids([profile.twitch_id])
+            if stream_data and stream_data['data']:
+                live = True
+
             if topic.eq(EventSubType.STREAM_ONLINE) or topic.eq(EventSubType.STREAM_OFFLINE):
                 # START Or FINISH
                 event = TwitchEvent(profile, data)
                 await event.profile.store_to_cache(self.manager.db.redis)
                 # TODO: verify if cache is enough or need to use API to get correct stream data
-                stream_data = await self.manager.db.redis.get_parsed_value_by_key(redis_key.get_twitch_channel_update(broadcaster_id))
             else:
                 # UPDATE
-                stream_data = data['event']
                 event = profile.last_event
                 # TODO: build event again if none and stream is online (api call)
+                if not event or event.is_down():
+                    # update when stream is off or we dont have start event (for example after restart)
+                    self.logger.info('Skipping update for {}'.format(profile.twitch_name))
+                    continue
 
-            if not event or event.is_down():
-                self.logger.info('Skipping update for {}'.format(profile.twitch_name))
-                continue
-
-            event.parse_stream_data(stream_data)
+            event.parse_stream_data(stream_data[0])
 
             # Publish event to Info bot
             self.loop.create_task(self.manager.event(event))

@@ -192,18 +192,23 @@ class Twitch(Core):
         return await self.make_get_request(url)
 
     @app_auth()
-    async def get_stream_info_by_ids(self, twitch_user_ids, first=50, after=None, before=None):
+    async def get_stream_info_by_ids(self, twitch_user_ids, first=None, after=None, before=None):
         url = '{base}streams'.format(base=self.helix_url)
 
         params = [('user_id', x) for x in twitch_user_ids]
+        if len(twitch_user_ids) == 0:
+            raise ValueError('Must provide atleast one id')
 
+        if len(twitch_user_ids) > 100:
+            raise ValueError('Cannot request more than 100 ids at once')
+
+        first = len(twitch_user_ids)
         if first is not None:
             params.append(('first', first))
         if after is not None:
             params.append(('after', after))
         if before is not None:
             params.append(('before', before))
-
         return await self.make_get_request(url=url, params=params)
 
     async def get_total_bits_by_user(self, broadcaster_tw_id, user_tw_id, token, period='all'):

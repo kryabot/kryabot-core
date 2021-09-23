@@ -44,8 +44,8 @@ class TwitchEvent(Event):
 
         title = self.get_attr(data, 'title')
         language = self.get_attr(data, 'language')
-        game_id = self.get_attr(data, 'category_id')
-        game_name = self.get_attr(data, 'category_name')
+        game_id = self.get_attr(data, 'game_id')
+        game_name = self.get_attr(data, 'game_name')
 
         if self.title and self.title != title:
             self.updated_data.append({'title': title})
