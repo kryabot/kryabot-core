@@ -68,7 +68,7 @@ async def getSql(sqlType):
         'sp_updateUserTgAward': 'CALL updateUserTgAward(%s, %s, %s)',
         'get_tg_awards': 'CALL getTgAwardsByUserId(%s)',
         'sp_deleteTgAward': 'CALL deleteTgAwardByUserId(%s, %s, %s)',
-        'set_getter': 'CALL setTgGetter(%s, %s, %s, %s, %s)',
+        'set_getter': 'CALL setTgGetter(%s, %s, %s, %s, %s, %s)',
         'get_getter': 'CALL getTgGetter(%s, %s)',
         'get_all_getters': 'CALL getAllTgGettersByUserId(%s)',
         'delete_getter': 'CALL deleteTgGetterByUserId(%s, %s, %s)',

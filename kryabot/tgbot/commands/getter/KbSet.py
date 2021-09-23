@@ -54,5 +54,5 @@ class KbSet(BaseCommand):
                 await self.reply_fail(self.get_translation('KB_MISSING_TEXT'))
                 return
 
-        await self.db.setTgGetter(self.channel['channel_id'], keyword, set_text, cached_id, self.sender['user_id'])
+        await self.db.setTgGetter(self.channel['channel_id'], keyword, set_text, cached_id, self.sender['user_id'], int(await self.is_chatadmin()))
         await self.reply_success(self.get_translation('KB_SET_SUCCESS').format(kw=keyword))

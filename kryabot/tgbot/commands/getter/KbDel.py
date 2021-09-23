@@ -31,5 +31,9 @@ class KbDel(BaseCommand):
             await self.reply_fail(self.get_translation('KB_KEYWORD_NOT_FOUND'))
             return
 
+        if 'access' in record and record['access'] == 1 and not (await self.is_chatadmin()):
+            await self.reply_fail(self.get_translation('KB_DELETE_PROTECTED'))
+            return
+
         await self.db.deleteTgGetter(self.channel['user_id'], record['tg_get_id'], self.sender['user_id'])
         await self.reply_success(self.get_translation('KB_DELETE_SUCCESS'))

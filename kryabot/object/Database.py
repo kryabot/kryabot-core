@@ -364,8 +364,8 @@ class Database:
     async def deleteTgAward(self, channel_user_id, award_id, user_id):
         return await self.query('sp_deleteTgAward', [channel_user_id, award_id, user_id])
 
-    async def setTgGetter(self, channel_id, keyword, text, cache_message_id, user_id):
-        return await self.query('set_getter', [channel_id, keyword, text, str(cache_message_id), user_id])
+    async def setTgGetter(self, channel_id, keyword, text, cache_message_id, user_id, access):
+        return await self.query('set_getter', [channel_id, keyword, text, str(cache_message_id), user_id, access])
 
     async def getTgGetter(self, channel_id, keyword):
         return await self.query('get_getter', [channel_id, keyword])
