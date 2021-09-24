@@ -65,7 +65,7 @@ class TwitchEvent(Event):
     def parse_update(self, data):
         self.updated_data = []
         self.update = True
-        
+
         title = self.get_attr(data, 'title')
         language = self.get_attr(data, 'language')
         game_id = self.get_attr(data, 'category_id')

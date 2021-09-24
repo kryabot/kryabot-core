@@ -52,6 +52,11 @@ class TwitchListener(Listener):
                     continue
                 event.parse_update(data['event'])
 
+                if event.update and not event.updated_data:
+                    # Nothing changed
+                    self.logger.info('[{}] Skipping update because nothing changed'.format(profile.twitch_id))
+                    continue
+
             # Publish event to Info bot
             self.loop.create_task(self.manager.event(event))
 
