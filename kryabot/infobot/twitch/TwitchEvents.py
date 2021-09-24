@@ -23,6 +23,7 @@ class TwitchEvent(Event):
         self.twitch_event_id: str = None
         self.event_id = None
         self.raw = data
+        self.update: bool = False
 
         if data:
             self.parse(data['event'])
@@ -63,7 +64,8 @@ class TwitchEvent(Event):
 
     def parse_update(self, data):
         self.updated_data = []
-
+        self.update = True
+        
         title = self.get_attr(data, 'title')
         language = self.get_attr(data, 'language')
         game_id = self.get_attr(data, 'category_id')
@@ -141,10 +143,6 @@ class TwitchEvent(Event):
     @property
     def down(self)->bool:
         return self.is_down()
-
-    @property
-    def update(self)->bool:
-        return self.is_update()
 
     @property
     def recovery(self)->bool:
