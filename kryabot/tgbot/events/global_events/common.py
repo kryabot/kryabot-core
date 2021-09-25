@@ -20,7 +20,10 @@ async def process_global_events(event):
         return
 
     for global_event in global_events:
-        if TG_TEST_GROUP_ID != chat_id and global_event['active_to'] is not None and global_event['active_to'] < datetime.now():
+        if global_event['public'] != 1 and TG_TEST_GROUP_ID != chat_id:
+            continue
+
+        if global_event['active_to'] is not None and global_event['active_to'] < datetime.now():
             event.client.logger.info('Skipping event {} because not active anymore: {}'.format(global_event['event_key'], global_event['active_to']))
             continue
 

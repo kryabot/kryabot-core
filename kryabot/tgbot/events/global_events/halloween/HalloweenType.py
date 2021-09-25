@@ -10,7 +10,6 @@ from telethon.tl.types import DocumentAttributeSticker
 from tgbot.events.global_events.GlobalEventProcessor import EventChannels, EventChannel
 from tgbot.events.global_events.halloween import HalloweenMonsters
 from utils import redis_key
-from object.Base import Base
 from utils.array import get_first
 from utils.formatting import format_html_user_mention
 
@@ -497,13 +496,12 @@ class HalloweenChannel(EventChannel):
 class HalloweenConfig:
     pumpkin_message: str = "🎃"
     pumpkin_boss = "🤬"
-    #pumpkin_heart = "❤"
     pumpkin_heart = "🥰"
     chestbox = "📦"
     chestbox_keys = ["🗝", "🔑"]
     hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "🔫"]
     love_messages: List[str] = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎"]
-    currency_key: str = "pumpkin"
+    currency_key: str = "demo"
 
     @staticmethod
     def is_event_regular(message)->bool:

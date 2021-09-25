@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from typing import Dict
 
 from object.Base import Base
+from tgbot.constants import TG_TEST_GROUP_ID
+
 
 class GlobalEventProcessor(Base):
     instance = None
@@ -26,13 +28,13 @@ class GlobalEventProcessor(Base):
     def get_logger(self)->logging:
         return logging.getLogger('krya.tg')
 
-    async def is_active_event(self, client)->bool:
+    async def get_event(self, client):
         global_events = await client.db.get_global_events()
+        event = next(filter(lambda e: e['event_key'] == self.event_name, global_events))
+        return event
 
-        event = None
-        for raw_event in global_events:
-            if raw_event['event_key'] == self.event_name:
-                event = raw_event
+    async def is_active_event(self, client)->bool:
+        event = await self.get_event(client)
 
         if event is None:
             return False
@@ -53,10 +55,15 @@ class GlobalEventProcessor(Base):
             client.loop.create_task(task(client))
 
     async def update_channels(self, client):
+        event = await self.get_event(client)
+
         try:
             tg_channels = await client.db.get_auth_subchats()
             for tg_channel in tg_channels:
                 if tg_channel['tg_chat_id'] == 0:
+                    continue
+
+                if event['public'] != 1 and tg_channel['tg_chat_id'] != TG_TEST_GROUP_ID:
                     continue
 
                 if tg_channel['global_events'] == 1:

@@ -10,7 +10,7 @@ from utils.formatting import format_html_user_mention
 class HalloweenEventProcessor(GlobalEventProcessor):
     def __init__(self, ):
         super().__init__()
-        self.event_name = 'halloween'
+        self.event_name = 'halloween_2021'
         self.channels: HalloweenChannels = HalloweenChannels()
         self.get_logger().info("Created HalloweenEventProcessor")
         self.register_task(self.pumpkin_spawner)
