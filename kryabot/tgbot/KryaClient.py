@@ -29,7 +29,7 @@ from utils.array import split_array_into_parts
 from utils.twitch import refresh_channel_token, sub_check, get_active_oauth_data, sub_check_many, \
     refresh_channel_token_no_client
 from tgbot.commands.commandbuilder import update_command_list
-from tgbot.constants import TG_GROUP_MONITORING_ID, TG_SUPER_ADMINS
+from tgbot.constants import TG_GROUP_MONITORING_ID, TG_SUPER_ADMINS, TG_TEST_GROUP_ID
 from utils.date_diff import get_datetime_diff_text
 from utils import redis_key
 
@@ -1087,7 +1087,7 @@ class KryaClient(TelegramClient):
 
     @log_exception_ignore(log=global_logger)
     async def get_group_member_count(self, tg_group_id: int, skip_cache=False)->int:
-        if tg_group_id == TG_GROUP_MONITORING_ID:
+        if tg_group_id == TG_TEST_GROUP_ID:
             return 100
 
         data = None
