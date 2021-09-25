@@ -10,7 +10,7 @@ from utils.formatting import format_html_user_mention
 class HalloweenEventProcessor(GlobalEventProcessor):
     def __init__(self, ):
         super().__init__()
-        self.event_name = 'halloween_2021'
+        self.event_name = 'halloween'
         self.channels: HalloweenChannels = HalloweenChannels()
         self.get_logger().info("Created HalloweenEventProcessor")
         self.register_task(self.pumpkin_spawner)
@@ -46,7 +46,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             except Exception as ex:
                 client.logger.exception(ex)
 
-    async def process(self, event_data, event, channel) -> None:
+    async def process(self, global_event, event, channel) -> None:
         if not event.message.is_reply:
             return
 
@@ -63,13 +63,13 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             return
 
         if HalloweenConfig.is_event_reply(event.message) and HalloweenConfig.is_event_boss(target_message):
-            await self.process_boss(event_data, event, channel, target_message, sender)
+            await self.process_boss(global_event, event, channel, target_message, sender)
         elif HalloweenConfig.is_event_box_reply(event.message) and HalloweenConfig.is_event_box(target_message):
-            await self.process_box(event_data, event, channel, target_message, sender)
+            await self.process_box(global_event, event, channel, target_message, sender)
         elif HalloweenConfig.is_event_reply(event.message) and HalloweenConfig.is_event_regular(target_message):
-            await self.process_regular(event_data, event, channel, target_message, sender)
+            await self.process_regular(global_event, event, channel, target_message, sender)
         elif HalloweenConfig.is_event_love_reply(event.message) and HalloweenConfig.is_event_love(target_message):
-            await self.process_love(event_data, event, channel, target_message, sender)
+            await self.process_love(global_event, event, channel, target_message, sender)
         else:
             event.client.logger.info('Unknown event from message {} to message {} in channel {}'.format(event.message.id, target_message.id, channel))
             return
