@@ -7,6 +7,7 @@ from tgbot.events.global_events.WinterEventProcessor import WinterEventProcessor
 class GlobalEventFactory:
     factory = {
         "halloween": HalloweenEventProcessor.get_instance(),
+        "halloween_2021": HalloweenEventProcessor.get_instance(),
         "winter": WinterEventProcessor.get_instance(),
         "easter": EasterEventProcessor.get_instance(),
             }
