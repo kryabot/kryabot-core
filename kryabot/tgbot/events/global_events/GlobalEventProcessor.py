@@ -14,6 +14,7 @@ class GlobalEventProcessor(Base):
         self.event_name: str = None
         self.startup_tasks: [] = []
         self.channels: EventChannels = EventChannels(EventChannel)
+        self.required_members = 20
 
     @classmethod
     def get_instance(cls):
@@ -64,6 +65,11 @@ class GlobalEventProcessor(Base):
                     continue
 
                 if event['public'] != 1 and tg_channel['tg_chat_id'] != TG_TEST_GROUP_ID:
+                    continue
+
+                count = int(await client.get_group_member_count(int(tg_channel['tg_chat_id'])))
+                if count < self.required_members:
+                    client.logger.info('Skipping event for channel {} because not enough members: {}'.format(tg_channel['tg_chat_id'], count))
                     continue
 
                 if tg_channel['global_events'] == 1:

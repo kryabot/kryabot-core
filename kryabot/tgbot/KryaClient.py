@@ -1087,6 +1087,9 @@ class KryaClient(TelegramClient):
 
     @log_exception_ignore(log=global_logger)
     async def get_group_member_count(self, tg_group_id: int, skip_cache=False)->int:
+        if tg_group_id == TG_GROUP_MONITORING_ID:
+            return 100
+
         data = None
         if not skip_cache:
             data = await self.db.get_telegram_group_size_from_cache(tg_group_id)
