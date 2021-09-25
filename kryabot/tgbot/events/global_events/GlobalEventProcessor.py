@@ -30,7 +30,7 @@ class GlobalEventProcessor(Base):
 
     async def get_event(self, client):
         global_events = await client.db.get_global_events()
-        event = next(filter(lambda e: e['event_key'] == self.event_name, global_events))
+        event = next(filter(lambda e: e['event_key'] == self.event_name, global_events), None)
         return event
 
     async def is_active_event(self, client)->bool:
