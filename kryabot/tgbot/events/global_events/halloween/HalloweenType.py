@@ -333,18 +333,22 @@ class HalloweenChannel(EventChannel):
         default_text = '🎬 ' + client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SILENT_INFO')
         info_message = None
         alive_seconds = randint(50, 80)
+        finish_ts = start_ts + timedelta(seconds=alive_seconds)
         reward = 5
+
+
 
         while True:
             await asyncio.sleep(1)
 
             attackers = self.get_attackers(event_message.id)
-            if start_ts + timedelta(seconds=alive_seconds) < datetime.utcnow() or attackers:
+            if finish_ts < datetime.utcnow() or attackers:
                 self.calc_next_silent_spawn()
                 self.pumpkins[event_message.id].kill()
 
             if self.is_active(event_message.id):
-                remaining_seconds = (datetime.utcnow() - start_ts + timedelta(seconds=alive_seconds)).seconds
+                remaining_seconds = (finish_ts - datetime.utcnow()).seconds
+                remaining_seconds = max(remaining_seconds, 0)
                 info_text = default_text.format(seconds=remaining_seconds)
                 try:
                     if not info_message:
