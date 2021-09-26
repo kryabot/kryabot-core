@@ -79,6 +79,7 @@ class HalloweenChannel(EventChannel):
 
     def is_active_type(self, check_type)->bool:
         for item_id in self.pumpkins.keys():
+            logger.info('Pumpkin {} is {} '.format(item_id, self.pumpkins[item_id].is_active()))
             if isinstance(self.pumpkins[item_id], check_type) and self.pumpkins[item_id].is_active():
                 return True
 
@@ -288,7 +289,7 @@ class HalloweenChannel(EventChannel):
         msg = await self.send_halloween_sticker(client, self.channel_id, HalloweenConfig.pumpkin_silent)
         client.logger.info("Spawned silent pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
 
-        monster = HalloweenMonsters.SilentPumpkin(msg_id=msg.id, hp=0, test=test)
+        monster = HalloweenMonsters.SilentPumpkin(msg_id=msg.id, hp=1, test=test)
         self.save(monster)
         client.loop.create_task(self.pumpkin_silent_info_updater(client, msg))
         self.calc_next_silent_spawn()

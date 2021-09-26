@@ -56,7 +56,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             event.client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.sender_id))
             return
 
-        if await self.is_active_type(event, type(HalloweenMonsters.SilentPumpkin)):
+        if await self.is_active_type(event, HalloweenMonsters.SilentPumpkin):
             await self.process_silent(global_event, event, channel, None, sender)
 
         if not event.message.is_reply:
