@@ -108,7 +108,7 @@ class TwitchEvent(Event):
         if self.is_down():
             return None
 
-        custom_url = 'https://static-cdn.jtvnw.net/previews-ttv/live_user_{}-1080x720.jpg'.format(self.raw['event']['broadcaster_user_login'])
+        custom_url = 'https://static-cdn.jtvnw.net/previews-ttv/live_user_{}-1920x1080.jpg'.format(self.raw['event']['broadcaster_user_login'])
         custom_url += '?id={tmp_id}{seed}'.format(tmp_id=self.twitch_event_id, seed=str(int(datetime.now().timestamp())))
         return custom_url
 

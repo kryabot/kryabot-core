@@ -76,7 +76,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         elif HalloweenConfig.is_event_number_reply(event.message) and HalloweenConfig.is_event_number(target_message):
             await self.process_number(global_event, event, channel, target_message, sender)
         else:
-            event.client.logger.info('Unknown event from message {} to message {} in channel {}'.format(event.message.id, target_message.id, channel['chanel_id']))
+            event.client.logger.info('Unknown event from message {} to message {} in channel {}'.format(event.message.id, target_message.id, channel['channel_id']))
             return
 
     async def process_regular(self, event_data, event, channel, target_message, sender):
