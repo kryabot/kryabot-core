@@ -329,7 +329,7 @@ class HalloweenChannel(EventChannel):
     async def pumpkin_silent_info_updater(self, client, event_message):
         self.client = client
         start_ts = datetime.utcnow()
-        client.logger.info('Starting pumpkin_silent_info_updater for message {} in channel {}, expected_number={}'.format(event_message.id, self.channel_id, expected_number))
+        client.logger.info('Starting pumpkin_silent_info_updater for message {} in channel {}'.format(event_message.id, self.channel_id))
         default_text = '🎬 ' + client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SILENT_INFO')
         info_message = None
         alive_seconds = randint(50, 80)
@@ -362,6 +362,7 @@ class HalloweenChannel(EventChannel):
                 if attackers:
                     final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SILENT_FAILURE')
                 else:
+                    self.channel_size = await client.get_group_member_count(int(self.channel_id))
                     final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SILENT_SUCCESS').format(member_count=self.channel_size, reward=reward)
                     # TODO: reward pumpkins to all users
 
