@@ -23,6 +23,7 @@ class Monster(Base):
         self.last_activity: datetime = datetime.utcnow()
         self.created: datetime = datetime.utcnow()
         self.damagers: Dict[int, int] = {}
+        self.immortal: bool = False
 
     def is_active(self):
         return self.active
@@ -41,7 +42,7 @@ class Monster(Base):
             self.damagers[user_id] = dmg
 
         # Last hit
-        if self.current_hp <= 0:
+        if not self.immortal and self.current_hp <= 0:
             self.active = False
             return True
 
@@ -93,6 +94,21 @@ class LovePumpkin(Monster):
     def __init__(self, msg_id: int, hp: int, test: bool=False):
         super().__init__(msg_id=msg_id, hp=hp, test=test)
         self.type = MonsterType.ITEM_PUMPKIN_REGULAR
+        self.immortal = True
 
     def hit(self, user_id: int, dmg: int):
         return super().hit(user_id=user_id, dmg=0)
+
+
+class NumberPumpkin(Monster):
+    def __init__(self, msg_id: int, hp: int, test: bool=False):
+        super().__init__(msg_id=msg_id, hp=hp, test=test)
+        self.type = MonsterType.ITEM_PUMPKIN_REGULAR
+        self.immortal = True
+
+    def hit(self, user_id: int, dmg: int):
+        # Reset previous guess
+        if user_id in self.damagers:
+            self.damagers[user_id] = 0
+
+        return super().hit(user_id=user_id, dmg=dmg)

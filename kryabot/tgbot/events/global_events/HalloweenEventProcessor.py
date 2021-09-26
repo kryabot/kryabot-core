@@ -34,6 +34,9 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                     if self.channels.channels[key].can_spawn_regular(count):
                         await self.channels.channels[key].spawn_regular(client, count)
                         await asyncio.sleep(randint(2, 15))
+                    elif self.channels.channels[key].can_spawn_number(count):
+                        await self.channels.channels[key].spawn_number(client, count)
+                        await asyncio.sleep(randint(2, 15))
                     elif self.channels.channels[key].can_spawn_love(count):
                         await self.channels.channels[key].spawn_love_pumpkin(client, count)
                         await asyncio.sleep(randint(2, 15))
@@ -70,6 +73,8 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             await self.process_regular(global_event, event, channel, target_message, sender)
         elif HalloweenConfig.is_event_love_reply(event.message) and HalloweenConfig.is_event_love(target_message):
             await self.process_love(global_event, event, channel, target_message, sender)
+        elif HalloweenConfig.is_event_number_reply(event.message) and HalloweenConfig.is_event_number(target_message):
+            await self.process_number(global_event, event, channel, target_message, sender)
         else:
             event.client.logger.info('Unknown event from message {} to message {} in channel {}'.format(event.message.id, target_message.id, channel['chanel_id']))
             return
@@ -92,7 +97,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
         destroyed = False
         try:
-            destroyed = self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, sender['user_id'])
+            destroyed = self.channels.hit_pumpkin(event.message.to_id.channel_id, target_message.id, sender['user_id'])
             await target_message.delete()
         except Exception as ex:
             self.get_logger().exception(ex)
@@ -124,7 +129,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
         try:
             self.channels.add_for_deletion(event.message.to_id.channel_id, event.message.id)
-            if self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):
+            if self.channels.hit_pumpkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):
                 await target_message.delete()
         except Exception as ex:
             self.get_logger().exception(ex)
@@ -144,7 +149,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
             await event.client.db.set_helloween_chestbox_cooldown(sender['user_id'])
             self.channels.add_for_deletion(event.message.to_id.channel_id, event.message.id)
-            if self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):
+            if self.channels.hit_pumpkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):
                 await target_message.delete()
         except Exception as ex:
             self.get_logger().exception(ex)
@@ -156,7 +161,26 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
         try:
             self.channels.add_for_deletion(event.message.to_id.channel_id, event.message.id)
-            if self.channels.hit_pumkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):
+            if self.channels.hit_pumpkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):
+                await target_message.delete()
+        except Exception as ex:
+            self.get_logger().exception(ex)
+
+    async def process_number(self, event_data, event, channel, target_message, sender):
+        event.client.logger.info('routed to process_love')
+        if not await self.is_active(event, target_message):
+            return
+
+        self.channels.add_for_deletion(event.message.to_id.channel_id, event.message.id)
+
+        try:
+            guess_number = int(event.message.text)
+        except ValueError:
+            return
+
+        try:
+            self.channels.add_for_deletion(event.message.to_id.channel_id, event.message.id)
+            if self.channels.hit_pumpkin(event.message.to_id.channel_id, target_message.id, sender['user_id'], damage=guess_number):
                 await target_message.delete()
         except Exception as ex:
             self.get_logger().exception(ex)
