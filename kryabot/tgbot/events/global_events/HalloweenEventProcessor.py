@@ -213,4 +213,4 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         return True
 
     async def is_active_type(self, event, event_type)->bool:
-        return self.channels.is_active(event.message.to_id.channel_id, event_type)
+        return self.channels.is_active_type(event.message.to_id.channel_id, event_type)
