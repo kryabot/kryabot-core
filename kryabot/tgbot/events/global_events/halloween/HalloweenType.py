@@ -181,7 +181,7 @@ class HalloweenChannel(EventChannel):
             return False
 
         if self.next_number is None:
-            self.calc_next_love_spawn()
+            self.calc_next_number_spawn()
 
         return self.next_number < datetime.utcnow()
 
