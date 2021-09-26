@@ -24,10 +24,12 @@ class HalloweenChannels(EventChannels):
         return self.channels[channel_id].is_active(message_id)
 
     def is_active_type(self, channel_id, check_type)->bool:
+        logger.info('Active: {} {} {}'.format(channel_id, check_type, self.channels[channel_id].is_active_type(check_type)))
         return self.channels[channel_id].is_active_type(check_type)
 
     def hit_pumpkin(self, channel_id: int, message_id: int, user_id: int, damage: int = 1)->bool:
         channel: HalloweenChannel = self.channels[channel_id]
+        logger.info('hitting {} from {}'.format(message_id, user_id))
         return channel.hit_pumpkin(message_id, user_id, custom_damage=damage)
 
     def add_for_deletion(self, channel_id: int, message_id: int):
