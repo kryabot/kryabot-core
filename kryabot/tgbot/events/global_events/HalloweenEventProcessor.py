@@ -76,7 +76,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             await self.process_love(global_event, event, channel, target_message, sender)
         elif HalloweenConfig.is_event_number_reply(event.message) and HalloweenConfig.is_event_number(target_message):
             await self.process_number(global_event, event, channel, target_message, sender)
-        elif self.is_active_type(event, type(HalloweenMonsters.SilentPumpkin)):
+        elif await self.is_active_type(event, type(HalloweenMonsters.SilentPumpkin)):
             await self.process_silent(global_event, event, channel, target_message, sender)
         else:
             event.client.logger.info('Unknown event from message {} to message {} in channel {}'.format(event.message.id, target_message.id, channel['channel_id']))
