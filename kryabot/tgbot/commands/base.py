@@ -3,6 +3,8 @@ from tgbot.commands.UserAccess import UserAccess
 from tgbot.commands.common.media import get_media_info
 
 # TODO: cache?
+from tgbot.constants import TG_TEST_GROUP_ID
+
 super_admin_list = [766888597]
 
 
@@ -36,6 +38,7 @@ class BaseCommand:
         self.need_admin_rights = False
         self.reply_message = None
         self.forward_message = None
+        self.test_only: bool = False
 
     async def get_text_after_command(self):
         try:
@@ -90,6 +93,9 @@ class BaseCommand:
 
     async def can_process(self)->bool:
         if self.channel is None:
+            return False
+
+        if self.test_only and not self.is_test_group():
             return False
 
         if self.user_level < self.min_level:
@@ -173,3 +179,6 @@ class BaseCommand:
 
     async def reply_incorrect_input(self):
         await self.reply_fail(self.get_translation('CMD_INCORRECT_INPUT'))
+
+    def is_test_group(self):
+        return self.channel['tg_chat_id'] == TG_TEST_GROUP_ID

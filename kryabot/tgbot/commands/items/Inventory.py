@@ -36,6 +36,9 @@ class Inventory(BaseCommand):
 
         text = self.get_translation("CMD_INVENTORY_CONTAINS") + "\n"
         for data in datas:
+            if data['public'] == 0 and not self.is_test_group():
+                continue
+
             text += "{} {}: {}\n".format(get_item_emote(data['currency_key']), self.get_translation("INVENTORY_ITEM_" + str(data['currency_key']).upper()), int(data['amount']))
 
         message = await self.event.reply(text, link_preview=False)

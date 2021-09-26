@@ -239,6 +239,7 @@ class HalloweenChannel(EventChannel):
         monster = HalloweenMonsters.NumberPumpkin(msg_id=msg.id, hp=0, test=test)
         self.save(monster)
         client.loop.create_task(self.pumpkin_number_info_updater(client, msg))
+        self.calc_next_number_spawn()
 
     async def spawn_box(self, client, size: int, test: bool=False):
         self.client = client
@@ -284,6 +285,7 @@ class HalloweenChannel(EventChannel):
         last_text = ""
         info_message = None
         alive_seconds = randint(60, 180)
+        reward = 5
 
         while True:
             await asyncio.sleep(1)
@@ -330,12 +332,12 @@ class HalloweenChannel(EventChannel):
                         total += 1
                         if attackers[user_id] == expected_number:
                             winners += 1
-                            await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, 5)
+                            await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, reward)
                             client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
 
                 # If its not active anymore then post results
                 if winners > 0:
-                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_NUMBER_DIED_WON').format(correct=expected_number, winners=winners, total=total)
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_NUMBER_DIED_WON').format(correct=expected_number, winners=winners, total=total, reward=reward)
                 else:
                     final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_NUMBER_DIED_NOBODY').format(correct=expected_number, total=total)
 
@@ -346,8 +348,6 @@ class HalloweenChannel(EventChannel):
                     logger.exception(ex)
 
                 break
-
-
             await asyncio.sleep(3)
 
     async def pumpkin_love_info_updater(self, client, love_message):
