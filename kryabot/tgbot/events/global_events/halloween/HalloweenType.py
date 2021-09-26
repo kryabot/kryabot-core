@@ -23,6 +23,9 @@ class HalloweenChannels(EventChannels):
     def is_active(self, channel_id, message_id)->bool:
         return self.channels[channel_id].is_active(message_id)
 
+    def is_active_type(self, channel_id, check_type)->bool:
+        return self.channels[channel_id].is_active_type(check_type)
+
     def hit_pumpkin(self, channel_id: int, message_id: int, user_id: int, damage: int = 1)->bool:
         channel: HalloweenChannel = self.channels[channel_id]
         return channel.hit_pumpkin(message_id, user_id, custom_damage=damage)
@@ -49,12 +52,14 @@ class HalloweenChannel(EventChannel):
         self.last_box: datetime = datetime.utcnow()
         self.last_love: datetime = datetime.utcnow()
         self.last_number: datetime = datetime.utcnow()
+        self.last_silent: datetime = datetime.utcnow()
         self.delete_messages: List[int] = []
         self.client = None
         self.next_boss: datetime = None
         self.next_box: datetime = None
         self.next_love: datetime = None
         self.next_number: datetime = None
+        self.next_silent: datetime = None
         self.channel_size: int = 1
         self.last_spawn: datetime = datetime.utcnow()
 
@@ -69,6 +74,20 @@ class HalloweenChannel(EventChannel):
             return False
 
         return self.pumpkins[int(msg_id)].is_active()
+
+    def is_active_type(self, check_type)->bool:
+        for item_id in self.pumpkins.keys():
+            if isinstance(self.pumpkins[item_id], check_type) and self.pumpkins[item_id].is_active():
+                return True
+
+        return False
+
+    def get_active_type_id(self, check_type):
+        for item_id in self.pumpkins.keys():
+            if isinstance(self.pumpkins[item_id], check_type) and self.pumpkins[item_id].is_active():
+                return int(item_id)
+
+        return None
 
     def has_active_pumpkin(self)->bool:
         for key in self.pumpkins.keys():
@@ -119,6 +138,14 @@ class HalloweenChannel(EventChannel):
         delay = randint(min_time, max_time)
         self.next_number = datetime.utcnow() + timedelta(minutes=delay)
         logger.info('Updated next number spawn to {} for channel {} (now = {})'.format(self.next_number, self.channel_id, datetime.utcnow()))
+
+    def calc_next_silent_spawn(self):
+        ratio = HalloweenConfig.calc(self.channel_size)
+        min_time = min(int(ratio), 60)
+        max_time = max(int(ratio), 180)
+        delay = randint(min_time, max_time)
+        self.next_silent = datetime.utcnow() + timedelta(minutes=delay)
+        logger.info('Updated next number spawn to {} for channel {} (now = {})'.format(self.next_silent, self.channel_id, datetime.utcnow()))
 
     def calc_next_box_spawn(self):
         ratio = HalloweenConfig.calc(self.channel_size, limit=300)
@@ -185,6 +212,16 @@ class HalloweenChannel(EventChannel):
 
         return self.next_number < datetime.utcnow()
 
+    def can_spawn_silent(self, channel_size: int)->bool:
+        self.channel_size = channel_size
+        if self.has_active_pumpkin() or not self.spawn_delay_passed():
+            return False
+
+        if self.next_silent is None:
+            self.calc_next_silent_spawn()
+
+        return self.next_silent < datetime.utcnow()
+
     def save(self, monster: HalloweenMonsters.Monster):
         self.pumpkins[int(monster.msg_id)] = monster
 
@@ -241,6 +278,19 @@ class HalloweenChannel(EventChannel):
         client.loop.create_task(self.pumpkin_number_info_updater(client, msg))
         self.calc_next_number_spawn()
 
+    async def spawn_silent(self, client, size: int, test: bool=False):
+        self.client = client
+        self.last_silent = datetime.utcnow()
+        self.last_spawn = datetime.utcnow()
+
+        msg = await self.send_halloween_sticker(client, self.channel_id, HalloweenConfig.pumpkin_silent)
+        client.logger.info("Spawned silent pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
+
+        monster = HalloweenMonsters.SilentPumpkin(msg_id=msg.id, hp=0, test=test)
+        self.save(monster)
+        client.loop.create_task(self.pumpkin_silent_info_updater(client, msg))
+        self.calc_next_silent_spawn()
+
     async def spawn_box(self, client, size: int, test: bool=False):
         self.client = client
         self.last_box = datetime.utcnow()
@@ -275,6 +325,53 @@ class HalloweenChannel(EventChannel):
             return None
 
         return self.pumpkins[msg_id].damagers
+
+    async def pumpkin_silent_info_updater(self, client, event_message):
+        self.client = client
+        start_ts = datetime.utcnow()
+        client.logger.info('Starting pumpkin_silent_info_updater for message {} in channel {}, expected_number={}'.format(event_message.id, self.channel_id, expected_number))
+        default_text = '🎬 ' + client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SILENT_INFO')
+        info_message = None
+        alive_seconds = randint(50, 80)
+        reward = 5
+
+        while True:
+            await asyncio.sleep(1)
+
+            attackers = self.get_attackers(event_message.id)
+            if start_ts + timedelta(seconds=alive_seconds) < datetime.utcnow() or attackers:
+                self.calc_next_silent_spawn()
+                self.pumpkins[event_message.id].kill()
+
+            if self.is_active(event_message.id):
+                remaining_seconds = (datetime.utcnow() - start_ts + timedelta(seconds=alive_seconds)).seconds
+                info_text = default_text.format(time=remaining_seconds)
+                if not info_message:
+                    info_message = await client.send_message(self.channel_id, info_text, reply_to=event_message.id)
+                else:
+                    info_message.edit(info_text)
+            else:
+                try:
+                    self.delete_messages.append(info_message.id)
+                    self.delete_messages.append(event_message.id)
+                    logger.info("Deleting messages: {}".format(self.delete_messages))
+                    result = await client.delete_messages(entity=self.channel_id, message_ids=self.delete_messages)
+                except Exception as ex:
+                    logger.exception(ex)
+
+                if attackers:
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SILENT_FAILURE')
+                else:
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SILENT_SUCCESS').format(member_count=self.channel_size, reward=reward)
+                    # TODO: reward pumpkins to all users
+
+                try:
+                    await client.send_message(self.channel_id, final_text)
+                except Exception as ex:
+                    logger.exception(ex)
+
+                break
+            await asyncio.sleep(2)
 
     async def pumpkin_number_info_updater(self, client, event_message):
         self.client = client
@@ -341,7 +438,7 @@ class HalloweenChannel(EventChannel):
                 else:
                     final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_NUMBER_DIED_NOBODY').format(correct=expected_number, total=total)
 
-                final_text += ' ' + HalloweenConfig.pumpkin_heart
+                # final_text += ' ' + HalloweenConfig.pumpkin_heart
                 try:
                     await client.send_message(self.channel_id, final_text)
                 except Exception as ex:
@@ -605,6 +702,7 @@ class HalloweenConfig:
     pumpkin_boss = "🤬"
     pumpkin_heart = '😘'
     pumpkin_number = '🤔'
+    pumpkin_silent = '💑'
     chestbox = "📦"
     chestbox_keys = ["🗝", "🔑"]
     hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "🔫"]
