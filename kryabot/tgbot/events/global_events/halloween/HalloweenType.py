@@ -496,7 +496,7 @@ class HalloweenChannel(EventChannel):
 class HalloweenConfig:
     pumpkin_message: str = "🎃"
     pumpkin_boss = "🤬"
-    pumpkin_heart = "🥰"
+    pumpkin_heart = '😘'
     chestbox = "📦"
     chestbox_keys = ["🗝", "🔑"]
     hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "🔫"]
