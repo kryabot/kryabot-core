@@ -79,7 +79,6 @@ class HalloweenChannel(EventChannel):
 
     def is_active_type(self, check_type)->bool:
         for item_id in self.pumpkins.keys():
-            logger.info('Pumpkin {} is {} '.format(item_id, self.pumpkins[item_id].is_active()))
             if isinstance(self.pumpkins[item_id], check_type) and self.pumpkins[item_id].is_active():
                 return True
 

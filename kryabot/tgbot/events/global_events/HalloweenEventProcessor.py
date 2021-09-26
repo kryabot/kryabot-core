@@ -192,7 +192,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         event.client.logger.info('routed to process_silent')
 
         try:
-            target_id = self.channels.channels[event.message.to_id.channel_id].get_active_type_id(type(HalloweenMonsters.SilentPumpkin))
+            target_id = self.channels.channels[event.message.to_id.channel_id].get_active_type_id(HalloweenMonsters.SilentPumpkin)
             self.channels.hit_pumpkin(event.message.to_id.channel_id, target_id, sender['user_id'])
         except Exception as ex:
             event.client.logger.exception(ex)
