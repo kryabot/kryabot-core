@@ -346,10 +346,13 @@ class HalloweenChannel(EventChannel):
             if self.is_active(event_message.id):
                 remaining_seconds = (datetime.utcnow() - start_ts + timedelta(seconds=alive_seconds)).seconds
                 info_text = default_text.format(seconds=remaining_seconds)
-                if not info_message:
-                    info_message = await client.send_message(self.channel_id, info_text, reply_to=event_message.id)
-                else:
-                    info_message.edit(info_text)
+                try:
+                    if not info_message:
+                        info_message = await client.send_message(self.channel_id, info_text, reply_to=event_message.id)
+                    else:
+                        await info_message.edit(info_text)
+                except Exception as ex:
+                    logger.exception(ex)
             else:
                 try:
                     self.delete_messages.append(info_message.id)
