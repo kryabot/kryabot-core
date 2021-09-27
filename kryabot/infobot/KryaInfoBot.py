@@ -302,15 +302,15 @@ class KryaInfoBot(TelegramClient):
             text = ''
             if event.recovery and event.start:
                 text = base_text.format(event.profile.twitch_name)
-            elif event.update and event.start:
+            elif event.update:
                 for upd in event.updated_data:
                     if 'title' in upd:
                         text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_TITLE'), event.title)
                     if 'game' in upd:
                         text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_GAME'), event.game_name)
 
-                if text != '':
-                    text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_ONLINE'), event.online)
+                # if text != '':
+                #     text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_UPDATED_ONLINE'), event.online)
 
                 text = '{}\n{}'.format(base_text, text)
             elif event.start:

@@ -48,14 +48,14 @@ class TwitchEvent(Event):
         game_id = self.get_attr(data, 'game_id')
         game_name = self.get_attr(data, 'game_name')
 
-        if self.title and self.title != title:
-            self.updated_data.append({'title': title})
-        if self.language and self.language != language:
-            self.updated_data.append({'language': language})
-        if self.game_id and self.game_id != game_id:
-            self.updated_data.append({'game_id': game_id})
-        if self.game_name and self.game_name != game_name:
-            self.updated_data.append({'game_name': game_name})
+        # if self.title and self.title != title:
+        #     self.updated_data.append({'title': title})
+        # if self.language and self.language != language:
+        #     self.updated_data.append({'language': language})
+        # if self.game_id and self.game_id != game_id:
+        #     self.updated_data.append({'game_id': game_id})
+        # if self.game_name and self.game_name != game_name:
+        #     self.updated_data.append({'game_name': game_name})
 
         self.title = title
         self.language = language
@@ -76,7 +76,7 @@ class TwitchEvent(Event):
         if self.language and self.language != language:
             self.updated_data.append({'language': language})
         if self.game_id and self.game_id != game_id:
-            self.updated_data.append({'game_id': game_id})
+            self.updated_data.append({'game': game_id})
         if self.game_name and self.game_name != game_name:
             self.updated_data.append({'game_name': game_name})
 
