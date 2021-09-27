@@ -691,6 +691,9 @@ class Database:
     async def add_currency_to_user(self, currency_key: str, user_id: int, amount: int):
         return await self.query('add_currency_to_user', [currency_key, user_id, amount])
 
+    async def add_currency_to_all_chat_users(self, currency_key: str, tg_chat_id: int, amount: int):
+        return await self.query('add_currency_to_all_users', [currency_key, tg_chat_id, amount])
+
     async def add_currency_to_channel(self, currency_key: str, channel_id: int, amount: int):
         return await self.query('add_currency_to_channel', [currency_key, channel_id, amount])
 

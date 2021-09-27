@@ -373,7 +373,8 @@ class HalloweenChannel(EventChannel):
                 else:
                     self.channel_size = await client.get_group_member_count(int(self.channel_id))
                     final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SILENT_SUCCESS').format(member_count=self.channel_size, reward=reward)
-                    # TODO: reward pumpkins to all users
+                    await client.db.add_currency_to_all_chat_users(HalloweenConfig.currency_key, event_message.to_id.channel_id, reward)
+                    client.loop.create_task(self.publish_pumpkin_amount_update(0))
 
                 try:
                     await client.send_message(self.channel_id, final_text)
@@ -688,6 +689,10 @@ class HalloweenChannel(EventChannel):
 
     async def publish_pumpkin_amount_update(self, user_id: int):
         if not self.client:
+            return
+
+        if user_id == 0:
+            # TODO: 0 means added to all
             return
 
         currency_data = await get_first(await self.client.db.get_user_currency_amount(HalloweenConfig.currency_key, user_id))
