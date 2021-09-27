@@ -234,14 +234,12 @@ class WebHandler:
         channel = get_value('channel', body)
         if users is None or users == [] or duration is None or reason is None or not isinstance(duration, int):
             return self.response_bad_input()
-        
-        if duration == 0:
-            action = ResponseAction.ResponseBan
-        else:
-            action = ResponseAction.ResponseTimeout
 
         for username in users:
-            await action.send(channel_name=channel, user=username, duration=duration, reason=reason)
+            if int(duration) == 0:
+                await ResponseAction.ResponseBan.send(channel_name=channel, user=username, reason=reason)
+            else:
+                await ResponseAction.ResponseTimeout.send(channel_name=channel, user=username, duration=duration, reason=reason)
 
         return self.response_success()
 
