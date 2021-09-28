@@ -36,14 +36,26 @@ class TwitchListener(Listener):
             if not profile:
                 self.logger.info('Received event for Twitch ID {} but profile not found'.format(broadcaster_id))
 
-            if topic.eq(EventSubType.STREAM_ONLINE) or topic.eq(EventSubType.STREAM_OFFLINE):
-                # START Or FINISH
-                event = TwitchEvent(profile, data)
+            event = None
+
+            if topic.eq(EventSubType.STREAM_ONLINE):
+                if profile.last_event and profile.last_event.is_recovery():
+                    event = profile.last_event
+                else:
+                    event = TwitchEvent(profile, data)
+
                 await event.profile.store_to_cache(self.manager.db.redis)
                 stream_data = await self.manager.api.twitch.get_stream_info_by_ids([profile.twitch_id])
                 event.parse_stream_data(stream_data['data'][0] if stream_data and stream_data['data'] else None)
-            else:
-                # UPDATE
+            elif topic.eq(EventSubType.STREAM_OFFLINE):
+                event = profile.last_event
+                if not event or event.finish:
+                    # update when stream is off or we dont have start event (for example after restart)
+                    self.logger.info('Skipping finish for {}'.format(profile.twitch_name))
+                    continue
+
+                event.parse_finish(data['event'])
+            elif topic.eq(EventSubType.CHANNEL_UPDATE):
                 event = profile.last_event
                 # TODO: build event again if none and stream is online (api call)
                 if not event or event.is_down():
@@ -56,6 +68,9 @@ class TwitchListener(Listener):
                     # Nothing changed
                     self.logger.info('[{}] Skipping update because nothing changed'.format(profile.twitch_id))
                     continue
+
+            if not event:
+                continue
 
             # Publish event to Info bot
             self.loop.create_task(self.manager.event(event))

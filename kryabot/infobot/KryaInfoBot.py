@@ -22,6 +22,8 @@ from object.System import System
 from object.Translator import Translator
 from tgbot import constants
 from tgbot.FastTelethon import upload_file
+from tgbot.constants import TG_TEST_GROUP_ID
+from utils.json_parser import dict_to_json
 
 
 @events.register(events.NewMessage(pattern='/ping'))
@@ -270,13 +272,13 @@ class KryaInfoBot(TelegramClient):
                     await self.exception_reporter(ex, 'instagram_story_event')
 
     async def twitch_stream_event(self, targets: List[Target], event: TwitchEvent):
-        self.logger.info('Stream: {}, start={}, update={}, down={}, recovery={}'.format(event.profile.twitch_name, event.start, event.update, event.down, event.recovery))
+        self.logger.info('Stream: {}, start={}, update={}, down={}, recovery={}'.format(event.profile.twitch_name, event.start, event.update, event.finish, event.recovery))
         url = event.get_formatted_image_url()
         file = None
         button = None
 
         text_key = 'TWITCH_NOTIFICATION_START'
-        if event.down:
+        if event.finish:
             text_key = 'TWITCH_NOTIFICATION_FINISH'
         elif event.recovery:
             text_key = 'TWITCH_NOTIFICATION_RECOVERY'
@@ -295,12 +297,12 @@ class KryaInfoBot(TelegramClient):
                 continue
             if event.start and not target.twitch_start:
                 continue
-            if event.down and not target.twitch_end:
+            if event.finish and not target.twitch_end:
                 continue
 
             base_text = self.translator.getLangTranslation(target.lang, text_key)
             text = ''
-            if event.recovery and event.start:
+            if event.recovery:
                 text = base_text.format(event.profile.twitch_name)
             elif event.update:
                 for upd in event.updated_data:
@@ -315,11 +317,18 @@ class KryaInfoBot(TelegramClient):
                 text = '{}\n{}'.format(base_text, text)
             elif event.start:
                 text = '<b>{}</b>\n🎮{}\n\n{}'.format(event.title, event.game_name, base_text)
-            else:
+            elif event.finish:
                 text = base_text
 
             try:
                 await self.send_message(target.target_id, message=text, file=file, buttons=button, link_preview=False, parse_mode='html')
+
+                try:
+                    if event.finish and target.target_id == TG_TEST_GROUP_ID:
+                        to_json = dict_to_json(event.summary)
+                        await self.send_file(target.target_id, file=to_json.encode())
+                except Exception as testEx:
+                    self.logger.exception(testEx)
             except ChannelPrivateError:
                 await self.report_to_monitoring('ChannelPrivateError. Target ID: {}, TG ID: {}'.format(target.id, target.target_id), True)
             except Exception as ex:
