@@ -55,6 +55,7 @@ class HalloweenChannel(EventChannel):
         self.last_love: datetime = datetime.utcnow()
         self.last_number: datetime = datetime.utcnow()
         self.last_silent: datetime = datetime.utcnow()
+        self.last_scary: datetime = datetime.utcnow()
         self.delete_messages: List[int] = []
         self.client = None
         self.next_boss: datetime = None
@@ -62,6 +63,7 @@ class HalloweenChannel(EventChannel):
         self.next_love: datetime = None
         self.next_number: datetime = None
         self.next_silent: datetime = None
+        self.next_scary: datetime = None
         self.channel_size: int = 1
         self.last_spawn: datetime = datetime.utcnow()
 
@@ -124,6 +126,14 @@ class HalloweenChannel(EventChannel):
         delay = randint(min_time, max_time)
         self.next_love = datetime.utcnow() + timedelta(minutes=delay)
         logger.info('Updated next love spawn to {} for channel {} (now = {})'.format(self.next_love, self.channel_id, datetime.utcnow()))
+
+    def calc_next_scary_spawn(self):
+        ratio = HalloweenConfig.calc(self.channel_size, limit=200)
+        min_time = int(ratio * 1.5)
+        max_time = int(ratio * 2)
+        delay = randint(min_time, max_time)
+        self.next_scary = datetime.utcnow() + timedelta(minutes=delay)
+        logger.info('Updated next love spawn to {} for channel {} (now = {})'.format(self.next_scary, self.channel_id, datetime.utcnow()))
 
     def calc_next_boss_spawn(self):
         ratio = HalloweenConfig.calc(self.channel_size)
@@ -204,6 +214,16 @@ class HalloweenChannel(EventChannel):
 
         return self.next_love < datetime.utcnow()
 
+    def can_spawn_scary(self, channel_size: int)->bool:
+        self.channel_size = channel_size
+        if self.has_active_pumpkin() or not self.spawn_delay_passed():
+            return False
+
+        if self.next_scary is None:
+            self.calc_next_scary_spawn()
+
+        return self.next_scary < datetime.utcnow()
+
     def can_spawn_number(self, channel_size: int)->bool:
         self.channel_size = channel_size
         if self.has_active_pumpkin() or not self.spawn_delay_passed():
@@ -254,6 +274,17 @@ class HalloweenChannel(EventChannel):
         self.save(monster)
         client.loop.create_task(self.pumpkin_love_info_updater(client, msg))
         self.calc_next_love_spawn()
+
+    async def spawn_scary(self, client, size: int, test: bool=False):
+        self.client = client
+        self.last_spawn = datetime.utcnow()
+        self.last_scary = datetime.utcnow()
+        msg = await self.send_halloween_sticker(client, self.channel_id, HalloweenConfig.pumpkin_scary)
+        client.logger.info("Spawned scary pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
+        monster = HalloweenMonsters.ScaryPumpkin(msg_id=msg.id, hp=10000, test=test)
+        self.save(monster)
+        client.loop.create_task(self.pumpkin_scary_info_updater(client, msg))
+        self.calc_next_scary_spawn()
 
     async def spawn_boss(self, client, size: int, test: bool=False):
         self.client = client
@@ -517,6 +548,69 @@ class HalloweenChannel(EventChannel):
 
             await asyncio.sleep(3)
 
+    async def pumpkin_scary_info_updater(self, client, event_message):
+        self.client = client
+        start_ts = datetime.utcnow()
+        client.logger.info('Starting pumpkin_scary_info_updater for message {} in channel {}'.format(event_message.id, self.channel_id))
+        default_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SCARY_INFO')
+        last_text = ""
+        info_message = None
+        alive_seconds = randint(60, 180)
+
+        while True:
+            await asyncio.sleep(1)
+
+            if start_ts + timedelta(seconds=alive_seconds) < datetime.utcnow():
+                self.calc_next_scary_spawn()
+                self.pumpkins[event_message.id].kill()
+
+            attackers = self.get_attackers(event_message.id)
+            if self.is_active(event_message.id):
+                new_text = default_text.format(emotes=' '.join(HalloweenConfig.scary_messages), total=len(attackers.keys()))
+                if new_text == last_text:
+                    continue
+                else:
+                    try:
+                        last_text = new_text
+                        if info_message is None:
+                            info_message = await client.send_message(self.channel_id, new_text, reply_to=event_message.id)
+                        else:
+                            await info_message.edit(new_text)
+                    except Exception as ex:
+                        logger.exception(ex)
+            else:
+                try:
+                    self.delete_messages.append(info_message.id)
+                    self.delete_messages.append(event_message.id)
+                    logger.info("Deleting messages: {}".format(self.delete_messages))
+                    result = await client.delete_messages(entity=self.channel_id, message_ids=self.delete_messages)
+                except Exception as ex:
+                    logger.exception(ex)
+
+                self.delete_messages = []
+                total = 0
+                if attackers is not None and not self.is_test(event_message.id):
+                    for user_id in attackers.keys():
+                        total += 1
+                        await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, 1)
+                        client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
+
+                # If its not active anymore then post results
+                if total > 0:
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SCARY_DIED_SUCCESS').format(total=total)
+                else:
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SCARY_DIED_FAILURE')
+
+                final_text += ' ' + HalloweenConfig.pumpkin_heart
+                try:
+                    await client.send_message(self.channel_id, final_text)
+                except Exception as ex:
+                    logger.exception(ex)
+
+                break
+
+            await asyncio.sleep(3)
+
     async def pumpkin_chestbox_info_updater(self, client, chest_message):
         self.client = client
         client.logger.info('Starting pumpkin_chextbox_info_updater for boss message {} in channel {}'.format(chest_message.id, self.channel_id))
@@ -718,10 +812,12 @@ class HalloweenConfig:
     pumpkin_heart = '😘'
     pumpkin_number = '🤔'
     pumpkin_silent = '💑'
+    pumpkin_scary = '👻'
     chestbox = "📦"
     chestbox_keys = ["🗝", "🔑"]
     hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "🔫"]
     love_messages: List[str] = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎"]
+    scary_messages: List[str] = ['😨']
     currency_key: str = "demo"
     number_range_min = 1
     number_range_max = 10
@@ -748,6 +844,17 @@ class HalloweenConfig:
 
         for attr in message.media.document.attributes:
             if isinstance(attr, DocumentAttributeSticker) and attr.stickerset.id == 773947703670341645 and attr.alt == HalloweenConfig.pumpkin_heart:
+                return True
+
+        return False
+
+    @staticmethod
+    def is_event_scary(message)->bool:
+        if not message.sticker:
+            return False
+
+        for attr in message.media.document.attributes:
+            if isinstance(attr, DocumentAttributeSticker) and attr.stickerset.id == 773947703670341645 and attr.alt == HalloweenConfig.pumpkin_scary:
                 return True
 
         return False
@@ -785,6 +892,16 @@ class HalloweenConfig:
     @staticmethod
     def is_event_love_reply(message)->bool:
         return message.text in HalloweenConfig.love_messages
+
+    @staticmethod
+    def is_event_scary_reply(message)->bool:
+        if message.sticker:
+            for attr in message.media.document.attributes:
+                if isinstance(attr, DocumentAttributeSticker) and attr.alt in HalloweenConfig.scary_messages:
+                    return True
+            return False
+
+        return message.text in HalloweenConfig.scary_messages
 
     @staticmethod
     def is_event_number_reply(message)->bool:

@@ -25,6 +25,7 @@ from tgbot.commands.actions.SpawnBox import SpawnBox
 from tgbot.commands.actions.SpawnLove import SpawnLove
 from tgbot.commands.actions.SpawnNumber import SpawnNumber
 from tgbot.commands.actions.SpawnSilent import SpawnSilent
+from tgbot.commands.actions.SpawnScary import SpawnScary
 from tgbot.commands.actions.SpawnSnowing import SpawnSnowing
 from tgbot.commands.actions.NewUserReport import NewUserReport
 from tgbot.commands.actions.DryMassKick import DryMassKick

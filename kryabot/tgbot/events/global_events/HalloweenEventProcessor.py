@@ -34,19 +34,17 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                     count = int(await client.get_group_member_count(int(key)))
                     if self.channels.channels[key].can_spawn_regular(count):
                         await self.channels.channels[key].spawn_regular(client, count)
-                        await asyncio.sleep(randint(2, 15))
                     elif self.channels.channels[key].can_spawn_number(count):
                         await self.channels.channels[key].spawn_number(client, count)
-                        await asyncio.sleep(randint(2, 15))
                     elif self.channels.channels[key].can_spawn_love(count):
                         await self.channels.channels[key].spawn_love_pumpkin(client, count)
-                        await asyncio.sleep(randint(2, 15))
                     elif self.channels.channels[key].can_spawn_boss(count):
                         await self.channels.channels[key].spawn_boss(client, count)
-                        await asyncio.sleep(randint(2, 15))
                     elif self.channels.channels[key].can_spawn_box(count):
                         await self.channels.channels[key].spawn_box(client, count)
-                        await asyncio.sleep(randint(2, 15))
+                    elif self.channels.channels[key].can_spawn_scary(count):
+                        await self.channels.channels[key].spawn_scary(client, count)
+                    await asyncio.sleep(randint(2, 15))
             except Exception as ex:
                 client.logger.exception(ex)
 
@@ -79,6 +77,8 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             await self.process_love(global_event, event, channel, target_message, sender)
         elif HalloweenConfig.is_event_number_reply(event.message) and HalloweenConfig.is_event_number(target_message):
             await self.process_number(global_event, event, channel, target_message, sender)
+        elif HalloweenConfig.is_event_scary_reply(event.message) and HalloweenConfig.is_event_scary(target_message):
+            await self.process_scary(global_event, event, channel, target_message, sender)
         else:
             return
 
@@ -159,6 +159,18 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
     async def process_love(self, event_data, event, channel, target_message, sender):
         event.client.logger.info('routed to process_love')
+        if not await self.is_active(event, target_message):
+            return
+
+        try:
+            self.channels.add_for_deletion(event.message.to_id.channel_id, event.message.id)
+            if self.channels.hit_pumpkin(event.message.to_id.channel_id, target_message.id, sender['user_id']):
+                await target_message.delete()
+        except Exception as ex:
+            self.get_logger().exception(ex)
+
+    async def process_scary(self, event_data, event, channel, target_message, sender):
+        event.client.logger.info('routed to process_scary')
         if not await self.is_active(event, target_message):
             return
 

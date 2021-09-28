@@ -100,6 +100,16 @@ class LovePumpkin(Monster):
         return super().hit(user_id=user_id, dmg=0)
 
 
+class ScaryPumpkin(Monster):
+    def __init__(self, msg_id: int, hp: int, test: bool=False):
+        super().__init__(msg_id=msg_id, hp=hp, test=test)
+        self.type = MonsterType.ITEM_PUMPKIN_REGULAR
+        self.immortal = True
+
+    def hit(self, user_id: int, dmg: int):
+        return super().hit(user_id=user_id, dmg=0)
+
+
 class NumberPumpkin(Monster):
     def __init__(self, msg_id: int, hp: int, test: bool=False):
         super().__init__(msg_id=msg_id, hp=hp, test=test)
