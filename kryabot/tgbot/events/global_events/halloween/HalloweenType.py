@@ -817,7 +817,7 @@ class HalloweenConfig:
     chestbox_keys = ["🗝", "🔑"]
     hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "🔫"]
     love_messages: List[str] = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎"]
-    scary_messages: List[str] = ['😨']
+    scary_messages: List[str] = ['😨', '😱']
     currency_key: str = "demo"
     number_range_min = 1
     number_range_max = 10
