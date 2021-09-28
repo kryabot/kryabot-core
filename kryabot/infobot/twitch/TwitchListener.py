@@ -58,7 +58,7 @@ class TwitchListener(Listener):
             elif topic.eq(EventSubType.CHANNEL_UPDATE):
                 event = profile.last_event
                 # TODO: build event again if none and stream is online (api call)
-                if not event or event.is_down():
+                if not event or event.finish:
                     # update when stream is off or we dont have start event (for example after restart)
                     self.logger.info('Skipping update for {}'.format(profile.twitch_name))
                     continue
