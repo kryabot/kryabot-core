@@ -390,4 +390,5 @@ class ResponseAction(Base):
         else:
             self.logger.info('Skip due to missing permissions: {}'.format(body))
             update = ResponseUpdateModStatus(ws=self.ws, body=ResponseUpdateModStatus.build(resp.channel.name if resp.channel else body['channel']))
+            update.channel = await update.get_channel()
             await update.process()

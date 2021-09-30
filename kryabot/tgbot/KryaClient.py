@@ -391,10 +391,9 @@ class KryaClient(TelegramClient):
 
         if kick and not silent:
             await self.send_message(channel['tg_chat_id'], self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_FINISH'), parse_mode='html')
-            await self.send_krya_love_sticker(channel['tg_chat_id'])
-
+            kick_report = self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_FINISH')
             if kicked_total > 0:
-                kick_report = '<b>Total kicks: {}</b>\n'.format(kicked_total)
+                kick_report += '\n\n<b>Total kicks: {}</b>\n'.format(kicked_total)
                 if kicked_deleted > 0:
                     kick_report += '\nDeleted accounts: {}'.format(kicked_deleted)
                 if kicked_blacklist > 0:
@@ -410,15 +409,7 @@ class KryaClient(TelegramClient):
             else:
                 await self.send_message(channel['tg_chat_id'], '🙄 Nothing to kick!')
 
-            split_list = split_array_into_parts(kick_array, 50)
-            is_first = True
-            for kick_list in split_list:
-                text = '\n'.join(kick_list)
-
-                if is_first:
-                    is_first = False
-                    text = 'Kick list:\n\n{}'.format(text)
-                await self.report_to_monitoring(text)
+            await self.send_file(TG_GROUP_MONITORING_ID, file='\n'.join(kick_array).encode(), caption=kick_report, attributes=[DocumentAttributeFilename('{}_report.txt'.format(channel['channel_name']))])
 
         if not dry_run:
             await self.db.get_auth_subchat(channel['tg_chat_id'], skip_cache=True)

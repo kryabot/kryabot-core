@@ -17,7 +17,6 @@ class Channel(Base):
         self.raw_data = db_channel
         self.channel_id = self.get_value('channel_id')
         self.channel_name = self.get_value('channel_name')
-        self.command_symbol = self.get_value('command_symbol')
         self.auto_join = self.get_value('auto_join')
         self.user_id = self.get_value('user_id')
         self.name = self.get_value('name')
