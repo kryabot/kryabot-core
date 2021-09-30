@@ -37,9 +37,6 @@ class ChatAdapter(Base, commands.Bot):
 
         self.loop.create_task(Pinger(System.KRYABOT_TMI, self.logger, self.db.redis).run_task())
 
-    async def event_pubsub(self, data):
-        pass
-
     async def on_update(self)->None:
         channels: Dict = await self.db.getAutojoinChannels()
         if channels is not None:
@@ -58,8 +55,6 @@ class ChatAdapter(Base, commands.Bot):
                     await asyncio.sleep(0.5)
                 except Exception as ex:
                     self.logger.exception(ex)
-
-        await self.resubstribe_pubsub()
 
     async def disconnect(self):
         self.logger.info('Disconnecting...')
@@ -98,7 +93,6 @@ class ChatAdapter(Base, commands.Bot):
         await self.on_update()
         await self.schedule_tasks()
         self.logger.info(f'Adapter is ready now, {self.nick}')
-        #await self._ws.send_privmsg(self.nick, '/w {owner} IRC adapter started'.format(owner=self.cfg.getInstanceConfig()['OWNER']))
         self.in_update = False
 
     async def on_spam_detector_response(self, body: Dict)->None:
@@ -145,11 +139,6 @@ class ChatAdapter(Base, commands.Bot):
         self.logger.info('Subscribing redis topics...')
         await self.db.redis.subscribe_event(redis_key.get_twitch_spam_detector_response_topic(), self.on_spam_detector_response)
 
-    async def on_token_update(self, msg):
-        if 'channel:read:redemptions' in msg['scope']:
-            self.logger.info('PubSub redemptions resubscribe for user {}'.format(msg['tw_id']))
-            await self.pubsub_subscribe(msg['token'], 'channel-points-channel-v1.{}'.format(msg['tw_id']))
-
     async def event_message(self, message: Message)->None:
         context: Context = await self.get_context(message)
 
@@ -167,10 +156,6 @@ class ChatAdapter(Base, commands.Bot):
     async def event_part(self, user: User)->None:
         self.logger.debug('{} left {}'.format(user.name, user.channel))
         await self.publish_movement('PART', user)
-
-    async def event_raw_pubsub(self, data):
-        pass
-        # await self.db.redis.publish_event(redis_key.get_pubsub_topic(), data)
 
     async def event_custom_raw_usernotice(self, irc)->None:
         context: Context = await self.get_context(irc)
@@ -269,13 +254,6 @@ class ChatAdapter(Base, commands.Bot):
             if channel.can_leave():
                 self.logger.info('Leaving inactive channel {}'.format(channel.channel_name))
                 await self.part_channels([channel.channel_name])
-
-    async def resubstribe_pubsub(self)->None:
-        auths = await self.db.getBotAuths()
-        for auth in auths:
-            if 'channel:read:redemptions' in auth['scope']:
-                self.logger.info('Resubscribing pubsub redepntions for channel {} {}'.format(auth['tw_id'], auth['token']))
-                await self.pubsub_subscribe(auth['token'], 'channel-points-channel-v1.{}'.format(auth['tw_id']))
 
     async def listen_responses(self)->None:
         while True:
