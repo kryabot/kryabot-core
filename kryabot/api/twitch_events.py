@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Dict
 
@@ -7,6 +8,8 @@ from api.core import Core
 from api.twitch import app_auth
 from exceptions.twitch import ExpiredAuthToken
 from object.Base import Base
+from object.Database import Database
+from utils.array import get_first
 from utils.json_parser import dict_to_json
 from utils.twitch import get_active_app_token
 import utils.redis_key as redis_key
@@ -83,6 +86,7 @@ class TwitchEvents(Core):
         self.callback = 'https://api2.krya.dev/public/callback/twitch_events'
         self.redis = redis
         self.webhook_secret = 'supermegasecret'
+        self.db = Database(loop=None, size=2)
 
     async def get_headers(self, oauth_token=None):
         if oauth_token:
@@ -227,7 +231,8 @@ class TwitchEvents(Core):
         status = EventSubStatus(event['subscription']['status'])
         if status == EventSubStatus.ENABLED:
             await self.handle_active_event(event)
-
+        else:
+            self.logger.info('Unhandled event status: {}'.format(status))
         # TODO: handle other statuses
 
     async def handle_active_event(self, event):
@@ -240,3 +245,51 @@ class TwitchEvents(Core):
         elif topic.eq(EventSubType.CHANNEL_UPDATE):
             await self.redis.push_list_to_right(redis_key.get_streams_data(), converted_event)
             await self.redis.set_parsed_value_by_key(redis_key.get_twitch_channel_update(broadcaster_id), event['event'], expire=redis_key.ttl_week)
+        elif topic.eq(EventSubType.CHANNEL_SUBSCRIBE):
+            await self.handle_subscribe('subscriptions.subscribe', event['event'])
+        elif topic.eq(EventSubType.CHANNEL_SUBSCRIBE_END):
+            await self.handle_subscribe('subscriptions.unsubscribe', event['event'])
+        elif topic.eq(EventSubType.CHANNEL_SUBSCRIBE_MESSAGE):
+            await self.handle_subscribe('subscriptions.notification', event['event'])
+
+    async def handle_subscribe(self, event_type, data):
+        user_id = int(data['user_id'])
+        broadcaster_id = int(data['broadcaster_user_id'])
+
+        user = await get_first(await self.db.getUserRecordByTwitchId(user_id))
+        if user is None:
+            await self.db.createUserRecord(user_id, data['user_login'], data['user_name'])
+            user = await get_first(await self.db.getUserRecordByTwitchId(user_id))
+
+        if user is None:
+            self.logger.info('Failed to find user record for event: {}'.format(data))
+            return
+
+        channel = await get_first(await self.db.get_channel_by_twitch_id(broadcaster_id))
+        if channel is None:
+            self.logger.info('Failed to find channel record for event: {}'.format(data))
+            return
+
+        try:
+            message = data['message']['text']
+        except:
+            message = ''
+
+        try:
+            gifted = bool(data['is_gift'])
+        except:
+            gifted = False
+
+        try:
+            tier = data['tier']
+        except:
+            tier = ''
+
+        await self.db.saveTwitchSubEvent(channel['channel_id'],
+                                         user['user_id'],
+                                         '',
+                                         event_type,
+                                         datetime.utcnow(),
+                                         gifted,
+                                         tier,
+                                         message)

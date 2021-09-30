@@ -138,6 +138,9 @@ class Database:
     async def getChannel(self, channel_name):
         return await self.query('find_channel', [channel_name])
 
+    async def get_channel_by_twitch_id(self, tw_user_id):
+        return await self.query('find_channel_by_tw_id', [tw_user_id])
+
     async def createUserRecord(self, twitch_id, username, display_name):
         return await self.query('create_user', [twitch_id, username, display_name])
 
