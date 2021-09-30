@@ -405,14 +405,12 @@ class KryaClient(TelegramClient):
                 if kicked_non_sub > 0:
                     kick_report += '\nNot subscriber: {}'.format(kicked_non_sub)
 
-                if kicked_total > 0:
-                    await self.send_file(channel['tg_chat_id'], file='\n'.join(kick_array).encode(), caption=kick_report, attributes=[DocumentAttributeFilename('MassKickReport.txt')])
-                else:
-                    self.send_message(channel['tg_chat_id'], kick_report, parse_mode='html')
+                await self.send_file(channel['tg_chat_id'], file='\n'.join(kick_array).encode(), caption=kick_report, attributes=[DocumentAttributeFilename('MassKickReport.txt')])
             else:
-                await self.send_message(channel['tg_chat_id'], '🙄 Nothing to kick!')
+                await self.send_message(channel['tg_chat_id'], kick_report + '\n\n🙄 Nothing to kick!')
 
-            await self.send_file(TG_GROUP_MONITORING_ID, file='\n'.join(kick_array).encode(), caption=kick_report, attributes=[DocumentAttributeFilename('{}_report.txt'.format(channel['channel_name']))])
+            if kick_array:
+                await self.send_file(TG_GROUP_MONITORING_ID, file='\n'.join(kick_array).encode(), caption=kick_report, attributes=[DocumentAttributeFilename('{}_report.txt'.format(channel['channel_name']))])
 
         if not dry_run:
             await self.db.get_auth_subchat(channel['tg_chat_id'], skip_cache=True)
