@@ -140,7 +140,7 @@ class TwitchHandler(Base):
         await self.db.redis.subscribe_event(redis_key.get_streams_forward_data(), self.on_stream_change)
         await self.db.redis.subscribe_event(redis_key.get_irc_topic_message(), self.on_message)
         await self.db.redis.subscribe_event(redis_key.get_irc_topic_notice(), self.on_usernotice)
-        await self.db.redis.subscribe_event(redis_key.get_pubsub_topic(), self.on_pubsub)
+        await self.db.redis.subscribe_event(redis_key.get_pubsub_topic(), self.on_channel_points)
 
     async def timed_task_processor(self)->None:
         for channel_key in ChannelCache.get_all().keys():
@@ -362,6 +362,44 @@ class TwitchHandler(Base):
                     pass  # Not used
                 if data['data']['topic'].startswith('channel-points-channel-v1.'):
                     await self.pubsub_process_channel_points(data['data']['message'])
+        except Exception as ex:
+            self.logger.exception(ex)
+
+    async def on_channel_points(self, data):
+        try:
+            data = json_to_dict(data)
+        except Exception as ex:
+            self.logger.exception(ex)
+            return
+
+        if data['event']['status'] != 'unfulfilled':
+            self.logger.info('Unexpected status: {} in event'.format(data['event']['status'], data['event']))
+            return
+
+        broadcaster_id = int(data['event']['broadcaster_user_id'])
+        channel = ChannelCache.get_by_twitch_id(broadcaster_id)
+        if channel is None:
+            self.logger.error('Failed to find channel record for ID {}'.format(broadcaster_id))
+            return
+
+        user_id = int(data['event']['user_id'])
+        user_login = data['event']['user_login']
+        user_name = data['event']['user_name']
+
+        db_user = await self.get_db_user(user_id, user_login, user_name)
+        if db_user is None:
+            # Retry, could be issue with sync/db
+            await asyncio.sleep(3)
+            db_user = await self.get_db_user(user_id, user_login, user_name)
+            if db_user is None:
+                self.logger.error('Failed to complete redemption, user not found. id: {} login: {}'.format(user_id, user_login))
+                await channel.reply('@{} i failed to do redeption action for user {}. Please proceed manually.'.format(channel.channel_name, user_name))
+                return
+
+        self.logger.info('User {} redeemed {} on channel {}'.format(user_login, data['event']['reward']['title'], channel.channel_name))
+
+        try:
+            await self.bot_pp.process(channel, db_user, data['event'])
         except Exception as ex:
             self.logger.exception(ex)
 

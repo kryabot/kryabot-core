@@ -251,6 +251,8 @@ class TwitchEvents(Core):
             await self.handle_subscribe('subscriptions.unsubscribe', event['event'])
         elif topic.eq(EventSubType.CHANNEL_SUBSCRIBE_MESSAGE):
             await self.handle_subscribe('subscriptions.notification', event['event'])
+        elif topic.eq(EventSubType.CHANNEL_POINTS_REDEMPTION_NEW):
+            await self.redis.publish_event(redis_key.get_pubsub_topic(), converted_event)
 
     async def handle_subscribe(self, event_type, data):
         user_id = int(data['user_id'])
@@ -285,11 +287,4 @@ class TwitchEvents(Core):
         except:
             tier = ''
 
-        await self.db.saveTwitchSubEvent(channel['channel_id'],
-                                         user['user_id'],
-                                         '',
-                                         event_type,
-                                         datetime.utcnow(),
-                                         gifted,
-                                         tier,
-                                         message)
+        await self.db.saveTwitchSubEvent(channel['channel_id'], user['user_id'], '', event_type, datetime.utcnow(), gifted, tier, message)

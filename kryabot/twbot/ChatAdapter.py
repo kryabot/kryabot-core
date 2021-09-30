@@ -144,7 +144,6 @@ class ChatAdapter(Base, commands.Bot):
     async def redis_subscribe(self)->None:
         self.logger.info('Subscribing redis topics...')
         await self.db.redis.subscribe_event(redis_key.get_twitch_spam_detector_response_topic(), self.on_spam_detector_response)
-        await self.db.redis.subscribe_event(redis_key.get_token_update_topic(), self.on_token_update)
 
     async def on_token_update(self, msg):
         if 'channel:read:redemptions' in msg['scope']:
@@ -170,7 +169,8 @@ class ChatAdapter(Base, commands.Bot):
         await self.publish_movement('PART', user)
 
     async def event_raw_pubsub(self, data):
-        await self.db.redis.publish_event(redis_key.get_pubsub_topic(), data)
+        pass
+        # await self.db.redis.publish_event(redis_key.get_pubsub_topic(), data)
 
     async def event_custom_raw_usernotice(self, irc)->None:
         context: Context = await self.get_context(irc)

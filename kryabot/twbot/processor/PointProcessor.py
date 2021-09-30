@@ -133,10 +133,10 @@ class PointProcessor(Processor):
             user_input = redemption_data[self.user_input_key]
 
         if action['data'] is not None and len(action['data']) > 0:
-            await channel.reply(self.replace_message_tags(action['data'], redemption_data['user']['login'], action['amount'], user_input))
+            await channel.reply(self.replace_message_tags(action['data'], redemption_data['user_login'], action['amount'], user_input))
 
     async def action_twitch_mute_self(self, channel: Channel, db_user, redemption_data, action):
-        await ResponseAction.ResponseTimeout.send(channel_name=channel.channel_name, user=redemption_data['user']['login'], duration=int(action['amount']), reason=redemption_data['reward']['title'])
+        await ResponseAction.ResponseTimeout.send(channel_name=channel.channel_name, user=redemption_data['user_login'], duration=int(action['amount']), reason=redemption_data['reward']['title'])
         await self.action_twitch_message(channel, db_user, redemption_data, action)
 
     async def action_twitch_mute_other(self, channel: Channel, db_user, redemption_data, action):
