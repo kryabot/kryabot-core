@@ -430,7 +430,7 @@ class HalloweenChannel(EventChannel):
             await asyncio.sleep(1)
 
             if start_ts + timedelta(seconds=alive_seconds) < datetime.utcnow():
-                self.calc_next_love_spawn()
+                self.calc_next_number_spawn()
                 self.pumpkins[event_message.id].kill()
 
             attackers = self.get_attackers(event_message.id)
