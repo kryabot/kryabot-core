@@ -499,7 +499,10 @@ class TwitchHandler(Base):
 
                 self.logger.info("[{}] Creating broadcaster topic ${}".format(channel.tw_id, topic.key))
                 try:
-                    resp = await self.api.twitch_events.create(channel.tw_id, topic)
+                    if topic.eq(EventSubType.CHANNEL_RAID):
+                        resp = await self.api.twitch_events.create(topic=topic, to_broadcaster_user_id=channel.tw_id)
+                    else:
+                        resp = await self.api.twitch_events.create(topic=topic, broadcaster_id=channel.tw_id)
                 except Exception as ex:
                     self.logger.exception(ex)
 

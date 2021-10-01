@@ -117,46 +117,43 @@ class TwitchEvents(Core):
 
         for topic in topics:
             try:
-                resp = await self.create(broadcaster_id, topic)
+                resp = await self.create(topic=topic, broadcaster_id=broadcaster_id)
                 response.append(resp['data'][0])
             except Exception as ex:
                 error.append(ex)
 
         return response, error
 
+    async def create_for_client(self, topic: EventSubType):
+        return await self.create(topic=topic, client_id=self.client_id)
+
     @app_auth()
-    async def create_for_client(self, topic: EventSubType, version=1, client_id=None):
+    async def create(self, topic: EventSubType,
+                     broadcaster_id: str=None,
+                     to_broadcaster_user_id: str=None,
+                     from_broadcaster_user_id: str=None,
+                     client_id: str=None,
+                     version: int=1):
         if not topic:
             raise ValueError('Must provide topic value!')
 
-        if not client_id:
-            client_id = self.client_id
+        condition = {}
+        if broadcaster_id:
+            condition['broadcaster_user_id'] = str(broadcaster_id)
+        if to_broadcaster_user_id:
+            condition['to_broadcaster_user_id'] = str(to_broadcaster_user_id)
+        if from_broadcaster_user_id:
+            condition['from_broadcaster_user_id'] = str(from_broadcaster_user_id)
+        if client_id:
+            condition['client_id'] = str(client_id)
+
+        if not condition or condition == {}:
+            raise ValueError('Failed to build condition data')
 
         body = {
             'type': topic.value,
             'version': version,
-            'condition': {'client_id': str(client_id)},
-            'transport': {
-                'method': 'webhook',
-                'callback': self.callback,
-                'secret': self.webhook_secret
-            }
-        }
-
-        return await self.make_post_request(self.events_url, body=body)
-
-    @app_auth()
-    async def create(self, broadcaster_id: str, topic: EventSubType, version: int=1):
-        if not topic:
-            raise ValueError('Must provide topic value!')
-
-        if not broadcaster_id:
-            raise ValueError('Must provide broadcaster_id value!')
-
-        body = {
-            'type': topic.value,
-            'version': version,
-            'condition': {'broadcaster_user_id': str(broadcaster_id)},
+            'condition': condition,
             'transport': {
                 'method': 'webhook',
                 'callback': self.callback,
