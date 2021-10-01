@@ -601,7 +601,7 @@ class HalloweenChannel(EventChannel):
                 else:
                     final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_SCARY_DIED_FAILURE')
 
-                final_text += ' ' + HalloweenConfig.pumpkin_heart
+                final_text += ' ' + HalloweenConfig.pumpkin_scary
                 try:
                     await client.send_message(self.channel_id, final_text)
                 except Exception as ex:

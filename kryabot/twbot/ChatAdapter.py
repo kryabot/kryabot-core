@@ -18,6 +18,9 @@ from utils import schedule
 
 
 class ChatAdapter(Base, commands.Bot):
+    async def event_pubsub(self, data):
+        pass
+
     def __init__(self):
         self.loop: asyncio.BaseEventLoop = asyncio.get_event_loop()
         self.cfg: BotConfig = BotConfig()
@@ -261,6 +264,7 @@ class ChatAdapter(Base, commands.Bot):
                 data = await self.db.redis.get_one_from_list_parsed(redis_key.get_irc_response_queue())
                 if data is not None:
                     self.loop.create_task(self.process_response(data))
+                    continue
             except Exception as ex:
                 self.logger.exception(ex)
 
