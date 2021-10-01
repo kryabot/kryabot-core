@@ -40,10 +40,6 @@ class LoopContainer:
         tasks.append(self.guard_bot.run_until_disconnected())
         tasks.append(self.daily_tasks_utc18())
         tasks.append(self.daily_tasks_utc17())
-        tasks.append(self.daily_tasks_utc16())
-        tasks.append(self.daily_tasks_utc10())
-        tasks.append(self.daily_tasks_utc4())
-        tasks.append(self.daily_tasks_utc22())
         tasks.append(self.run_scheduler())
 
         task_response = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED, loop=self.loop)
@@ -60,6 +56,13 @@ class LoopContainer:
         schedule.every().day.at("15:30").do(self.guard_bot.task_check_invite_links)
         schedule.every().day.at("07:30").do(self.guard_bot.task_check_invite_links)
         schedule.every().day.at("15:00").do(self.guard_bot.task_check_chat_publicity)
+        schedule.every().day.at("07:00").do(self.guard_bot.task_delete_old_auths)
+        schedule.every().day.at("03:00").do(self.daily_tasks_tg_member_refresher)
+        schedule.every().day.at("07:00").do(self.daily_tasks_tg_member_refresher)
+        schedule.every().day.at("11:00").do(self.daily_tasks_tg_member_refresher)
+        schedule.every().day.at("15:00").do(self.daily_tasks_tg_member_refresher)
+        schedule.every().day.at("19:00").do(self.daily_tasks_tg_member_refresher)
+        schedule.every().day.at("23:00").do(self.daily_tasks_tg_member_refresher)
         schedule.every(1).hours.do(self.guard_bot.task_delete_old_messages)
         schedule.every(1).hours.do(self.guard_bot.task_fix_twitch_ids)
         schedule.every(1).hours.do(self.guard_bot.task_fix_twitch_names)
@@ -107,52 +110,27 @@ class LoopContainer:
             except Exception as e:
                 await self.guard_bot.exception_reporter(e, 'Error during daily task:')
 
-    # TODO use schedule libs to schedule things, or write proper decorator
-    async def daily_tasks_utc16(self):
-        await self.daily_tasks_tg_member_refresher(16, 0)
+    async def daily_tasks_tg_member_refresher(self):
+        if self.guard_bot.in_refresh:
+            self.logger.info('Skipping daily_tasks_tg_member_refresher because bot is in refresh status')
+            return
 
-    async def daily_tasks_utc22(self):
-        await self.daily_tasks_tg_member_refresher(22, 0)
+        await self.guard_bot.update_data()
+        self.guard_bot.in_refresh = True
 
-    async def daily_tasks_utc4(self):
-        await self.daily_tasks_tg_member_refresher(4, 0)
+        for channel in await self.guard_bot.db.get_auth_subchats():
+            if channel['tg_chat_id'] == 0:
+                continue
 
-    async def daily_tasks_utc10(self):
-        await self.daily_tasks_tg_member_refresher(10, 0)
+            if channel['refresh_status'] != 'DONE':
+                continue
 
-    async def daily_tasks_tg_member_refresher(self, hour, minute):
-        while True:
             try:
-                now = datetime.utcnow()
-                runtime = datetime(now.year, now.month, now.day, hour, minute)
-                diff = runtime - now
-                if diff.seconds > 120:
-                    self.logger.info('Going to sleep for {sec}'.format(sec=diff.seconds))
-                    await asyncio.sleep(diff.seconds)
-                    continue
-
-                self.logger.info('Starting daily tasks ({})'.format(hour))
-
-                await self.guard_bot.update_data()
-                self.guard_bot.in_refresh = True
-
-                for channel in await self.guard_bot.db.get_auth_subchats():
-                    if channel['tg_chat_id'] == 0:
-                        continue
-
-                    if channel['refresh_status'] != 'DONE':
-                        continue
-
-                    try:
-                        await self.guard_bot.run_channel_refresh_new(channel, False, None, silent=True)
-                    except Exception as ex:
-                        await self.guard_bot.exception_reporter(ex, 'TG member updater task for {}'.format(channel['channel_name']))
-
-                self.guard_bot.in_refresh = False
+                await self.guard_bot.run_channel_refresh_new(channel, False, None, silent=True)
             except Exception as ex:
-                await self.guard_bot.report_exception(ex, 'Error during daily task:')
-            finally:
-                self.guard_bot.in_refresh = False
+                await self.guard_bot.exception_reporter(ex, 'TG member updater task for {}'.format(channel['channel_name']))
+
+        self.guard_bot.in_refresh = False
 
     # TODO use schedule libs to schedule things, or write proper decorator
     async def daily_tasks_utc17(self):

@@ -986,6 +986,13 @@ class KryaClient(TelegramClient):
         self.logger.info('This is test task with an error')
         raise Exception("Exception from task_task_error")
 
+    @log_exception_ignore(log=global_logger)
+    async def task_delete_old_auths(self):
+        try:
+            await self.db.deleteOldAuths()
+        except Exception as ex:
+            await self.exception_reporter(ex, 'task_delete_old_auths')
+
     async def get_group_participant_full_data(self, channel, need_subs=True, need_follows=True, kick_not_verified=True, kick_deleted=True):
         self.logger.info('Collecting full data for channel {}'.format(channel['channel_id']))
         # Return value is data

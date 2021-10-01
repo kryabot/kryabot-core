@@ -309,6 +309,9 @@ class Database:
     async def deleteOldTwitchMessages(self):
         return await self.query('wipe_twitch_messages', [])
 
+    async def deleteOldAuths(self):
+        return await self.query('delete_old_auths', [])
+
     async def saveTwitchMassBan(self, channel_id, user_id, ban_text, ban_time, ban_count):
         return await self.query('save_mass_ban', [channel_id, user_id, ban_text, ban_time, ban_count])
 
