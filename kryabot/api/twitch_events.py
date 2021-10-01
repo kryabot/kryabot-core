@@ -125,6 +125,27 @@ class TwitchEvents(Core):
         return response, error
 
     @app_auth()
+    async def create_for_client(self, topic: EventSubType, version=1, client_id=None):
+        if not topic:
+            raise ValueError('Must provide topic value!')
+
+        if not client_id:
+            client_id = self.client_id
+
+        body = {
+            'type': topic.value,
+            'version': version,
+            'condition': {'client_id': str(client_id)},
+            'transport': {
+                'method': 'webhook',
+                'callback': self.callback,
+                'secret': self.webhook_secret
+            }
+        }
+
+        return await self.make_post_request(self.events_url, body=body)
+
+    @app_auth()
     async def create(self, broadcaster_id: str, topic: EventSubType, version: int=1):
         if not topic:
             raise ValueError('Must provide topic value!')

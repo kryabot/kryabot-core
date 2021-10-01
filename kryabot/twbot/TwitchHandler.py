@@ -437,7 +437,7 @@ class TwitchHandler(Base):
             self.logger.exception(ex)
 
     async def schedule_eventsub_register(self)->None:
-        required_topics = [
+        required_broadcaster_topics = [
             EventSubType.CHANNEL_SUBSCRIBE,
             EventSubType.CHANNEL_SUBSCRIBE_END,
             EventSubType.CHANNEL_SUBSCRIBE_GIFT,
@@ -449,13 +449,16 @@ class TwitchHandler(Base):
             EventSubType.CHANNEL_POLL_BEGIN,
             EventSubType.CHANNEL_POLL_PROGRESS,
             EventSubType.CHANNEL_POLL_END,
-            EventSubType.AUTH_GRANTED,
-            EventSubType.AUTH_REVOKED,
             EventSubType.CHANNEL_POINTS_REDEMPTION_NEW,
             EventSubType.CHANNEL_POINTS_REDEMPTION_UPDATE,
             EventSubType.CHANNEL_HYPE_TRAIN_BEGIN,
             EventSubType.CHANNEL_HYPE_TRAIN_PROGRESS,
             EventSubType.CHANNEL_HYPE_TRAIN_END
+        ]
+
+        required_client_topics = [
+            EventSubType.AUTH_GRANTED,
+            EventSubType.AUTH_REVOKED,
         ]
 
         current_events = await self.api.twitch_events.get_all()
@@ -468,7 +471,7 @@ class TwitchHandler(Base):
             current_scopes = auth[0]['scope'].split(' ')
             channel_events = list(filter(lambda row: int(row['condition']['broadcaster_user_id']) == int(channel.tw_id), current_events['data']))
 
-            for topic in required_topics:
+            for topic in required_broadcaster_topics:
                 have_scope = False
                 if topic.scopes:
                     # Topic requires scopes in auth
@@ -493,9 +496,26 @@ class TwitchHandler(Base):
                         # status is enabled, we can skip to next topic
                         continue
 
-                self.logger.info("[{}] Creating topic ${}".format(channel.tw_id, topic.key))
+                self.logger.info("[{}] Creating broadcaster topic ${}".format(channel.tw_id, topic.key))
                 try:
                     resp = await self.api.twitch_events.create(channel.tw_id, topic)
                 except Exception as ex:
                     self.logger.exception(ex)
 
+        self.logger.info('Checking client topics...')
+        for topic in required_client_topics:
+            topic_event = next(filter(lambda row: row['type'] == topic.key, current_events), None)
+            if topic_event:
+                status = EventSubStatus(topic_event['status'])
+                if status != EventSubStatus.ENABLED:
+                    self.logger.info("Deleting not enabled client event {}".format(topic_event))
+                    await self.api.twitch_events.delete(message_id=topic_event['id'])
+                else:
+                    # status is enabled, we can skip to next topic
+                    continue
+
+            self.logger.info("Creating client topic ${}".format(topic.key))
+            try:
+                resp = await self.api.twitch_events.create_for_client(topic)
+            except Exception as ex:
+                self.logger.exception(ex)
