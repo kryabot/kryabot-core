@@ -255,13 +255,13 @@ class TwitchEvents(Core):
 
     async def handle_active_event(self, event):
         topic = EventSubType(event['subscription']['type'])
-        broadcaster_id = int(event['subscription']['condition']['broadcaster_user_id'])
 
         converted_event = dict_to_json(event)
         if topic.eq(EventSubType.STREAM_ONLINE) or topic.eq(EventSubType.STREAM_OFFLINE):
             await self.redis.push_list_to_right(redis_key.get_streams_data(), converted_event)
         elif topic.eq(EventSubType.CHANNEL_UPDATE):
             await self.redis.push_list_to_right(redis_key.get_streams_data(), converted_event)
+            broadcaster_id = int(event['subscription']['condition']['broadcaster_user_id'])
             await self.redis.set_parsed_value_by_key(redis_key.get_twitch_channel_update(broadcaster_id), event['event'], expire=redis_key.ttl_week)
         elif topic.eq(EventSubType.CHANNEL_SUBSCRIBE):
             await self.handle_subscribe('subscriptions.subscribe', event['event'])
@@ -270,7 +270,9 @@ class TwitchEvents(Core):
         elif topic.eq(EventSubType.CHANNEL_SUBSCRIBE_MESSAGE):
             await self.handle_subscribe('subscriptions.notification', event['event'])
         elif topic.eq(EventSubType.CHANNEL_POINTS_REDEMPTION_NEW):
-            await self.redis.publish_event(redis_key.get_pubsub_topic(), converted_event)
+            await self.redis.publish_event(redis_key.get_pubsub_topic(), event)
+        else:
+            self.logger.info('Unhandled type {}'.format(topic))
 
     async def handle_subscribe(self, event_type, data):
         user_id = int(data['user_id'])
