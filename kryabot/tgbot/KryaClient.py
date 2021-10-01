@@ -392,21 +392,21 @@ class KryaClient(TelegramClient):
         if kick and not silent:
             kick_report = self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_FINISH')
             if kicked_total > 0:
-                kick_report += '\n\n<b>Total kicks: {}</b>\n'.format(kicked_total)
+                kick_report += '\n\n<b>⚠️{}: {}</b>\n'.format(self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_KICKED_TOTAL'), kicked_total)
                 if kicked_deleted > 0:
-                    kick_report += '\nDeleted accounts: {}'.format(kicked_deleted)
+                    kick_report += '\n➖ {} {}'.format(self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_KICKED_DELETED'), kicked_deleted)
                 if kicked_blacklist > 0:
-                    kick_report += '\nBanned users: {}'.format(kicked_blacklist)
+                    kick_report += '\n➖ {}: {}'.format(self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_KICKED_BANNED'), kicked_blacklist)
                 if kicked_not_verified > 0:
-                    kick_report += '\nNot verified: {}'.format(kicked_not_verified)
+                    kick_report += '\n➖ {}: {}'.format(self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_KICKED_NOT_VERIFIED'), kicked_not_verified)
                 if kicked_non_follow > 0:
-                    kick_report += '\nNot follower: {}'.format(kicked_non_follow)
+                    kick_report += '\n➖ {}: {}'.format(self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_KICKED_NOT_FOLLOWER'), kicked_non_follow)
                 if kicked_non_sub > 0:
-                    kick_report += '\nNot subscriber: {}'.format(kicked_non_sub)
+                    kick_report += '\n➖ {}: {}'.format(self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_KICKED_NOT_SUB'), kicked_non_sub)
 
                 await self.send_file(channel['tg_chat_id'], file='\n'.join(kick_array).encode(), caption=kick_report, attributes=[DocumentAttributeFilename('MassKickReport.txt')])
             else:
-                await self.send_message(channel['tg_chat_id'], kick_report + '\n\n🙄 Nothing to kick!')
+                await self.send_message(channel['tg_chat_id'], kick_report + '\n\n🙄 ' + self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_KICKED_NOTHING'))
 
             if kick_array:
                 await self.send_file(TG_GROUP_MONITORING_ID, file='\n'.join(kick_array).encode(), caption=kick_report, attributes=[DocumentAttributeFilename('{}_report.txt'.format(channel['channel_name']))])
