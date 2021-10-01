@@ -271,7 +271,7 @@ class TwitchHandler(Base):
                     user = users
 
                 if user['name'] != user_name and user_name is not None or user['dname'] != user_display_name:
-                    self.logger.info('[{}] Updating user names, from [{} {}] to [{} {}]'.format(author_twitch_id, user['name'], user['dname'], user_name, user_display_name))
+                    self.logger.debug('[{}] Updating user names, from [{} {}] to [{} {}]'.format(author_twitch_id, user['name'], user['dname'], user_name, user_display_name))
                     await self.db.updateUserTwitchName(user['user_id'], user_name, user_display_name, tw_user_id=author_twitch_id)
                 return user
             except Exception as e:
@@ -366,12 +366,6 @@ class TwitchHandler(Base):
             self.logger.exception(ex)
 
     async def on_channel_points(self, data):
-        try:
-            data = json_to_dict(data)
-        except Exception as ex:
-            self.logger.exception(ex)
-            return
-
         if data['event']['status'] != 'unfulfilled':
             self.logger.info('Unexpected status: {} in event'.format(data['event']['status'], data['event']))
             return

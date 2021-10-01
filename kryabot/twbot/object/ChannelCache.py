@@ -34,7 +34,7 @@ class ChannelCache(Base):
     @staticmethod
     def get_by_channel_id(channel_id: int)->Channel:
         for channel_key in ChannelCache.get_all().keys():
-            if ChannelCache.get(channel_key).channel_id == channel_id:
+            if int(ChannelCache.get(channel_key).channel_id) == int(channel_id):
                 return ChannelCache.get(channel_key)
 
     @staticmethod

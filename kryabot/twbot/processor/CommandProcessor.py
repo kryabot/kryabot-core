@@ -94,7 +94,7 @@ class CommandProcessor(Processor):
         user_level = self.get_access_level(context)
         # Global commands
         if command.startswith('!'):
-            self.logger.info('{} got rights: {}'.format(context.user.name, context.rights))
+            self.logger.debug('{} got rights: {}'.format(context.user.name, context.rights))
             global_cmd = commandbuilder.build(command_name=command[1:], context=context)
             if global_cmd is not None:
                 self.logger.debug('Processing global command {} in channel {} by {}'.format(command, context.channel.channel_name, context.user.name))
