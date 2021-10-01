@@ -390,7 +390,6 @@ class KryaClient(TelegramClient):
             await self.report_to_monitoring(report + '\nStatus: Done\nTotal members: ' + str(data['summary']['total']) + '\nVerified: ' + str(data['summary']['verified']) + '\nSubscribers: ' + str(data['summary']['subs']))
 
         if kick and not silent:
-            await self.send_message(channel['tg_chat_id'], self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_FINISH'), parse_mode='html')
             kick_report = self.translator.getLangTranslation(channel['bot_lang'], 'MASS_KICK_FINISH')
             if kicked_total > 0:
                 kick_report += '\n\n<b>Total kicks: {}</b>\n'.format(kicked_total)
