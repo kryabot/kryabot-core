@@ -324,8 +324,9 @@ class TwitchHandler(Base):
     async def on_stream_change(self, data):
         self.logger.info(data)
 
-        channel = ChannelCache.get_by_channel_id(data['channel_id'])
+        channel = ChannelCache.get_by_twitch_id(data['channel_id'])
         if channel is None:
+            self.logger.info('Failed to find channel for twitch_id={}'.format(data['channel_id']))
             return
 
         answer = await channel.update_status(data)
@@ -504,7 +505,7 @@ class TwitchHandler(Base):
 
         self.logger.info('Checking client topics...')
         for topic in required_client_topics:
-            topic_event = next(filter(lambda row: row['type'] == topic.key, current_events), None)
+            topic_event = next(filter(lambda row: row['type'] == topic.key, current_events['data']), None)
             if topic_event:
                 status = EventSubStatus(topic_event['status'])
                 if status != EventSubStatus.ENABLED:
