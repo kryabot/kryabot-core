@@ -818,9 +818,9 @@ class HalloweenConfig:
     hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "🔫"]
     love_messages: List[str] = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎"]
     scary_messages: List[str] = ['😨', '😱']
-    currency_key: str = "demo"
+    currency_key: str = "pumpkin_2021"
     number_range_min = 1
-    number_range_max = 10
+    number_range_max = 7
 
     @staticmethod
     def is_event_regular(message)->bool:

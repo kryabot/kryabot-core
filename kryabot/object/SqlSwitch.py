@@ -131,7 +131,7 @@ async def getSql(sqlType):
         'get_songs_by_channel': 'SELECT * FROM song_source where song_source.channel_id = %s',
         'get_channel_by_user_id': 'SELECT c.channel_id, c.user_id, c.channel_name, c.auto_join, c.allow_web_access, c.trigger_period, cs.channel_subchat_id, u.tw_id FROM channel c LEFT JOIN user u ON u.user_id = c.user_id LEFT JOIN channel_subchat cs ON cs.channel_id = c.channel_id where c.user_id = %s;',
         'update_channel_global_events': 'UPDATE channel_subchat SET channel_subchat.global_events = %s WHERE channel_subchat.tg_chat_id = %s',
-        'get_active_global_events': 'SELECT * FROM global_event ge WHERE ge.active_from < CURRENT_TIMESTAMP and (UNIX_TIMESTAMP(ge.active_to) = 0 or ge.active_to > CURRENT_TIMESTAMP );',
+        'get_active_global_events': 'SELECT * FROM global_event ge WHERE ge.active_from < NOW() + INTERVAL 3 DAY and (UNIX_TIMESTAMP(ge.active_to) = 0 or ge.active_to > CURRENT_TIMESTAMP );',
         'get_global_event_user_data_by_event': 'SELECT * from global_event_reward ger WHERE ger.global_event_id = %s and ger.user_id = %s',
         'set_global_event_user_reward': 'CALL setGlobalEventRewardForUser(%s, %s, %s, %s)',
         'get_global_user_awards': 'SELECT ger.amount, ger.val, ge.event_key, ge.label FROM global_event_reward ger left JOIN global_event ge ON ge.global_event_id = ger.global_event_id WHERE ger.user_id = %s;',
