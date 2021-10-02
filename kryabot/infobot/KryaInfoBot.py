@@ -22,7 +22,7 @@ from object.System import System
 from object.Translator import Translator
 from tgbot import constants
 from tgbot.FastTelethon import upload_file
-from tgbot.constants import TG_GROUP_MONITORING_ID
+from tgbot.constants import TG_GROUP_MONITORING_ID_FULL
 from utils.json_parser import dict_to_json
 
 
@@ -324,7 +324,7 @@ class KryaInfoBot(TelegramClient):
                 await self.send_message(target.target_id, message=text, file=file, buttons=button, link_preview=False, parse_mode='html')
 
                 try:
-                    if event.finish and target.target_id == TG_GROUP_MONITORING_ID:
+                    if event.finish and int(target.target_id) == int(TG_GROUP_MONITORING_ID_FULL):
                         to_json = dict_to_json(event.summary)
                         await self.send_file(target.target_id, file=to_json.encode())
                 except Exception as testEx:
