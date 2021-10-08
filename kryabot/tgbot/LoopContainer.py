@@ -67,6 +67,8 @@ class LoopContainer:
         schedule.every(1).hours.do(self.guard_bot.task_fix_twitch_ids)
         schedule.every(1).hours.do(self.guard_bot.task_fix_twitch_names)
         schedule.every(1).hours.do(self.guard_bot.task_ping)
+        schedule.every(15).minutes.do(self.guard_bot.task_oauth_refresher)
+        schedule.every(1).minutes.do(self.guard_bot.db.activity_check)
 
     async def run_scheduler(self):
         while True:

@@ -81,10 +81,6 @@ class KryaClient(TelegramClient):
 
     async def start_bot(self):
         await self.update_data()
-        self.logger.info('Creating db_activity task')
-        self.loop.create_task(self.db.db_activity())
-        self.logger.info('Creating task_oauth_refresher')
-        self.loop.create_task(self.task_oauth_refresher())
         self.loop.create_task(Pinger(System.KRYABOT_TELEGRAM, self.logger, self.db.redis).run_task())
         self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
 
@@ -634,17 +630,15 @@ class KryaClient(TelegramClient):
 
     async def task_oauth_refresher(self):
         await asyncio.sleep(10)
-        refresh_period = 1800
-        while True:
-            try:
-                auths = await self.db.getBotAuths()
 
-                for auth in auths:
-                    new_auth = await get_active_oauth_data(auth['user_id'], self.db, self.api, sec_diff=(refresh_period + 60))
-            except Exception as e:
-                self.logger.error(str(e))
-                await self.exception_reporter(e, 'In task_oauth_refresher')
-            await asyncio.sleep(refresh_period)
+        try:
+            auths = await self.db.getBotAuths()
+
+            for auth in auths:
+                new_auth = await get_active_oauth_data(auth['user_id'], self.db, self.api, sec_diff=(900 + 60))
+        except Exception as e:
+            self.logger.error(str(e))
+            await self.exception_reporter(e, 'In task_oauth_refresher')
 
     async def twitch_event_unsubscribe(self, event_id):
         twitch_event = await self.db.getTwitchEventByEventId(event_id)
