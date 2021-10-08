@@ -26,7 +26,6 @@ from utils.array import split_array_into_parts, get_first
 from utils import redis_key
 from utils import schedule as scheduler_utils
 from utils.json_parser import json_to_dict
-from utils.twitch import get_active_oauth_data
 
 
 class TwitchHandler(Base):

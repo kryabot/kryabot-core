@@ -3,7 +3,6 @@ websockets
 aiomysql
 python-dateutil
 pympler
-flask
 Telethon==1.23.0
 redis
 aioredis==1.3.1
@@ -15,7 +14,8 @@ aiofiles
 python-ffmpeg
 mutagen
 hachoir
-sanic
+sanic==21.9.0
 instaloader
 Unidecode
 aioschedule
+selenium
