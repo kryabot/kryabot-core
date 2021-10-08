@@ -140,7 +140,7 @@ class TwitchEvent(Event):
         self.summary.append({'type': 'game', 'ts': when if when else datetime.utcnow(), 'new_value': category_name})
 
     def add_summary_finish(self):
-        self.summary.append({'type': 'finish', 'when': datetime.utcnow()})
+        self.summary.append({'type': 'finish', 'ts': datetime.utcnow()})
 
     def set_start(self):
         self.start = True

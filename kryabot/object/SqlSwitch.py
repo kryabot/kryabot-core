@@ -1,4 +1,5 @@
-TG_AUTH_CHAT = 'SELECT channel_subchat.global_events, channel_subchat.show_report, channel_subchat.force_pause, channel_subchat.on_refund, channel_subchat.min_sub_months, channel_subchat.refresh_status, channel_subchat.max_warns, channel_subchat.warn_mute_h, channel_subchat.warn_expires_in, channel_subchat.last_reminder, channel_subchat.reminder_cooldown, channel_subchat.getter_cooldown, channel_subchat.channel_subchat_id, channel_subchat.tg_chat_id, channel_subchat.auto_kick, channel.channel_id, user.tw_id, channel.channel_name, ac.token, ac.expires_at, ac.refresh_token, channel_subchat.enabled_join, channel_subchat.join_follower_only, channel_subchat.join_sub_only, channel_subchat.ban_time, channel_subchat.bot_lang, channel_subchat.join_link, channel_subchat.auto_mass_kick, channel_subchat.last_auto_kick, channel_subchat.on_stream, channel_subchat.welcome_message_id, user.user_id FROM channel_subchat INNER JOIN channel ON channel_subchat.channel_id=channel.channel_id INNER JOIN user on user.user_id = channel.user_id INNER JOIN auth ac on ac.user_id = user.user_id where ac.type="BOT"'
+TG_AUTH_CHAT = 'SELECT channel_subchat.auth_status, channel_subchat.global_events, channel_subchat.show_report, channel_subchat.force_pause, channel_subchat.on_refund, channel_subchat.min_sub_months, channel_subchat.refresh_status, channel_subchat.max_warns, channel_subchat.warn_mute_h, channel_subchat.warn_expires_in, channel_subchat.last_reminder, channel_subchat.reminder_cooldown, channel_subchat.getter_cooldown, channel_subchat.channel_subchat_id, channel_subchat.tg_chat_id, channel_subchat.auto_kick, channel.channel_id, user.tw_id, channel.channel_name, ac.token, ac.expires_at, ac.refresh_token, channel_subchat.enabled_join, channel_subchat.join_follower_only, channel_subchat.join_sub_only, channel_subchat.ban_time, channel_subchat.bot_lang, channel_subchat.join_link, channel_subchat.auto_mass_kick, channel_subchat.last_auto_kick, channel_subchat.on_stream, channel_subchat.welcome_message_id, user.user_id FROM channel_subchat INNER JOIN channel ON channel_subchat.channel_id=channel.channel_id INNER JOIN user on user.user_id = channel.user_id INNER JOIN auth ac on ac.user_id = user.user_id where ac.type="BOT"'
+
 
 async def getSql(sqlType):
     return {
@@ -37,7 +38,7 @@ async def getSql(sqlType):
         'add_request_link': 'INSERT INTO request_link (channel_id, user_id, link) VALUES (%s, %s, %s)',
         'get_settings': 'SELECT setting_key, setting_value FROM setting WHERE type = "BOT"',
         'get_setting': 'SELECT setting_key, setting_value FROM setting WHERE type = "BOT" AND setting_key=%s',
-        'save_bot_refresh_token': 'UPDATE auth SET auth.token = %s, auth.expires_at = CURRENT_TIMESTAMP + interval %s second, auth.refresh_token = %s where auth.type = "BOT" and auth.user_id = %s',
+        'save_bot_refresh_token': 'CALL updateAuthData(%s, %s, %s, %s)',
         'get_user_by_tg_id': 'select user.user_id, user.name, user.dname, user.tw_id, user.is_admin, user.supporter, user.soc_vk, user.soc_inst, user.soc_ut, user.allow_soc from user where user_id = (select request.user_id from request where request.request_id = (select response.request_id from response where response.tg_id = %s))',
         'get_users_by_tg_id': 'SELECT u.user_id, u.name, u.dname, u.tw_id, u.is_admin, u.supporter, u.soc_vk, u.soc_inst, u.soc_ut, u.allow_soc, resp.tg_id from response resp left join request req on req.request_id = resp.request_id LEFT JOIN user u ON u.user_id = req.user_id where resp.tg_id in (%s);',
         'save_chat_info_by_hash': 'UPDATE channel_subchat SET channel_subchat.tg_chat_id = %s, channel_subchat.tg_chat_name = %s WHERE channel_subchat.join_link like %s',
@@ -168,4 +169,5 @@ async def getSql(sqlType):
         'add_currency_to_channel': 'CALL addCurrencyToChannel(%s, %s, %s)',
         'update_subchat_forced_pause': 'UPDATE channel_subchat SET channel_subchat.force_pause = %s WHERE channel_subchat.tg_chat_id = %s',
         'register_profile_twitch': 'registerNewTwitchProfile(%s)',
+        'set_subchat_auth_status': 'UPDATE channel_subchat cs SET cs.auth_status = %s WHERE cs.channel_subchat_id = %s',
     }.get(sqlType, 'unknown_sql_type')

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import aioschedule as schedule
 from typing import List, Dict
 from datetime import datetime
 
@@ -62,8 +63,17 @@ class TwitchHandler(Base):
         for proc in self.processors:
             proc.set_tools(self.logger, self.db, self.api)
 
+    async def run_scheduler(self):
+        while True:
+            await schedule.run_pending()
+            await asyncio.sleep(60)
+
+    async def init_scheduler(self):
+        schedule.every(1).hours.do(self.schedule_eventsub_register)
+
     async def start(self):
         await self.bot_data_update_all()
+        await self.init_scheduler()
         await self.schedule_tasks()
 
         while True:
@@ -124,15 +134,15 @@ class TwitchHandler(Base):
         if self.tasks:
             return
 
+        scheduler = self.loop.create_task(self.run_scheduler())
         listener = self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
         triggers = schedule.schedule_task_periodically(5, self.timed_task_processor, logger=self.logger)
-        events_checker = schedule.schedule_task_periodically(redis_key.ttl_day, self.schedule_eventsub_register, logger=self.logger)
         ping = self.loop.create_task(Pinger(System.KRYABOT_TWITCH, self.logger, self.db.redis).run_task())
 
-        self.tasks.append(events_checker)
         self.tasks.append(triggers)
         self.tasks.append(listener)
         self.tasks.append(ping)
+        self.tasks.append(scheduler)
 
     # List of subscribes executed during initialization
     async def redis_subscribe(self)->None:

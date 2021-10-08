@@ -230,7 +230,7 @@ class Database:
         return await self.query('get_setting', [setting_key])
 
     async def saveBotAuth(self, kb_user_id, token, refresh_token, expires_in):
-        return await self.query('save_bot_refresh_token', [token, expires_in, refresh_token, kb_user_id])
+        return await self.query('save_bot_refresh_token', [kb_user_id, token, refresh_token, expires_in])
 
     async def getUserByTgChatId(self, tg_user_id, skip_cache=False):
         cache_key = redis_key.get_kb_user_by_tg_id(tg_id=tg_user_id)
@@ -690,6 +690,9 @@ class Database:
 
     async def registerTwitchProfile(self, user_id):
         await self.query('register_profile_twitch', [user_id])
+
+    async def updateSubchatAuthStatus(self, subchat_id, status):
+        await self.query('set_subchat_auth_status', [status, subchat_id])
 
     async def get_list_values_full(self, list_name):
         return await self.query('get_active_list_values', [list_name])

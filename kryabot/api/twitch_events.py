@@ -249,6 +249,8 @@ class TwitchEvents(Core):
         status = EventSubStatus(event['subscription']['status'])
         if status == EventSubStatus.ENABLED:
             await self.handle_active_event(event)
+        elif status == EventSubStatus.AUTH_REVOKED:
+            await self.handle_revoked(event)
         else:
             self.logger.info('Unhandled event status: {}'.format(status))
         # TODO: handle other statuses
@@ -308,3 +310,26 @@ class TwitchEvents(Core):
             tier = ''
 
         await self.db.saveTwitchSubEvent(channel['channel_id'], user['user_id'], '', event_type, datetime.utcnow(), gifted, tier, message)
+
+    async def handle_revoked(self, data):
+        broadcaster_id = int(data['subscription']['condition']['broadcaster_user_id'])
+        self.logger.info('[{}] Revoked auth topic {}'.format(broadcaster_id, data['subscription']['type']))
+
+        try:
+            await self.delete(message_id=data['subscription']['id'])
+        except Exception as ex:
+            self.logger.exception(ex)
+
+        user = await get_first(await self.db.getUserRecordByTwitchId(broadcaster_id))
+        if user is None:
+            self.logger.error('[{}] Failed to find user record'.format(broadcaster_id))
+            return
+
+        chat = await get_first(await self.db.getSubchatByUserId(user[0]['user_id']))
+        if chat is None:
+            # Possible case, not an error
+            self.logger.info('[{}] Failed to find chat'.format(broadcaster_id))
+            return
+
+        if chat['auth_status'] != 0:
+            await self.db.updateSubchatAuthStatus(chat['channel_subchat_id'], 0)
