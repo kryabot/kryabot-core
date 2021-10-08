@@ -66,9 +66,11 @@ class TwitchHandler(Base):
     async def run_scheduler(self):
         self.logger.info("Started scheduler...")
         try:
+            await aioschedule.run_all()
+
             while True:
-                await aioschedule.run_pending()
                 await asyncio.sleep(20)
+                await aioschedule.run_pending()
         except Exception as ex:
             self.logger.exception(ex)
             self.problems_to_report.append(str(ex))
