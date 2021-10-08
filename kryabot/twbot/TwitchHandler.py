@@ -24,7 +24,7 @@ from twbot.processor.PointProcessor import PointProcessor
 from twbot.processor.Processor import Processor
 from utils.array import split_array_into_parts, get_first
 from utils import redis_key
-from utils import schedule as scheduler
+from utils import schedule as scheduler_utils
 from utils.json_parser import json_to_dict
 from utils.twitch import get_active_oauth_data
 
@@ -136,7 +136,7 @@ class TwitchHandler(Base):
 
         scheduler = self.loop.create_task(self.run_scheduler())
         listener = self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
-        triggers = scheduler.schedule_task_periodically(5, self.timed_task_processor, logger=self.logger)
+        triggers = scheduler_utils.schedule_task_periodically(5, self.timed_task_processor, logger=self.logger)
         ping = self.loop.create_task(Pinger(System.KRYABOT_TWITCH, self.logger, self.db.redis).run_task())
 
         self.tasks.append(triggers)
