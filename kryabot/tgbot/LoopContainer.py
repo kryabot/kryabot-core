@@ -38,7 +38,6 @@ class LoopContainer:
 
         tasks = []
         tasks.append(self.guard_bot.run_until_disconnected())
-        tasks.append(self.daily_tasks_utc18())
         tasks.append(self.daily_tasks_utc17())
         tasks.append(self.run_scheduler())
 
