@@ -472,6 +472,14 @@ class TwitchHandler(Base):
             EventSubType.AUTH_REVOKED,
         ]
 
+        def filter_row(row, id):
+            if 'broadcaster_user_id' in row['condition'] and int(row['condition']['broadcaster_user_id']) == int(id):
+                return True
+            if 'to_broadcaster_user_id' in row['condition'] and int(row['condition']['to_broadcaster_user_id']) == int(id):
+                return True
+
+            return False
+
         current_events = await self.api.twitch_events.get_all()
         for channel in ChannelCache.iter():
             auth = await self.db.getBotAuthByUserId(channel.user_id)
@@ -480,7 +488,7 @@ class TwitchHandler(Base):
                 continue
 
             current_scopes = auth[0]['scope'].split(' ')
-            channel_events = list(filter(lambda row: int(row['condition']['broadcaster_user_id']) == int(channel.tw_id), current_events['data']))
+            channel_events = list(filter(lambda row: filter_row(row, channel.tw_id), current_events['data']))
 
             for topic in required_broadcaster_topics:
                 have_scope = False
