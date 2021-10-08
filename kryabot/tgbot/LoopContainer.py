@@ -62,6 +62,7 @@ class LoopContainer:
         schedule.every().day.at("11:00").do(self.daily_tasks_tg_member_refresher)
         schedule.every().day.at("15:00").do(self.daily_tasks_tg_member_refresher)
         schedule.every().day.at("19:00").do(self.daily_tasks_tg_member_refresher)
+        schedule.every().day.at("21:00").do(self.guard_bot.task_global_user_report)
         schedule.every().day.at("23:00").do(self.daily_tasks_tg_member_refresher)
         schedule.every(1).hours.do(self.guard_bot.task_delete_old_messages)
         schedule.every(1).hours.do(self.guard_bot.task_fix_twitch_ids)
@@ -93,24 +94,6 @@ class LoopContainer:
         #     await self.web_app.stop()
         # except Exception as ex:
         #     pass
-
-    # TODO use schedule libs to schedule things, or write proper decorator
-    async def daily_tasks_utc18(self):
-        while True:
-            try:
-                now = datetime.utcnow()
-                runtime = datetime(now.year, now.month, now.day, 18, 0)
-                diff = runtime - now
-                if diff.seconds > 120:
-                    self.logger.info('Going to sleep for {sec}'.format(sec=diff.seconds))
-                    await asyncio.sleep(diff.seconds)
-                    continue
-
-                self.logger.info('Starting daily tasks (21)')
-                await self.guard_bot.event_user_statistics()
-
-            except Exception as e:
-                await self.guard_bot.exception_reporter(e, 'Error during daily task:')
 
     async def daily_tasks_tg_member_refresher(self):
         if self.guard_bot.in_refresh:

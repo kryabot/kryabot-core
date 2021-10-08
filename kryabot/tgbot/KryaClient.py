@@ -712,7 +712,7 @@ class KryaClient(TelegramClient):
         except ValueError:
             return None
 
-    async def event_user_statistics(self):
+    async def task_global_user_report(self):
         await self.update_data()
         for channel in (await self.db.get_auth_subchats()):
             if channel['tg_chat_id'] == 0:
