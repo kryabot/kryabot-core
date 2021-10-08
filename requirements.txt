@@ -14,7 +14,7 @@ aiofiles
 python-ffmpeg
 mutagen
 hachoir
-sanic==21.9.0
+sanic==21.6.2
 instaloader
 Unidecode
 aioschedule
