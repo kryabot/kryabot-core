@@ -1,6 +1,6 @@
 import asyncio
 import logging
-import aioschedule as schedule
+import aioschedule
 from typing import List, Dict
 from datetime import datetime
 
@@ -64,12 +64,18 @@ class TwitchHandler(Base):
             proc.set_tools(self.logger, self.db, self.api)
 
     async def run_scheduler(self):
-        while True:
-            await schedule.run_pending()
-            await asyncio.sleep(60)
+        self.logger.info("Started scheduler...")
+        try:
+            while True:
+                await aioschedule.run_pending()
+                await asyncio.sleep(20)
+        except Exception as ex:
+            self.logger.exception(ex)
+            self.problems_to_report.append(str(ex))
 
     async def init_scheduler(self):
-        schedule.every(1).hours.do(self.schedule_eventsub_register)
+        self.logger.info("Registering scheduler tasks...")
+        aioschedule.every(1).hours.do(self.schedule_eventsub_register)
 
     async def start(self):
         await self.bot_data_update_all()
@@ -448,6 +454,8 @@ class TwitchHandler(Base):
             self.logger.exception(ex)
 
     async def schedule_eventsub_register(self)->None:
+        await asyncio.sleep(30)
+
         required_broadcaster_topics = [
             EventSubType.CHANNEL_SUBSCRIBE,
             EventSubType.CHANNEL_SUBSCRIBE_END,
@@ -472,10 +480,10 @@ class TwitchHandler(Base):
             EventSubType.AUTH_REVOKED,
         ]
 
-        def filter_row(row, id):
-            if 'broadcaster_user_id' in row['condition'] and int(row['condition']['broadcaster_user_id']) == int(id):
+        def filter_row(row, twitch_id)->bool:
+            if 'broadcaster_user_id' in row['condition'] and int(row['condition']['broadcaster_user_id']) == int(twitch_id):
                 return True
-            if 'to_broadcaster_user_id' in row['condition'] and int(row['condition']['to_broadcaster_user_id']) == int(id):
+            if 'to_broadcaster_user_id' in row['condition'] and int(row['condition']['to_broadcaster_user_id']) == int(twitch_id):
                 return True
 
             return False
