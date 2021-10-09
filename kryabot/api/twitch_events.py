@@ -273,6 +273,8 @@ class TwitchEvents(Core):
             await self.handle_subscribe('subscriptions.notification', event['event'])
         elif topic.eq(EventSubType.CHANNEL_POINTS_REDEMPTION_NEW):
             await self.redis.publish_event(redis_key.get_pubsub_topic(), event)
+        elif topic.eq(EventSubType.AUTH_GRANTED):
+            await self.handle_auth_granted(event)
         else:
             self.logger.info('Unhandled type {}'.format(topic))
 
@@ -333,4 +335,25 @@ class TwitchEvents(Core):
 
         if chat['auth_status'] != 0:
             await self.db.updateSubchatAuthStatus(chat['channel_subchat_id'], 0)
+            # Refresh cache
             await self.db.get_auth_subchat(chat['tg_chat_id'], True)
+
+    async def handle_auth_granted(self, data):
+        broadcaster_id = int(data['event']['user_id'])
+
+        user = await get_first(await self.db.getUserRecordByTwitchId(broadcaster_id))
+        if user is None:
+            self.logger.error('[{}] Failed to find user record'.format(broadcaster_id))
+            return
+
+        chat = await get_first(await self.db.getSubchatByUserId(user['user_id']))
+        if chat is None:
+            # Possible case, not an error
+            self.logger.info('[{}] Failed to find chat'.format(broadcaster_id))
+            return
+
+        if chat['auth_status'] != 1:
+            await self.db.updateSubchatAuthStatus(chat['channel_subchat_id'], 1)
+
+        # Refresh cache
+        await self.db.get_auth_subchat(chat['tg_chat_id'], True)
