@@ -1008,7 +1008,7 @@ class KryaClient(TelegramClient):
             if user.id == self.me.id:
                 bot_admin = True
 
-        is_authorized = True
+        is_authorized = bool(channel['auth_status'])
         summary = {
                  'total': 0,
                  'bots': 0,
