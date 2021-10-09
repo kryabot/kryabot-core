@@ -325,7 +325,7 @@ class TwitchEvents(Core):
             self.logger.error('[{}] Failed to find user record'.format(broadcaster_id))
             return
 
-        chat = await get_first(await self.db.getSubchatByUserId(user[0]['user_id']))
+        chat = await get_first(await self.db.getSubchatByUserId(user['user_id']))
         if chat is None:
             # Possible case, not an error
             self.logger.info('[{}] Failed to find chat'.format(broadcaster_id))
