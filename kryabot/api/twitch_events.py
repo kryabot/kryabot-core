@@ -333,3 +333,4 @@ class TwitchEvents(Core):
 
         if chat['auth_status'] != 0:
             await self.db.updateSubchatAuthStatus(chat['channel_subchat_id'], 0)
+            await self.db.get_auth_subchat(chat['tg_chat_id'], True)
