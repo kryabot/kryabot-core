@@ -6,6 +6,10 @@ from tgbot.commands.common.user_data import get_user_data, format_user_data
 async def user_join_check(client, channel, tg_user_id, message_id=0):
     await client.db.update_tg_stats_join(channel['tg_chat_id'])
 
+    if channel['auth_status'] == 0:
+        await client.send_message(client.get_translation(channel['bot_lang'], 'GENERAL_MISSING_AUTH'))
+        return
+
     try:
         data = await get_user_data(client, channel, tg_user_id)
         text = await format_user_data(data, client, channel)
@@ -57,6 +61,9 @@ async def user_join_check(client, channel, tg_user_id, message_id=0):
 
 
 async def user_left(client, channel, tg_user_id):
+    if channel['auth_status'] == 0:
+        return
+
     user_entity = await client.get_entity(PeerUser(int(tg_user_id)))
     user_mention = await format_html_user_mention(user_entity)
 

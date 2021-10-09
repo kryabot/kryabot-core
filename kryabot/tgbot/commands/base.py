@@ -101,6 +101,10 @@ class BaseCommand:
         if self.user_level < self.min_level:
             return False
 
+        if self.channel['auth_status'] == 0:
+            await self.reply_fail(self.get_translation('GENERAL_MISSING_AUTH'))
+            return False
+
         if self.must_be_reply and not self.event.message.is_reply:
             await self.reply_fail(self.get_translation('CMD_NOT_REPLY'))
             return False

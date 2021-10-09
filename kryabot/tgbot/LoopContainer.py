@@ -109,6 +109,9 @@ class LoopContainer:
             if channel['refresh_status'] != 'DONE':
                 continue
 
+            if channel['auth_status'] == 0:
+                continue
+
             try:
                 await self.guard_bot.run_channel_refresh_new(channel, False, None, silent=True)
             except Exception as ex:
@@ -134,6 +137,9 @@ class LoopContainer:
 
                 for channel in await self.guard_bot.db.get_auth_subchats():
                     if channel['tg_chat_id'] == 0:
+                        continue
+
+                    if channel['auth_status'] == 0:
                         continue
 
                     if int(channel['auto_mass_kick']) > 0:

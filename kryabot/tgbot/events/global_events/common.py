@@ -19,6 +19,9 @@ async def process_global_events(event):
     if channel['global_events'] == 0:
         return
 
+    if channel['auth_status'] == 0:
+        return
+
     for global_event in global_events:
         if global_event['public'] != 1 and TG_TEST_GROUP_ID != chat_id:
             continue

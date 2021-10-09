@@ -64,6 +64,9 @@ class GlobalEventProcessor(Base):
                 if tg_channel['tg_chat_id'] == 0:
                     continue
 
+                if tg_channel['auth_status'] == 0:
+                    continue
+
                 if event['public'] != 1 and tg_channel['tg_chat_id'] != TG_TEST_GROUP_ID:
                     continue
 

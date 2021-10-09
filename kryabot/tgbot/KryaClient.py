@@ -225,6 +225,10 @@ class KryaClient(TelegramClient):
             self.logger.info('Skipping channel {} refresh because current status is WAIT'.format(channel['tg_chat_id']))
             return
 
+        if channel['auth_status'] == 0:
+            self.logger.info('Skipping channel {} refresh because auth status is 0'.format(channel['tg_chat_id']))
+            return
+
         await self.run_channel_refresh_new(channel, is_kick, params)
 
     async def run_channel_refresh_new(self, channel, kick, params, silent=False, dry_run=False):
