@@ -40,11 +40,11 @@ class TwitchEvent(Event):
         self.started_at = self.get_attr(data, 'started_at')
         self.type = str(self.get_attr(data, 'type', ''))
         self.twitch_event_id = str(self.get_attr(data, 'id'))
-        self.profile.last_stream_start: datetime = self.started_at
+        self.profile.last_stream_start = self.started_at
 
     def parse_finish(self, data):
         self.set_finish()
-        self.profile.last_stream_finish: datetime = datetime.utcnow()
+        self.profile.last_stream_finish = datetime.utcnow()
         self.add_summary_finish()
 
     def parse_stream_data(self, data):
@@ -104,13 +104,13 @@ class TwitchEvent(Event):
         custom_url += '?id={tmp_id}{seed}'.format(tmp_id=self.twitch_event_id, seed=str(int(datetime.now().timestamp())))
         return custom_url
 
-    def get_formatted_channel_url(self):
+    def get_formatted_channel_url(self) -> str:
         return '<a href="https://twitch.tv/{ch}">{ch}</a>'.format(ch=self.profile.twitch_name)
 
-    def get_channel_url(self):
+    def get_channel_url(self) -> str:
         return 'https://twitch.tv/{}'.format(self.profile.twitch_name)
 
-    def export(self)->Dict:
+    def export(self) -> Dict:
         return {"channel_id": self.profile.twitch_id,
                 "channel_name": self.profile.twitch_name,
                 "channel_url": self.get_channel_url(),
@@ -129,41 +129,41 @@ class TwitchEvent(Event):
                 "updated_data": self.updated_data,
                 "summary": self.summary}
 
-    def add_summary_start(self):
+    def add_summary_start(self) -> None:
         if self.summary:
             self.summary.append({'type': 'resume', 'ts': datetime.utcnow()})
         else:
             self.summary.append({'type': 'start', 'ts': self.started_at})
             self.add_summary_category(self.game_name, self.started_at)
 
-    def add_summary_category(self, category_name, when=None):
+    def add_summary_category(self, category_name, when=None) -> None:
         self.summary.append({'type': 'game', 'ts': when if when else datetime.utcnow(), 'new_value': category_name})
 
-    def add_summary_finish(self):
+    def add_summary_finish(self) -> None:
         self.summary.append({'type': 'finish', 'ts': datetime.utcnow()})
 
-    def set_start(self):
+    def set_start(self) -> None:
         self.start = True
         self.update = False
         self.finish = False
         self.updated_data = []
         self.recovery = self.is_recovery()
 
-    def set_update(self):
+    def set_update(self) -> None:
         self.start = False
         self.update = True
         self.finish = False
         self.updated_data = []
         self.recovery = False
 
-    def set_finish(self):
+    def set_finish(self) -> None:
         self.start = False
         self.update = False
         self.finish = True
         self.updated_data = []
         self.recovery = False
 
-    def set_recovery(self):
+    def set_recovery(self) -> None:
         self.start = False
         self.update = False
         self.finish = False

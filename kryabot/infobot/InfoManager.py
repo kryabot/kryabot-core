@@ -79,9 +79,6 @@ class InfoManager:
 
         if targets:
             await self.process_event(targets, event)
-        else:
-            self.logger.error('Received event, but no targets found:')
-            self.logger.error(event.stringify())
 
     async def subscribe(self):
         await self.db.redis.subscribe_event(redis_key.get_infobot_update_links_topic(), self.on_link_update)
@@ -119,6 +116,3 @@ class InfoManager:
 
         if tg_targets:
             self.loop.create_task(self.tg_bot.info_event(tg_targets, event))
-
-    async def publish_stream_video(self, event, stream):
-        await self.tg_bot.publish_stream_video(event, stream)

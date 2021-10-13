@@ -156,44 +156,17 @@ class Database:
             await self.redis.set_parsed_value_by_key(cache_key, data, expire=redis_key.ttl_day)
         return data
 
-    async def updateUserAdmin(self, user_id, is_admin):
-        return await self.query('update_user_admin', [is_admin, user_id])
-
     async def get_admins(self):
         return await self.query('find_admins', [])
-
-    async def getChannelAdmins(self, channel_id):
-        return await self.query('find_channel_admins', [channel_id])
-
-    async def createUserRightRecord(self, user_id, channel_id, admin, blacklisted):
-        return await self.query('add_user_right', [user_id, channel_id, admin, blacklisted])
-
-    async def updateUserRightRecord(self, user_id, channel_id, admin, blacklisted):
-        return await self.query('update_user_right', [admin, blacklisted, user_id, channel_id])
 
     async def getChannelNotices(self):
         return await self.query('find_channel_notices', [])
 
-    async def getAllCommands(self):
-        return await self.query('find_channel_commands', [])
-
     async def getNoticeTypes(self):
         return await self.query('find_notice_types', [])
 
-    async def createRequestRecord(self, user_id, code):
-        return await self.query('add_request', [user_id, code])
-
     async def createResponseRecord(self, request_id, tg_id, tg_name, tg_second_name, tg_tag):
         return await self.query('add_response', [request_id, tg_id, tg_name, tg_second_name, tg_tag])
-
-    async def createReqLinkRecord(self, channel_id, user_id, link):
-        return await self.query('add_request_link', [channel_id, user_id, link])
-
-    async def getRequestsByUser(self, user_id):
-        return await self.query('find_request_by_user', [user_id])
-
-    async def getRequestsByCode(self, code):
-        return await self.query('find_request_by_code', [code])
 
     async def getResponseByRequest(self, request_id):
         return await self.query('find_response_by_request', [request_id])
@@ -204,24 +177,11 @@ class Database:
     async def getUserById(self, user_id):
         return await self.query('find_user_by_id', [user_id])
 
-    async def getRequestById(self, request_id):
-        return await self.query('find_request_by_id', [request_id])
-
     async def updateUserTwitchId(self, user_id, twitch_id):
         return await self.query('update_user_twitch_id', [twitch_id, user_id])
 
-    async def getTgChatAvailChannels(self):
-        return await self.query('find_all_link_channels', [])
-
     async def getTgChatAvailChannelsWithAuth(self):
         return await self.query('find_all_tg_channels_with_auth', [])
-
-    async def getSubchatLink(self, channel_name):
-        channel = await self.getChannel(channel_name)
-        if len(channel) == 0:
-            return None
-
-        return await self.query('find_subchat_link', [channel[0]['channel_id']])
 
     async def get_settings(self):
         return await self.query('get_settings', [])
@@ -257,10 +217,6 @@ class Database:
                 await self.redis.set_parsed_value_by_key(redis_key.get_kb_user_by_tg_id(tg_id=item['tg_id']), [item], expire=redis_key.ttl_hour)
         return response
 
-
-    async def saveChatInfoByHash(self, chat_id, chat_name, hash):
-        return await self.query('save_chat_info_by_hash', [chat_id, chat_name, hash])
-
     async def updateSubchatAfterJoin(self, channel_subchat_id,  chat_id, chat_name, link):
         return await self.query('save_chat_info_after_join', [chat_id, chat_name, link, channel_subchat_id])
 
@@ -293,18 +249,14 @@ class Database:
     async def getBannedMedia(self):
         return await self.query('get_banned_media', [])
 
-    async def getAllUsersSpecialRights(self):
-        return await self.get_all_tg_chat_special_rights()
-        #return await self.query('get_all_tg_special_rights', [])
-
-    async def getLinkedUserData(self, tw_login):
-        return await self.query('find_tg_user_by_twitch_name', [tw_login])
-
     async def createMessage(self, channel_id, user_id, message):
         return await self.query('create_message', [channel_id, user_id, message])
 
     async def searchTwitchMessages(self, channel_id, text):
         return await self.query('search_twitch_messages', [channel_id, text])
+
+    async def getChatMostActiveUser(self, channel_id, within_last_seconds):
+        return await self.query('get_twitch_message_most_active_user', [channel_id, within_last_seconds])
 
     async def deleteOldTwitchMessages(self):
         return await self.query('wipe_twitch_messages', [])
@@ -333,8 +285,8 @@ class Database:
     async def removeTgSudoRight(self, channel_id, tg_user_id):
         return await self.query('remove_sudo_right', [channel_id, tg_user_id])
 
-    async def removeTgSpecialRight(self, channel_name, tg_user_id):
-        return await self.query('sp_deleteTgSpecialRight', [channel_name, tg_user_id])
+    async def removeTgSpecialRight(self, kb_user_id, tg_user_id):
+        return await self.query('sp_deleteTgSpecialRight', [kb_user_id, tg_user_id])
 
     async def updateAutoMassKickTs(self, subchat_id, next_date):
         return await self.query('update_auto_mass_kick_ts', [next_date, subchat_id])
@@ -499,12 +451,6 @@ class Database:
 
     async def setUserSocUt(self, kb_user_id, link):
         await self.query('set_user_soc_ut', [link, kb_user_id])
-
-    async def updateBrokenGet(self, channel_id, keyword, message_id, access_hash, file_ref):
-        await self.query('fix_get_file_ref', [message_id, access_hash, file_ref, channel_id, keyword])
-
-    async def updateKbDocumentSha(self, channel_id, keyword, new_sha):
-        await self.query('update_kb_doc_sha', [new_sha, channel_id, keyword])
 
     async def setWelcomeMessageId(self, tg_chat_id, message_id):
         await self.query('set_welcome_message_id', [message_id, tg_chat_id])

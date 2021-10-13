@@ -22,7 +22,7 @@ class SpeedTest(BaseCommand):
         text += 'Telegram: {}\n'.format(diff.total_seconds())
 
         started_at = datetime.now(tz=timezone.utc)
-        test = await  self.db.getAllCommands()
+        test = await self.db.getChannelNotices()
         diff =  datetime.now(tz=timezone.utc) - started_at
         text += 'Database: {}\n'.format(diff.total_seconds())
 

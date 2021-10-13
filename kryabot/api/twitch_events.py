@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from enum import Enum
 from typing import Dict
@@ -285,7 +286,8 @@ class TwitchEvents(Core):
         user = await get_first(await self.db.getUserRecordByTwitchId(user_id))
         if user is None:
             await self.db.createUserRecord(user_id, data['user_login'], data['user_name'])
-            user = await get_first(await self.db.getUserRecordByTwitchId(user_id))
+            await asyncio.sleep(1)
+            user = await get_first(await self.db.getUserRecordByTwitchId(user_id, skip_cache=True))
 
         if user is None:
             self.logger.info('Failed to find user record for event: {}'.format(data))

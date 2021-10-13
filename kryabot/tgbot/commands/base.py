@@ -127,7 +127,7 @@ class BaseCommand:
 
     async def is_chatadmin(self, tg_user_id=None):
         if tg_user_id is None:
-            return self.user_level == UserAccess.CHAT_ADMIN
+            return self.user_level in [UserAccess.CHAT_ADMIN, UserAccess.CHAT_SUDO, UserAccess.CHAT_OWNER, UserAccess.SUPER_ADMIN]
 
         for admin in self.admins:
             if admin.id == tg_user_id:

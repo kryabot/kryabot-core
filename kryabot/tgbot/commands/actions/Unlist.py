@@ -34,6 +34,6 @@ class Unlist(BaseCommand):
                 tid=await avoid_none(self.reply_message.sender_id)
             ))
 
-        await self.db.removeTgSpecialRight(self.channel['channel_name'], self.reply_message.sender_id)
+        await self.db.removeTgSpecialRight(self.channel['user_id'], self.reply_message.sender_id)
         await self.client.init_special_rights(self.channel['channel_id'])
         await self.reply_success(self.get_translation('CMD_UNLIST_SUCCESS'))
