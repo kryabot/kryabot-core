@@ -326,7 +326,7 @@ class KryaInfoBot(TelegramClient):
                 try:
                     if event.finish and int(target.target_id) == int(TG_GROUP_MONITORING_ID_FULL):
                         to_json = dict_to_json(event.summary)
-                        await self.send_file(target.target_id, file=to_json.encode())
+                        await self.send_file(target.target_id, file=to_json.encode(), caption=await self.format_stream_finish_message(target, event))
                 except Exception as testEx:
                     self.logger.exception(testEx)
             except ChannelPrivateError:
@@ -367,12 +367,41 @@ class KryaInfoBot(TelegramClient):
             except Exception as ex:
                 await self.exception_reporter(ex, 'boosty_post_event')
 
-    async def publish_stream_video(self, event, stream):
-        self.logger.info("Receive stream video for publishing: {}".format(stream))
+    async def format_stream_finish_message(self, target, event) -> str:
+        formatted_message = self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_FINISH').format(event.profile.twitch_name)
 
-        binary_file = open(stream['converted'], 'rb')
-        uploaded_file = await upload_file(self, file=binary_file, file_name=stream['converted'])
-        await self.upload_file()
-        await self.send_file(1255287898, file=uploaded_file, attributes=[DocumentAttributeVideo(w=stream['width'], h=stream['height'], duration=30, supports_streaming=True)], supports_streaming=True)
+        channels = await self.db.get_channel_by_twitch_id(event.profile.twitch_id)
+        if channels is None or len(channels) == 0:
+            return formatted_message
 
-        os.remove(stream['converted'])
+        stream_start = None
+        stream_end = None
+        game_changes = ''
+        previous_item = None
+        for item in event.summary:
+            if item['type'] == 'start':
+                stream_start = item['ts']
+            elif item['type'] == 'finish':
+                # Possible multiple finishes, interested in last one
+                stream_end = item['ts']
+            elif item['type'] == 'resume':
+                game_changes += '\nTechnical break {} seconds'.format(item['ts'] - stream_end)
+            else:
+                # Game change
+                if previous_item:
+                    game_changes += '\nPlayed {} for {} seconds'.format(previous_item['new_value'], item['ts'] - previous_item['ts'])
+                    previous_item = item
+
+        if previous_item:
+            game_changes += '\nPlayed {} for {} seconds'.format(previous_item['new_value'], stream_end - previous_item['ts'])
+
+        stream_duration = stream_end - stream_start
+        formatted_message += '\n\nStream duration: {}'.format(stream_duration)
+
+        formatted_message += '\n' + game_changes
+
+        active_chatters = await self.db.getChatMostActiveUser(channels[0]['channel_id'], 600)
+        if active_chatters and len(active_chatters) > 0:
+            formatted_message += '\nMost active chatter: {} ({} messages)'.format(active_chatters[0]['dname'], active_chatters[0]['count'])
+
+        return formatted_message
