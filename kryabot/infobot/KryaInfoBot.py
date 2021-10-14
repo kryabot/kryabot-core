@@ -393,9 +393,9 @@ class KryaInfoBot(TelegramClient):
                     previous_item = item
 
         if previous_item:
-            game_changes += '\nPlayed {} for {} seconds'.format(previous_item['new_value'], stream_end - previous_item['ts'])
+            game_changes += '\nPlayed {} for {} seconds'.format(previous_item['new_value'], stream_end.replace(tzinfo=None) - previous_item['ts'].replace(tzinfo=None))
 
-        stream_duration = stream_end - stream_start
+        stream_duration = stream_end.replace(tzinfo=None) - stream_start.replace(tzinfo=None)
         formatted_message += '\n\nStream duration: {}'.format(stream_duration)
 
         formatted_message += '\n' + game_changes
