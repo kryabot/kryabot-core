@@ -24,6 +24,7 @@ from tgbot import constants
 from tgbot.FastTelethon import upload_file
 from tgbot.constants import TG_GROUP_MONITORING_ID_FULL
 from utils.json_parser import dict_to_json
+from utils.formatting import td_format
 
 
 @events.register(events.NewMessage(pattern='/ping'))
@@ -378,6 +379,7 @@ class KryaInfoBot(TelegramClient):
         stream_end = None
         game_changes = ''
         previous_item = None
+        contains_changes = False
         for item in event.summary:
             if item['type'] == 'start':
                 stream_start = item['ts']
@@ -389,14 +391,17 @@ class KryaInfoBot(TelegramClient):
             else:
                 # Game change
                 if previous_item:
+                    contains_changes = True
                     game_changes += '\nPlayed {} for {} seconds'.format(previous_item['new_value'], item['ts'] - previous_item['ts'])
-                    previous_item = item
+                previous_item = item
 
         if previous_item:
             game_changes += '\nPlayed {} for {} seconds'.format(previous_item['new_value'], stream_end.replace(tzinfo=None) - previous_item['ts'].replace(tzinfo=None))
 
         stream_duration = stream_end.replace(tzinfo=None) - stream_start.replace(tzinfo=None)
-        formatted_message += '\n\nStream duration: {}'.format(stream_duration)
+
+        if not contains_changes:
+            formatted_message += '\n\nStream duration: {}'.format(td_format(stream_duration))
 
         formatted_message += '\n' + game_changes
 
