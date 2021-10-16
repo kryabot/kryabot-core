@@ -29,7 +29,7 @@ LOG_TIO_PATH = log_dir + app_name + 'twitchio.log'
 LOG_SPAM_DETECTOR_PATH = log_dir + app_name + 'spamdetector.log'
 LOG_IRC = log_dir + app_name + 'irc.log'
 GLOBAL_PRAPOGATE = False
-GLOBAL_FILE_CLASS = 'logging.WatchedFileHandler'
+GLOBAL_FILE_CLASS = 'logging.handlers.WatchedFileHandler'
 
 KRYA_LOGGING_CONFIG = dict(
     version=1,
