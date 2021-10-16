@@ -1,7 +1,7 @@
 import logging
 
 from twbot.TwitchHandler import TwitchHandler
-from utils.log import load_config
+from utils.json_log import load_config
 import asyncio
 
 load_config()

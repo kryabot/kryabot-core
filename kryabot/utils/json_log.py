@@ -21,6 +21,7 @@ class CustomStdlibFormatter(ecs_logging.StdlibFormatter):
         result = super().format_to_ecs(record)
         # Append app field to recognise application
         result["app"] = os.getenv('KB_APP', 'unknown')
+        result["level"] = result["log.level"]
         del result["process"]
         del result["log"]["original"]
         return result
