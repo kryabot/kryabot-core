@@ -1,24 +1,33 @@
 import logging, os
 import logging.config
 
-log_dir = os.getenv('LOG_DIR')
+app_name = os.getenv('KB_APP')
+if app_name is None:
+    app_name = ''
+if app_name != '':
+    app_name += '.'
+
+log_dir = os.getenv('KB_LOG_DIR')
 if log_dir is None:
     log_dir = 'log/'
+
+if not log_dir.endswith('/'):
+    log_dir += '/'
 
 GLOBAL_LOG_LEVEL = "INFO"
 GLOBAL_ENCODING = "utf-8"
 
-LOG_TWITCH_PATH = log_dir + 'twitch.log'
-LOG_API_PATH = log_dir + 'api.log'
-LOG_DB_PATH = log_dir + 'db.log'
-LOG_TG_AUTH_PATH = log_dir + 'auth.log'
-LOG_TG_INFO_PATH = log_dir + 'infobot.log'
-LOG_INFO_MANAGER_PATH = log_dir + 'infomanager.log'
-LOG_TG_PATH = log_dir + 'tg.log'
-LOG_SANIC_PATH = log_dir + 'sanic.log'
-LOG_TIO_PATH = log_dir + 'twitchio.log'
-LOG_SPAM_DETECTOR_PATH = log_dir + 'spamdetector.log'
-LOG_IRC = log_dir + 'irc.log'
+LOG_TWITCH_PATH = log_dir + app_name + 'twitch.log'
+LOG_API_PATH = log_dir + app_name + 'api.log'
+LOG_DB_PATH = log_dir + app_name + 'db.log'
+LOG_TG_AUTH_PATH = log_dir + app_name + 'auth.log'
+LOG_TG_INFO_PATH = log_dir + app_name + 'infobot.log'
+LOG_INFO_MANAGER_PATH = log_dir + app_name + 'infomanager.log'
+LOG_TG_PATH = log_dir + app_name + 'tg.log'
+LOG_SANIC_PATH = log_dir + app_name + 'sanic.log'
+LOG_TIO_PATH = log_dir + app_name + 'twitchio.log'
+LOG_SPAM_DETECTOR_PATH = log_dir + app_name + 'spamdetector.log'
+LOG_IRC = log_dir + app_name + 'irc.log'
 GLOBAL_PRAPOGATE = False
 
 KRYA_LOGGING_CONFIG = dict(
