@@ -6,7 +6,7 @@ from twbot.command.CommandBase import CommandBase
 
 
 class UnlinkTelegram(CommandBase):
-    names = ['unlinktelegram']
+    names = ['unlinktelegram', 'kbunlink']
     access = [AccessType.CHANNEL_USER]
 
     def __init__(self, context):
