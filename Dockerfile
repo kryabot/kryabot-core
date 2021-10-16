@@ -39,7 +39,7 @@ COPY scripts scripts
 EXPOSE 5000
 
 # Start up script
-COPY scripts/dockerstart_irc.sh scripts/dockerstart_telegram.sh scripts/dockerstart_twitch.sh /
-RUN chmod +x scripts/* && chmod +x /dockerstart_irc.sh && chmod +x /dockerstart_telegram.sh && chmod +x /dockerstart_twitch.sh
+COPY scripts/ /
+RUN chmod +x scripts/* && chmod +x /dockerstart_*.sh
 
 CMD /dockerstart.sh

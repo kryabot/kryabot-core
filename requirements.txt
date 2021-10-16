@@ -19,3 +19,4 @@ instaloader
 Unidecode
 aioschedule
 selenium
+ecs-logging
