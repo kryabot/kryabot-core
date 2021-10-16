@@ -25,12 +25,12 @@ stop_container(){
 
 start_container(){
     log "Starting container ${1}"
-    docker run -dit --name kryabot_$1 --env KB_APP=$1 --env KB_LOG_DIR=$KB_MOUNT_TARGET --mount source=$KB_MOUNT_NAME,target=$KB_MOUNT_TARGET --mount source=$KB_MOUNT_LOG_NAME,target=$KB_MOUNT_LOG_TARGET --network $KB_NETWORK_NAME --entrypoint "/dockerstart_${1}.sh" $TAG_SOURCE
+    docker run -dit --name kryabot_$1 --env KB_APP=$1 --env KB_LOG_DIR=$KB_MOUNT_LOG_TARGET --mount source=$KB_MOUNT_NAME,target=$KB_MOUNT_TARGET --mount source=$KB_MOUNT_LOG_NAME,target=$KB_MOUNT_LOG_TARGET --network $KB_NETWORK_NAME --entrypoint "/dockerstart_${1}.sh" $TAG_SOURCE
 }
 
 start_container_telegram(){
     log "Starting container ${CONTAINER_NAME_TELEGRAM}"
-    docker run -dit --name kryabot_${CONTAINER_NAME_TELEGRAM} --env KB_APP=${CONTAINER_NAME_TELEGRAM} --mount source=$KB_MOUNT_NAME,target=$KB_MOUNT_TARGET --mount source=$KB_MOUNT_LOG_NAME,target=$KB_MOUNT_LOG_TARGET -p 5000:5000 --network $KB_NETWORK_NAME --entrypoint "/dockerstart_${CONTAINER_NAME_TELEGRAM}.sh" $TAG_SOURCE
+    docker run -dit --name kryabot_${CONTAINER_NAME_TELEGRAM} --env KB_APP=${CONTAINER_NAME_TELEGRAM} --env KB_LOG_DIR=$KB_MOUNT_LOG_TARGET --mount source=$KB_MOUNT_NAME,target=$KB_MOUNT_TARGET --mount source=$KB_MOUNT_LOG_NAME,target=$KB_MOUNT_LOG_TARGET -p 5000:5000 --network $KB_NETWORK_NAME --entrypoint "/dockerstart_${CONTAINER_NAME_TELEGRAM}.sh" $TAG_SOURCE
 }
 
 
@@ -69,10 +69,10 @@ update(){
    log "Finished!"
 }
 
-if [ "$UPDATE_CONTAINER" != "all" ] 
-&& [ "$UPDATE_CONTAINER" != "$CONTAINER_NAME_IRC" ]; 
-&& [ "$UPDATE_CONTAINER" != "$CONTAINER_NAME_TWITCH" ]; 
-&& [ "$UPDATE_CONTAINER" != "$CONTAINER_NAME_TELEGRAM" ]; 
+if [ "$UPDATE_CONTAINER" != "all" ] \
+&& [ "$UPDATE_CONTAINER" != "$CONTAINER_NAME_IRC" ] \
+&& [ "$UPDATE_CONTAINER" != "$CONTAINER_NAME_TWITCH" ] \
+&& [ "$UPDATE_CONTAINER" != "$CONTAINER_NAME_TELEGRAM" ] \
 && [ "$UPDATE_CONTAINER" != "$CONTAINER_NAME_INFOMANAGER" ]; then
   log "Bad input app name ${UPDATE_CONTAINER}. Supported values: all ${CONTAINER_NAME_IRC} ${CONTAINER_NAME_TWITCH} ${CONTAINER_NAME_TELEGRAM} ${CONTAINER_NAME_INFOMANAGER}"
   exit 1

@@ -3,4 +3,4 @@
 cd $WORK_DIR
 
 
-./scripts/guard_bot.sh startdirect
+./scripts/guard_bot.sh start
