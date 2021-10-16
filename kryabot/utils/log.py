@@ -29,6 +29,7 @@ LOG_TIO_PATH = log_dir + app_name + 'twitchio.log'
 LOG_SPAM_DETECTOR_PATH = log_dir + app_name + 'spamdetector.log'
 LOG_IRC = log_dir + app_name + 'irc.log'
 GLOBAL_PRAPOGATE = False
+GLOBAL_FILE_CLASS = 'logging.WatchedFileHandler'
 
 KRYA_LOGGING_CONFIG = dict(
     version=1,
@@ -110,12 +111,6 @@ KRYA_LOGGING_CONFIG = dict(
             "propagate": GLOBAL_PRAPOGATE,
             "qualname": "streamlink",
         },
-        "krya.spam": {
-            "level": GLOBAL_LOG_LEVEL,
-            "handlers": ["file.spam"],
-            "propagate": GLOBAL_PRAPOGATE,
-            "qualname": "krya.spam",
-        },
         "krya.irc": {
             "level": GLOBAL_LOG_LEVEL,
             "handlers": ["file.irc"],
@@ -161,91 +156,84 @@ KRYA_LOGGING_CONFIG = dict(
     },
     handlers={
         'file.sanic.error': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_SANIC_PATH,
             'formatter': 'sanic.generic',
             'encoding': GLOBAL_ENCODING,
             'delay': True,
         },
         'file.sanic.access': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_SANIC_PATH,
             'formatter': 'sanic.access',
             'encoding': GLOBAL_ENCODING,
             'delay': True,
         },
         'file.sanic.default': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_SANIC_PATH,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
             'delay': True,
         },
         'file.twitch': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_TWITCH_PATH,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
             'delay': True,
         },
         'file.api': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_API_PATH,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
             'delay': True,
         },
         'file.tg': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_TG_PATH,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
             'delay': True,
         },
         'file.db': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_DB_PATH,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
             'delay': True,
         },
         'file.auth': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_TG_AUTH_PATH,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
             'delay': True,
         },
         'file.infobot': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_TG_INFO_PATH,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
             'delay': True,
         },
         'file.infomanager': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_INFO_MANAGER_PATH,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
             'delay': True,
         },
         'file.twitchio': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_TIO_PATH,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
             'delay': True,
         },
-        'file.spam': {
-            'class': 'logging.FileHandler',
-            'filename': LOG_SPAM_DETECTOR_PATH,
-            'formatter': 'default',
-            'encoding': GLOBAL_ENCODING,
-            'delay': True,
-        },
         'file.irc': {
-            'class': 'logging.FileHandler',
+            'class': GLOBAL_FILE_CLASS,
             'filename': LOG_IRC,
             'formatter': 'default',
             'encoding': GLOBAL_ENCODING,
