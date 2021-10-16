@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-from utils.log import load_config
+from utils.json_log import load_config
 import logging
 import asyncio
 from tgbot.LoopContainer import LoopContainer
