@@ -1,4 +1,4 @@
-from utils.log import load_config
+from utils.json_log import load_config
 from twbot.ChatAdapter import ChatAdapter
 import asyncio
 
