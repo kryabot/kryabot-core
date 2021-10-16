@@ -2,7 +2,6 @@ import logging, os
 import logging.config
 import ecs_logging
 
-
 app_name = os.getenv('KB_APP')
 if app_name is None:
     app_name = ''
@@ -15,6 +14,17 @@ if log_dir is None:
 
 if not log_dir.endswith('/'):
     log_dir += '/'
+
+
+class CustomStdlibFormatter(ecs_logging.StdlibFormatter):
+    def format_to_ecs(self, record):
+        result = super().format_to_ecs(record)
+        # Append app field to recognise application
+        result["app"] = os.getenv('KB_APP', 'unknown')
+        del result["process"]
+        del result["log"]["original"]
+        return result
+
 
 JSON_OUTPUT_FILE = log_dir + app_name + 'json.log'
 DEFAULT_JSON_HANDLER_NAME = 'file.json'
@@ -208,7 +218,7 @@ KRYA_LOGGING_CONFIG = dict(
             "class": "logging.Formatter",
         },
         "json_formatter": {
-            'class': 'ecs_logging.StdlibFormatter'
+            'class': 'utils.json_log.CustomStdlibFormatter'
         }
     },
 )
