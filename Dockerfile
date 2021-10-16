@@ -40,6 +40,6 @@ EXPOSE 5000
 
 # Start up script
 COPY scripts/ /
-RUN chmod +x scripts/* && chmod +x /dockerstart_*.sh
+RUN chmod +x scripts/* && chmod +x /dockerstart_*.sh && sed -i -e 's/\r$//' /dockerstart_*.sh && sed -i -e 's/\r$//' scripts/*.sh
 
 CMD /dockerstart.sh
