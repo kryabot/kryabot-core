@@ -48,7 +48,8 @@ class TwitchEvent(Event):
         self.add_summary_finish()
 
     def parse_stream_data(self, data):
-        self.set_start()
+        if not self.recovery:
+            self.set_start()
 
         title = self.get_attr(data, 'title')
         language = self.get_attr(data, 'language')

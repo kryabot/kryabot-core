@@ -41,6 +41,7 @@ class TwitchListener(Listener):
             if topic.eq(EventSubType.STREAM_ONLINE):
                 if profile.last_event and profile.last_event.is_recovery():
                     event = profile.last_event
+                    event.set_recovery()
                 else:
                     event = TwitchEvent(profile, data)
 

@@ -3,7 +3,7 @@ import os
 import logging
 from typing import Dict, List
 
-from telethon.errors import ChannelPrivateError
+from telethon.errors import ChannelPrivateError, WebpageCurlFailedError
 from telethon.extensions import html
 from telethon.tl.functions.channels import GetParticipantRequest, GetFullChannelRequest
 from telethon.tl.functions.messages import GetFullChatRequest
@@ -319,11 +319,15 @@ class KryaInfoBot(TelegramClient):
             elif event.start:
                 text = '<b>{}</b>\n🎮{}\n\n{}'.format(event.title, event.game_name, base_text)
             elif event.finish:
-                text = base_text
+                text = base_text.format(event.profile.twitch_name)
 
             try:
-                await self.send_message(target.target_id, message=text, file=file, buttons=button, link_preview=False, parse_mode='html')
-
+                try:
+                    await self.send_message(target.target_id, message=text, file=file, buttons=button, link_preview=False, parse_mode='html')
+                except WebpageCurlFailedError:
+                    fileio = await self.manager.api.twitch.download_file_io(file.url)
+                    fileio.seek(0)
+                    await self.send_message(target.target_id, message=text, file=fileio, buttons=button, link_preview=False, parse_mode='html')
                 try:
                     if event.finish and int(target.target_id) == int(TG_GROUP_MONITORING_ID_FULL):
                         to_json = dict_to_json(event.summary)
@@ -369,7 +373,7 @@ class KryaInfoBot(TelegramClient):
                 await self.exception_reporter(ex, 'boosty_post_event')
 
     async def format_stream_finish_message(self, target, event) -> str:
-        formatted_message = self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_FINISH').format(event.profile.twitch_name)
+        formatted_message = '⏹ ' + self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_FINISH').format(event.profile.twitch_name)
 
         channels = await self.db.get_channel_by_twitch_id(event.profile.twitch_id)
         if channels is None or len(channels) == 0:
@@ -387,26 +391,25 @@ class KryaInfoBot(TelegramClient):
                 # Possible multiple finishes, interested in last one
                 stream_end = item['ts']
             elif item['type'] == 'resume':
-                game_changes += '\nTechnical break {} seconds'.format(item['ts'] - stream_end)
+                game_changes += '\n🎮 Technical break ({})'.format(td_format(item['ts'] - stream_end))
             else:
                 # Game change
                 if previous_item:
                     contains_changes = True
-                    game_changes += '\nPlayed {} for {} seconds'.format(previous_item['new_value'], item['ts'] - previous_item['ts'])
+                    game_changes += '\n🎮 Played <b>{}</b> for {}'.format(previous_item['new_value'], td_format(item['ts'] - previous_item['ts']))
                 previous_item = item
 
         if previous_item:
-            game_changes += '\nPlayed {} for {} seconds'.format(previous_item['new_value'], stream_end.replace(tzinfo=None) - previous_item['ts'].replace(tzinfo=None))
+            game_changes += '\n🎮 Played <b>{}</b> for {}'.format(previous_item['new_value'], td_format(stream_end.replace(tzinfo=None) - previous_item['ts'].replace(tzinfo=None)))
 
         stream_duration = stream_end.replace(tzinfo=None) - stream_start.replace(tzinfo=None)
-
-        if not contains_changes:
-            formatted_message += '\n\nStream duration: {}'.format(td_format(stream_duration))
-
         formatted_message += '\n' + game_changes
+
+        if contains_changes:
+            formatted_message += '\n\n🎮 Full stream duration: {}'.format(td_format(stream_duration))
 
         active_chatters = await self.db.getChatMostActiveUser(channels[0]['channel_id'], 600)
         if active_chatters and len(active_chatters) > 0:
-            formatted_message += '\nMost active chatter: {} ({} messages)'.format(active_chatters[0]['dname'], active_chatters[0]['count'])
+            formatted_message += '\n\n💥 Most active chatter: {} with {} messages'.format(active_chatters[0]['dname'], active_chatters[0]['count'])
 
         return formatted_message
