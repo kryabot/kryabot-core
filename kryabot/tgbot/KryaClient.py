@@ -705,12 +705,11 @@ class KryaClient(TelegramClient):
             await self.send_krya_kill_sticker(chat_id=chat['tg_chat_id'])
 
     async def find_participant(self, tg_chat_id, tg_user_id):
-        self.logger.info('Searching for user {} in chat {}'.format(tg_user_id, tg_chat_id))
+        self.logger.debug('Searching for user {} in chat {}'.format(tg_user_id, tg_chat_id))
         try:
-
             channel_entity = await self.get_input_entity(int(tg_chat_id))
             user_entity = await self.get_input_entity(int(tg_user_id))
-            return await self(GetParticipantRequest(channel=channel_entity, user_id=user_entity))
+            return await self(GetParticipantRequest(channel=channel_entity, participant=user_entity))
         except UserNotParticipantError:
             return None
         except ValueError:
@@ -796,14 +795,17 @@ class KryaClient(TelegramClient):
         err = None
         try:
             for ch in check_channels:
-                await asyncio.sleep(1)
+                if ch['tg_chat_id'] == 0:
+                    continue
 
                 try:
-                    await self.kick_user_from_channel(ch['tg_chat_id'], unlink_tg_id, ch['ban_time'])
-                    self.logger.info('Removed user {} from chat {}'.format(unlink_kb_id, ch['tg_chat_id']))
-                    removed_from += ' ' + ch['tg_chat_id']
+                    if await self.find_participant(ch['tg_chat_id'], unlink_tg_id):
+                        await self.kick_user_from_channel(ch['tg_chat_id'], unlink_tg_id, ch['ban_time'])
+                        self.logger.info('Removed user {} from chat {}'.format(unlink_kb_id, ch['tg_chat_id']))
+                        removed_from += ' ' + ch['tg_chat_id']
                 except Exception as e:
-                    continue
+                    await asyncio.sleep(1)
+                    self.logger.exception(e)
 
             # Remove cached data
             await self.db.getUserRecordByTwitchId(unlink_tw_id, skip_cache=True)
