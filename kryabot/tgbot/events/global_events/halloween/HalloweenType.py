@@ -253,7 +253,7 @@ class HalloweenChannel(EventChannel):
         self.pumpkins[int(msg_id)] = None
 
     def spawn_delay_passed(self)->bool:
-        return self.last_spawn + timedelta(minutes=5) < datetime.utcnow()
+        return self.last_spawn + timedelta(minutes=15) < datetime.utcnow()
 
     async def spawn_regular(self, client, size: int, test: bool=False):
         self.client = client

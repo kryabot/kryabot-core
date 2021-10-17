@@ -89,6 +89,7 @@ class AuthBot(TelegramClient):
         words = event.raw_text.split(' ')
         if len(words) != 2:
             await event.reply(self.format_translation('', '', 'AUTH_BAD_START'))
+            self.logger.info('Result: start_empty')
             return
 
         val = words[1]
@@ -102,16 +103,19 @@ class AuthBot(TelegramClient):
         except Exception as e:
             await event.reply(self.format_translation('', '', 'AUTH_BAD_HASH'))
             self.logger.error('Decode failed for: ' + str(input_data) + ' error: ' + str(e))
+            self.logger.info('Result: start_failed_parse')
             return
 
         if 'code' not in params or params['code'] is None or params['code'] == '':
             self.logger.info('{}: {}'.format(sender_string, 'Hash has no code parameter'))
             await event.reply(self.format_translation('', '', 'AUTH_BAD_HASH'))
+            self.logger.info('Result: start_failed_parse')
             return
 
         if 'id' not in params or params['id'] is None or params['id'] == '':
             self.logger.info('{}: {}'.format(sender_string, 'Hash has no id parameter'))
             await event.reply(self.format_translation('', '', 'AUTH_BAD_HASH'))
+            self.logger.info('Result: start_failed_parse')
             return
 
         self.logger.info('Received code: ' + params['code'])
@@ -123,6 +127,7 @@ class AuthBot(TelegramClient):
             if len(request) != 1:
                 self.logger.info('{}: {} {}'.format(sender_string, 'Unknown or ambig code', params['code']))
                 await event.reply(self.format_translation('', '', 'AUTH_INACTIVE_CODE'))
+                self.logger.info('Result: start_duplicate')
                 return
 
             # Check if response does not exists yet
@@ -149,6 +154,7 @@ class AuthBot(TelegramClient):
         if currentChannel is None:
             await event.reply(self.format_translation('', '', 'AUTH_NO_SUBCHAT'))
             self.logger.info('{}: {}'.format(sender_string, 'channel_no_subchat'))
+            self.logger.info('Result: start_no_chat')
             return
 
         requestor = await self.db.getUserByTgChatId(event.message.chat_id, skip_cache=True)
@@ -156,6 +162,7 @@ class AuthBot(TelegramClient):
         if len(requestor) == 0:
             await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_NOT_VERIFIED'))
             self.logger.info('{}: {}'.format(sender_string, 'user_not_verified'))
+            self.logger.info('Result: start_missing_link')
             return
 
         try:
@@ -183,7 +190,7 @@ class AuthBot(TelegramClient):
 
         if is_banned:
             await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_USER_BLACKLISTED'))
-            self.logger.info('Result: user_blacklisted')
+            self.logger.info('Result: join_reject_blacklist')
             return
 
         invites = await self.db.getTgInvite(currentChannel['channel_id'], requestor[0]['user_id'])
@@ -195,7 +202,7 @@ class AuthBot(TelegramClient):
 
         if (not skip_checks) and currentChannel['enabled_join'] == 0:
             await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_GROUP_CLOSED'))
-            self.logger.info('Result: user_blacklisted')
+            self.logger.info('Result: join_reject_closed')
             return
 
         if (not skip_checks) and currentChannel['join_follower_only'] == 1:
@@ -205,11 +212,11 @@ class AuthBot(TelegramClient):
                     pass
                 else:
                     await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_NOT_FOLLOWER'))
-                    self.logger.info('Result: not_follower, failed to follower status')
+                    self.logger.info('Result: join_reject_not_follower')
             except Exception as e:
                 self.logger.error(str(e))
                 await event.reply(self.format_translation(currentChannel['channel_name'], requestor[0]['name'], 'AUTH_SYS_ERR'))
-                self.logger.info('Result: sys_err, failed to check sub status')
+                self.logger.info('Result: sys_err, failed to check follow status')
                 return
 
         if (not skip_checks) and currentChannel['join_sub_only'] == 1:
@@ -223,7 +230,7 @@ class AuthBot(TelegramClient):
 
             if sub is False:
                 await event.reply(self.format_translation(currentChannel['channel_name'], requestor[0]['name'], 'AUTH_NOT_SUB'))
-                self.logger.info('Result: not_sub')
+                self.logger.info('Result: join_reject_not_sub')
                 return
 
             if currentChannel['min_sub_months'] > 0:
@@ -239,7 +246,7 @@ class AuthBot(TelegramClient):
 
                 if cache_info < currentChannel['min_sub_months']:
                     await event.reply(self.format_translation(currentChannel['channel_name'], requestor[0]['name'], 'AUTH_SUB_LOW_MONTH'))
-                    self.logger.info('Result: sub_low_months')
+                    self.logger.info('Result: join_reject_low_sub_months')
                     return
 
         try:
