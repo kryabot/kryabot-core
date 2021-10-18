@@ -168,5 +168,4 @@ class TwitchEvent(Event):
         self.start = False
         self.update = False
         self.finish = False
-        self.updated_data = []
         self.recovery = True
