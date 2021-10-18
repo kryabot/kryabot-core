@@ -232,7 +232,7 @@ async def fill_twitch_user_info(user_data, client):
         user_data['twitch_user'] = twitch_user
         user_data['name'] = twitch_user['login']
         user_data['display_name'] = twitch_user['display_name']
-        user_data['created_at'] = parse(twitch_user['created_at'])
+        user_data['created_at'] = parse(twitch_user['created_at']) if isinstance(twitch_user['created_at'], str) else twitch_user['created_at']
         user_data['twitch_user_exists'] = True
     except Exception as err:
         await client.exception_reporter(err, 'Twitch ID: {}'.format(user_data['tw_id']))
