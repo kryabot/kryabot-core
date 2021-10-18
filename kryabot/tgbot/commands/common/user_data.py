@@ -11,6 +11,7 @@ async def get_default_user_data():
             'name': '',
             'display_name': '',
             'created_at': None,
+            'linked_at': None,
             'tw_id': 0,
             'tg_id': 0,
             'kb_id': 0,
@@ -62,7 +63,7 @@ async def get_user_data(client, channel, user_id, skip_bits=True):
         if tg_user_entity.bot:
             user_data['is_bot'] = True
     except Exception as ex:
-        await client.exception_reporter(ex, 'get_u')
+        await client.exception_reporter(ex, 'get_user_data')
 
     target_user = await get_first(await client.db.getUserByTgChatId(user_id))
     user_data['kb_user'] = target_user
@@ -71,6 +72,11 @@ async def get_user_data(client, channel, user_id, skip_bits=True):
     user_data = await fill_basic_info(user_data)
     user_data['global_awards'] = await client.db.getGlobalUserAwards(user_data['kb_id'])
     user_data['invitations'] = await client.db.getTgInvite(channel['channel_id'], user_data['kb_id'])
+
+    if user_data['is_verified']:
+        linkage = await get_first(await client.db.getLinkageDataByTwitchId(user_data['tw_id']))
+        if linkage:
+            user_data['linked_at'] = linkage[0]['response_time'].date()
 
     # Chat related info
     user_data = await fill_chat_info(user_data, client, channel)
@@ -98,6 +104,11 @@ async def format_user_data(user_data, client, channel)->str:
             answer += '\nWarning: user Twitch account does not exist anymore (Twitch ID {})'.format(user_data['tw_id'])
         else:
             if user_data['is_chat_owner'] is False:
+                if user_data['created_at']:
+                    answer += '\n{}: {}'.format(client.get_translation(lang, 'USER_CREATED_TWITCH'), user_data['created_at'].split('T')[0])
+                if user_data['linked_at']:
+                    answer += '\n{}: {}'.format(client.get_translation(lang, 'USER_CREATED_KB'), user_data['linked_at'])
+
                 # Twitch sub data
                 answer += '\n{} {}: '.format(await custom_subinfo_badge(channel['channel_id']), client.get_translation(lang, 'USER_SUB_INFO'))
                 if user_data['is_sub'] is True:
@@ -192,7 +203,6 @@ async def fill_basic_info(user_data):
     user_data['soc_vk'] = user_data['kb_user']['soc_vk']
     user_data['soc_inst'] = user_data['kb_user']['soc_inst']
     user_data['soc_ut'] = user_data['kb_user']['soc_ut']
-
     return user_data
 
 
