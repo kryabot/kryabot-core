@@ -76,7 +76,7 @@ async def get_user_data(client, channel, user_id, skip_bits=True):
     if user_data['is_verified']:
         linkage = await get_first(await client.db.getLinkageDataByTwitchId(user_data['tw_id']))
         if linkage:
-            user_data['linked_at'] = linkage['response_time'].date()
+            user_data['linked_at'] = linkage['response_time']
 
     # Chat related info
     user_data = await fill_chat_info(user_data, client, channel)
@@ -105,9 +105,9 @@ async def format_user_data(user_data, client, channel)->str:
         else:
             if user_data['is_chat_owner'] is False:
                 if user_data['created_at']:
-                    answer += '\n{}: {}'.format(client.get_translation(lang, 'USER_CREATED_TWITCH'), user_data['created_at'].split('T')[0])
+                    answer += '\n{}: {}'.format(client.get_translation(lang, 'USER_CREATED_TWITCH'), user_data['created_at'].date())
                 if user_data['linked_at']:
-                    answer += '\n{}: {}'.format(client.get_translation(lang, 'USER_CREATED_KB'), user_data['linked_at'])
+                    answer += '\n{}: {}'.format(client.get_translation(lang, 'USER_CREATED_KB'), user_data['linked_at'].date())
 
                 # Twitch sub data
                 answer += '\n{} {}: '.format(await custom_subinfo_badge(channel['channel_id']), client.get_translation(lang, 'USER_SUB_INFO'))
