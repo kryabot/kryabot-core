@@ -76,7 +76,7 @@ async def get_user_data(client, channel, user_id, skip_bits=True):
     if user_data['is_verified']:
         linkage = await get_first(await client.db.getLinkageDataByTwitchId(user_data['tw_id']))
         if linkage:
-            user_data['linked_at'] = linkage[0]['response_time'].date()
+            user_data['linked_at'] = linkage['response_time'].date()
 
     # Chat related info
     user_data = await fill_chat_info(user_data, client, channel)
