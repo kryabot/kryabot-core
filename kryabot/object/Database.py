@@ -549,6 +549,9 @@ class Database:
         else:
             return await self.query('get_songs_by_channel', [channel_id])
 
+    async def getTgHistoricalStats(self, channel_id: int, stat_type: str, days_old: int):
+        return await self.query('get_tg_historical_stats', [channel_id, stat_type, days_old])
+
     async def getChannelByUserId(self, kb_user_id):
         return await self.query('get_channel_by_user_id', [kb_user_id])
 

@@ -15,6 +15,9 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         self.channels: HalloweenChannels = HalloweenChannels()
         self.get_logger().info("Created HalloweenEventProcessor")
         self.register_task(self.pumpkin_spawner)
+        self.required_members = 30
+        self.required_messages_total = 100
+        self.required_messages_interval = 3
 
     async def pumpkin_spawner(self, client):
         client.logger.info('Starting pumpkin_spawner')
