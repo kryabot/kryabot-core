@@ -91,7 +91,7 @@ class GlobalEventProcessor(Base):
                             for item in history:
                                 if iterated >= self.required_messages_interval:
                                     break
-                                counted_messages += min(item['count'], math.floor(self.required_messages_total / 2))
+                                counted_messages += min(item['counter'], math.floor(self.required_messages_total / 2))
                                 iterated += 1
                     except Exception as historyEx:
                         self.get_logger().exception(historyEx)
