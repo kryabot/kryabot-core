@@ -327,6 +327,7 @@ class KryaInfoBot(TelegramClient):
                 except WebpageCurlFailedError:
                     fileio = await self.manager.api.twitch.download_file_io(file.url)
                     fileio.seek(0)
+                    fileio.filename = "image.jpg"
                     await self.send_message(target.target_id, message=text, file=fileio, buttons=button, link_preview=False, parse_mode='html')
                 try:
                     if event.finish and int(target.target_id) == int(TG_GROUP_MONITORING_ID_FULL):
