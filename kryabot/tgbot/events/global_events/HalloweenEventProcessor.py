@@ -35,9 +35,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
                 for key in self.channels.channels.keys():
                     count = int(await client.get_group_member_count(int(key)))
-                    if self.channels.channels[key].can_spawn_regular(count):
-                        await self.channels.channels[key].spawn_regular(client, count)
-                    elif self.channels.channels[key].can_spawn_number(count):
+                    if self.channels.channels[key].can_spawn_number(count):
                         await self.channels.channels[key].spawn_number(client, count)
                     elif self.channels.channels[key].can_spawn_love(count):
                         await self.channels.channels[key].spawn_love_pumpkin(client, count)
@@ -47,6 +45,8 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                         await self.channels.channels[key].spawn_box(client, count)
                     elif self.channels.channels[key].can_spawn_scary(count):
                         await self.channels.channels[key].spawn_scary(client, count)
+                    elif self.channels.channels[key].can_spawn_regular(count):
+                        await self.channels.channels[key].spawn_regular(client, count)
                     await asyncio.sleep(randint(2, 15))
             except Exception as ex:
                 client.logger.exception(ex)
