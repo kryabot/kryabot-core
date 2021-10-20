@@ -45,6 +45,8 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                         await self.channels.channels[key].spawn_box(client, count)
                     elif self.channels.channels[key].can_spawn_scary(count):
                         await self.channels.channels[key].spawn_scary(client, count)
+                    elif self.channels.channels[key].can_spawn_silent(count):
+                        await self.channels.channels[key].spawn_silent(client, count)
                     elif self.channels.channels[key].can_spawn_regular(count):
                         await self.channels.channels[key].spawn_regular(client, count)
                     await asyncio.sleep(randint(2, 15))
