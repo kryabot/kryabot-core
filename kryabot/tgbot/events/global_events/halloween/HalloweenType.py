@@ -139,7 +139,7 @@ class HalloweenChannel(EventChannel):
 
     def calc_next_boss_spawn(self):
         ratio = HalloweenConfig.calc(self.channel_size)
-        min_time = min(int(ratio), 60)
+        min_time = min(int(ratio), 120)
         max_time = max(int(ratio), 180)
         delay = randint(min_time, max_time)
         self.next_boss = datetime.utcnow() + timedelta(minutes=delay)
@@ -147,7 +147,7 @@ class HalloweenChannel(EventChannel):
 
     def calc_next_number_spawn(self):
         ratio = HalloweenConfig.calc(self.channel_size)
-        min_time = min(int(ratio), 60)
+        min_time = min(int(ratio), 120)
         max_time = max(int(ratio), 180)
         delay = randint(min_time, max_time)
         self.next_number = datetime.utcnow() + timedelta(minutes=delay)
@@ -155,8 +155,8 @@ class HalloweenChannel(EventChannel):
 
     def calc_next_silent_spawn(self):
         ratio = HalloweenConfig.calc(self.channel_size)
-        min_time = min(int(ratio), 60)
-        max_time = max(int(ratio), 180)
+        min_time = min(int(ratio), 120)
+        max_time = max(int(ratio), 250)
         delay = randint(min_time, max_time)
         self.next_silent = datetime.utcnow() + timedelta(minutes=delay)
         logger.info('Updated next number spawn to {} for channel {} (now = {})'.format(self.next_silent, self.channel_id, datetime.utcnow()))
@@ -369,9 +369,7 @@ class HalloweenChannel(EventChannel):
         info_message = None
         alive_seconds = randint(50, 80)
         finish_ts = start_ts + timedelta(seconds=alive_seconds)
-        reward = 5
-
-
+        reward = randint(1, 2)
 
         while True:
             await asyncio.sleep(1)
