@@ -54,6 +54,11 @@ class HalloweenEventProcessor(GlobalEventProcessor):
                 client.logger.exception(ex)
 
     async def process(self, global_event, event, channel) -> None:
+        ignored_users = await get_first(await event.client.db.get_setting('TG_GLOBAL_EVENT_IGNORED_USERS'))
+        if ignored_users and str(event.message.sender_id) in str(ignored_users['setting_value']).split(','):
+            self.get_logger().info('Skipped ignored global event user {}'.format(event.message.sender_id))
+            return
+
         sender = await get_first(await event.client.db.getUserByTgChatId(event.message.sender_id))
         if sender is None:
             event.client.logger.info('Skipping event because sender user record not found: {}'.format(event.message.sender_id))
@@ -61,6 +66,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
         if await self.is_active_type(event, HalloweenMonsters.SilentPumpkin):
             await self.process_silent(global_event, event, channel, None, sender)
+            return
 
         if not event.message.is_reply:
             return

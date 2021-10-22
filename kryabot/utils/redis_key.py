@@ -102,6 +102,10 @@ def get_global_events():
     return 'tg.global.events'
 
 
+def get_setting(key):
+    return 'tg.setting.{}'.format(key)
+
+
 def get_streams_data():
     return 'tg.streams.data'
 

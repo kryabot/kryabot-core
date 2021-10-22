@@ -186,8 +186,18 @@ class Database:
     async def get_settings(self):
         return await self.query('get_settings', [])
 
-    async def get_setting(self, setting_key: str):
-        return await self.query('get_setting', [setting_key])
+    async def get_setting(self, setting_key: str, skip_cache=False):
+        cache_key = redis_key.get_setting(setting_key)
+
+        data = None
+        if not skip_cache:
+            data = await self.redis.get_parsed_value_by_key(cache_key)
+
+        if data is None:
+            data = await self.query('get_setting', [setting_key])
+            await self.redis.set_parsed_value_by_key(cache_key, data, expire=redis_key.ttl_minute * 10)
+        return data
+
 
     async def saveBotAuth(self, kb_user_id, token, refresh_token, expires_in):
         return await self.query('save_bot_refresh_token', [kb_user_id, token, refresh_token, expires_in])

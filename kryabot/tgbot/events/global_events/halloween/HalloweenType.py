@@ -387,12 +387,14 @@ class HalloweenChannel(EventChannel):
                     if not info_message:
                         info_message = await client.send_message(self.channel_id, info_text, reply_to=event_message.id)
                     else:
-                        await info_message.edit(info_text)
+                        if remaining_seconds > 0:
+                            await info_message.edit(info_text)
                 except Exception as ex:
                     logger.exception(ex)
             else:
                 try:
-                    self.delete_messages.append(info_message.id)
+                    if info_message:
+                        self.delete_messages.append(info_message.id)
                     self.delete_messages.append(event_message.id)
                     logger.info("Deleting messages: {}".format(self.delete_messages))
                     result = await client.delete_messages(entity=self.channel_id, message_ids=self.delete_messages)
