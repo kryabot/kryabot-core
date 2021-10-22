@@ -380,30 +380,39 @@ class KryaInfoBot(TelegramClient):
         if channels is None or len(channels) == 0:
             return formatted_message
 
+        for item in event.summary:
+            item['ts'] = item['ts'].replace(tzinfo=None)
+
         stream_start = None
         stream_end = None
         game_changes = ''
         previous_item = None
         contains_changes = False
+        last_resume_ts = None
         for item in event.summary:
             if item['type'] == 'start':
                 stream_start = item['ts']
             elif item['type'] == 'finish':
                 # Possible multiple finishes, interested in last one
                 stream_end = item['ts']
+                calc_from = last_resume_ts if last_resume_ts and last_resume_ts > previous_item['ts'] else previous_item['ts']
+                game_changes += '\n🎮 Played <b>{}</b> for {}'.format(previous_item['new_value'], td_format(stream_end - calc_from))
             elif item['type'] == 'resume':
+                contains_changes = True
+                last_resume_ts = item['ts']
                 game_changes += '\n🎮 Technical break ({})'.format(td_format(item['ts'] - stream_end))
             else:
                 # Game change
                 if previous_item:
                     contains_changes = True
-                    game_changes += '\n🎮 Played <b>{}</b> for {}'.format(previous_item['new_value'], td_format(item['ts'] - previous_item['ts']))
+                    calc_from = last_resume_ts if last_resume_ts and last_resume_ts > previous_item['ts'] else previous_item['ts']
+                    game_changes += '\n🎮 Played <b>{}</b> for {}'.format(previous_item['new_value'], td_format(item['ts'] - calc_from))
                 previous_item = item
 
-        if previous_item:
-            game_changes += '\n🎮 Played <b>{}</b> for {}'.format(previous_item['new_value'], td_format(stream_end.replace(tzinfo=None) - previous_item['ts'].replace(tzinfo=None)))
+        # if previous_item:
+        #     game_changes += '\n🎮 Played <b>{}</b> for {}'.format(previous_item['new_value'], td_format(stream_end.replace(tzinfo=None) - previous_item['ts'].replace(tzinfo=None)))
 
-        stream_duration = stream_end.replace(tzinfo=None) - stream_start.replace(tzinfo=None)
+        stream_duration = stream_end - stream_start
         formatted_message += '\n' + game_changes
 
         if contains_changes:

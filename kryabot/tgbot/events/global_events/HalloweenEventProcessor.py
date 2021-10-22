@@ -56,7 +56,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
     async def process(self, global_event, event, channel) -> None:
         ignored_users = await get_first(await event.client.db.get_setting('TG_GLOBAL_EVENT_IGNORED_USERS'))
         if ignored_users and str(event.message.sender_id) in str(ignored_users['setting_value']).split(','):
-            self.get_logger().info('Skipped ignored global event user {}'.format(event.message.sender_id))
+            self.get_logger().debug('Skipped ignored global event user {}'.format(event.message.sender_id))
             return
 
         sender = await get_first(await event.client.db.getUserByTgChatId(event.message.sender_id))
