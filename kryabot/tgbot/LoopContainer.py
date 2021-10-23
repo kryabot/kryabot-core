@@ -6,6 +6,7 @@ from tgbot.AuthBot import AuthBot
 from tgbot.KryaClient import KryaClient
 from webserver.WebHandler import WebHandler
 import aioschedule as schedule
+from telethon.errors import ChannelPrivateError
 
 
 class LoopContainer:
@@ -114,6 +115,10 @@ class LoopContainer:
 
             try:
                 await self.guard_bot.run_channel_refresh_new(channel, False, None, silent=True)
+            except ChannelPrivateError as private_ex:
+                # removed channel
+                self.logger.info('Removing subchat {} because of ChannelPrivateError'.format(channel['channel_subchat_id']))
+                await self.guard_bot.db.updateSubchatAfterJoin(channel['channel_subchat_id'], 0, '', '')
             except Exception as ex:
                 await self.guard_bot.exception_reporter(ex, 'TG member updater task for {}'.format(channel['channel_name']))
 
