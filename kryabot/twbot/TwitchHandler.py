@@ -384,7 +384,7 @@ class TwitchHandler(Base):
             self.logger.exception(ex)
 
     async def on_channel_points(self, data):
-        if data['event']['status'] != 'unfulfilled':
+        if data['event']['status'] not in ['unfulfilled', 'fulfilled']:
             self.logger.info('Unexpected status: {} in event'.format(data['event']['status'], data['event']))
             return
 
