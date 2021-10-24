@@ -17,6 +17,7 @@ RUN python --version &&\
 			musl-dev \
 			make \
 			gcc \
+            google-chrome-stable \
 			g++ 
 	
 	
