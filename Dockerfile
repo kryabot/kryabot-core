@@ -3,6 +3,8 @@
 
 FROM python:3.9-alpine
 RUN python --version &&\
+    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - &&\
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list &&\
 	pip install -U pip &&\
 	apk update &&\
 	apk add curl \
