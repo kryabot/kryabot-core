@@ -18,29 +18,39 @@ RUN python --version &&\
 			make \
 			gcc \
             chromium-chromedriver \
-			g++ 
+			g++ &&\
+    rm -rf /var/cache/apk/*
 	
 	
-COPY requirements.txt .
-RUN pip install -r requirements.txt && pip install -U https://github.com/LonamiWebs/Telethon/archive/master.zip && ln -s /usr/share/zoneinfo/Etc/GMT+3 /etc/localtime
+
+
 
 # Environment variables
-ENV WORK_DIR="/opt/app/kb"
-ENV SECRET_DIR=$WORK_DIR/secret/
-ENV LOG_DIR=$WORK_DIR/log/
-ENV TZ=GMT-3
+ENV WORK_DIR="/opt/app/kb" \
+    SECRET_DIR=$WORK_DIR/secret/ \
+    LOG_DIR=$WORK_DIR/log/ \
+    TZ=GMT-3
+
 WORKDIR $WORK_DIR
 
 # Move needed files
+COPY requirements.txt .
 COPY log log
 COPY kryabot kryabot
 COPY scripts scripts
+COPY scripts/ /
 
 # Webserver
 EXPOSE 5000
 
 # Start up script
-COPY scripts/ /
-RUN chmod +x scripts/* && chmod +x /dockerstart_*.sh && sed -i -e 's/\r$//' /dockerstart_*.sh && sed -i -e 's/\r$//' scripts/*.sh
+
+RUN pip install -r requirements.txt &&\
+    pip install -U https://github.com/LonamiWebs/Telethon/archive/master.zip &&\
+    ln -s /usr/share/zoneinfo/Etc/GMT+3 /etc/localtime && \
+    chmod +x scripts/* &&  \
+    chmod +x /dockerstart_*.sh &&  \
+    sed -i -e 's/\r$//' /dockerstart_*.sh && \
+    sed -i -e 's/\r$//' scripts/*.sh
 
 CMD /dockerstart.sh
