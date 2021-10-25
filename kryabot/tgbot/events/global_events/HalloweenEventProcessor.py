@@ -210,8 +210,8 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
             # Damage amount used to identify which group user selected
             damage = 0
-            damage = 1 if event.message.text == HalloweenConfig.greedy_message_a else damage
-            damage = 2 if event.message.text == HalloweenConfig.greedy_message_b else damage
+            damage = 1 if event.message.text in HalloweenConfig.greedy_message_a else damage
+            damage = 2 if event.message.text in HalloweenConfig.greedy_message_b else damage
 
             if self.channels.hit_pumpkin(event.message.to_id.channel_id, target_message_id, sender['user_id'], damage):
                 await target_message.delete()

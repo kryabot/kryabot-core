@@ -544,7 +544,7 @@ class HalloweenChannel(EventChannel):
             if self.is_active(sticker_message.id):
                 remaining_seconds = (finish_ts - datetime.utcnow()).seconds
                 remaining_seconds = max(remaining_seconds, 0)
-                new_text = default_text.format(emotes=' '.join([HalloweenConfig.greedy_message_a, HalloweenConfig.greedy_message_b]), total=len(attackers.keys()), time=remaining_seconds)
+                new_text = default_text.format(emotes=' '.join(HalloweenConfig.greedy_message_a + HalloweenConfig.greedy_message_b), total=len(attackers.keys()), time=remaining_seconds)
                 if new_text != last_text:
                     try:
                         last_text = new_text
@@ -596,11 +596,11 @@ class HalloweenChannel(EventChannel):
                     for user_id in group_a:
                         await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, -2)
                         client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
-                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_TEAM_WON').format(team_a=HalloweenConfig.greedy_message_a,
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_TEAM_WON').format(team_a=HalloweenConfig.greedy_message_a[0],
                                                                                                                          a_size=len(group_a),
-                                                                                                                         team_b=HalloweenConfig.greedy_message_b,
+                                                                                                                         team_b=HalloweenConfig.greedy_message_b[0],
                                                                                                                          b_size=len(group_b),
-                                                                                                                         team=HalloweenConfig.greedy_message_b,
+                                                                                                                         team=HalloweenConfig.greedy_message_b[0],
                                                                                                                          amt=2)
                 elif len(group_b) > len(group_a):
                     for user_id in group_a:
@@ -609,11 +609,11 @@ class HalloweenChannel(EventChannel):
                     for user_id in group_b:
                         # await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, -2)
                         client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
-                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_TEAM_WON').format(team_a=HalloweenConfig.greedy_message_a,
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_TEAM_WON').format(team_a=HalloweenConfig.greedy_message_a[0],
                                                                                                                          a_size=len(group_a),
-                                                                                                                         team_b=HalloweenConfig.greedy_message_b,
+                                                                                                                         team_b=HalloweenConfig.greedy_message_b[0],
                                                                                                                          b_size=len(group_b),
-                                                                                                                         team=HalloweenConfig.greedy_message_a,
+                                                                                                                         team=HalloweenConfig.greedy_message_a[0],
                                                                                                                          amt=2)
 
                 final_text += ' ' + HalloweenConfig.pumpkin_greedy
@@ -956,8 +956,8 @@ class HalloweenConfig:
     hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "🔫"]
     love_messages: List[str] = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎"]
     scary_messages: List[str] = ['😨', '😱']
-    greedy_message_a: str = '🅰️'
-    greedy_message_b: str = '🅱️'
+    greedy_message_a: List[str] = ['🅰️', '🅰']
+    greedy_message_b: List[str] = ['🅱️', '🅱']
     currency_key: str = "pumpkin_2021"
     number_range_min = 1
     number_range_max = 7
@@ -1046,7 +1046,7 @@ class HalloweenConfig:
 
     @staticmethod
     def is_event_greedy_reply(message)->bool:
-        return message.text in [HalloweenConfig.greedy_message_a, HalloweenConfig.greedy_message_b]
+        return message.text in HalloweenConfig.greedy_message_a + HalloweenConfig.greedy_message_b
 
     @staticmethod
     def is_event_scary_reply(message)->bool:
