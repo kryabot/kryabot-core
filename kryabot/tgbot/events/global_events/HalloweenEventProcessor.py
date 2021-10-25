@@ -90,6 +90,8 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             await self.process_number(global_event, event, channel, target_message, sender)
         elif HalloweenConfig.is_event_scary_reply(event.message) and HalloweenConfig.is_event_scary(target_message):
             await self.process_scary(global_event, event, channel, target_message, sender)
+        elif HalloweenConfig.is_event_greedy_reply(event.message) and HalloweenConfig.is_event_greedy(target_message):
+            await self.process_greedy(global_event, event, channel, target_message, sender)
         else:
             return
 
@@ -169,7 +171,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             self.get_logger().exception(ex)
 
     async def process_love(self, event_data, event, channel, target_message, sender):
-        event.client.logger.info('routed to process_love')
+        event.client.logger.debug('routed to process_love')
         if not await self.is_active(event, target_message):
             return
 
@@ -181,7 +183,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             self.get_logger().exception(ex)
 
     async def process_scary(self, event_data, event, channel, target_message, sender):
-        event.client.logger.info('routed to process_scary')
+        event.client.logger.debug('routed to process_scary')
         if not await self.is_active(event, target_message):
             return
 
@@ -192,8 +194,30 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         except Exception as ex:
             self.get_logger().exception(ex)
 
+    async def process_greedy(self, event_data, event, channel, target_message, sender):
+        event.client.logger.info('routed to process_greedy')
+        if not await self.is_active(event, target_message):
+            return
+
+        try:
+            target_message_id = target_message.id
+            try:
+                await event.delete()
+            except Exception as delete_ex:
+                self.get_logger().exception(delete_ex)
+
+            # Damage amount used to identify which group user selected
+            damage = 0
+            damage = 1 if event.message.text == HalloweenConfig.greedy_message_a else damage
+            damage = 2 if event.message.text == HalloweenConfig.greedy_message_b else damage
+
+            if self.channels.hit_pumpkin(event.message.to_id.channel_id, target_message_id, sender['user_id'], damage):
+                await target_message.delete()
+        except Exception as ex:
+            self.get_logger().exception(ex)
+
     async def process_number(self, event_data, event, channel, target_message, sender):
-        event.client.logger.info('routed to process_number')
+        event.client.logger.debug('routed to process_number')
         if not await self.is_active(event, target_message):
             return
 
@@ -212,7 +236,7 @@ class HalloweenEventProcessor(GlobalEventProcessor):
             self.get_logger().exception(ex)
 
     async def process_silent(self, event_data, event, channel, target_message, sender):
-        event.client.logger.info('routed to process_silent')
+        event.client.logger.debug('routed to process_silent')
 
         try:
             target_id = self.channels.channels[event.message.to_id.channel_id].get_active_type_id(HalloweenMonsters.SilentPumpkin)

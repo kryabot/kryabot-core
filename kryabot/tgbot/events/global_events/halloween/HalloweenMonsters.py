@@ -128,3 +128,17 @@ class SilentPumpkin(Monster):
     def __init__(self, msg_id: int, hp: int, test: bool=False):
         super().__init__(msg_id=msg_id, hp=hp, test=test)
         self.type = MonsterType.ITEM_PUMPKIN_REGULAR
+
+
+class GreedyPumpkin(Monster):
+    def __init__(self, msg_id: int, hp: int, test: bool=False):
+        super().__init__(msg_id=msg_id, hp=hp, test=test)
+        self.type = MonsterType.ITEM_PUMPKIN_REGULAR
+        self.immortal = True
+
+    def hit(self, user_id: int, dmg: int):
+        # Reset previous group
+        if user_id in self.damagers:
+            self.damagers[user_id] = 0
+
+        return super().hit(user_id=user_id, dmg=dmg)

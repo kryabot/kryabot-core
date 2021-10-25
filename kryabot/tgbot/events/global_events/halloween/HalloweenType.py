@@ -58,6 +58,7 @@ class HalloweenChannel(EventChannel):
         self.last_number: datetime = datetime.utcnow()
         self.last_silent: datetime = datetime.utcnow()
         self.last_scary: datetime = datetime.utcnow()
+        self.last_greedy: datetime = datetime.utcnow()
         self.delete_messages: List[int] = []
         self.client = None
         self.next_boss: datetime = None
@@ -66,6 +67,7 @@ class HalloweenChannel(EventChannel):
         self.next_number: datetime = None
         self.next_silent: datetime = None
         self.next_scary: datetime = None
+        self.next_greedy: datetime = None
         self.channel_size: int = 1
         self.last_spawn: datetime = datetime.utcnow()
 
@@ -120,6 +122,14 @@ class HalloweenChannel(EventChannel):
             self.calc_next_boss_spawn()
 
         return died
+
+    def calc_next_greedy_spawn(self):
+        ratio = HalloweenConfig.calc(self.channel_size, limit=200)
+        min_time = int(ratio * 2)
+        max_time = int(ratio * 3)
+        delay = randint(min_time, max_time)
+        self.next_greedy = datetime.utcnow() + timedelta(minutes=delay)
+        logger.info('Updated next greedy spawn to {} for channel {} (now = {})'.format(self.next_greedy, self.channel_id, datetime.utcnow()))
 
     def calc_next_love_spawn(self):
         ratio = HalloweenConfig.calc(self.channel_size, limit=200)
@@ -216,6 +226,16 @@ class HalloweenChannel(EventChannel):
 
         return self.next_love < datetime.utcnow()
 
+    def can_spawn_greedy(self, channel_size: int)->bool:
+        self.channel_size = channel_size
+        if self.has_active_pumpkin() or not self.spawn_delay_passed():
+            return False
+
+        if self.next_greedy is None:
+            self.calc_next_greedy_spawn()
+
+        return self.next_greedy < datetime.utcnow()
+
     def can_spawn_scary(self, channel_size: int)->bool:
         self.channel_size = channel_size
         if self.has_active_pumpkin() or not self.spawn_delay_passed():
@@ -265,6 +285,17 @@ class HalloweenChannel(EventChannel):
 
         monster = HalloweenMonsters.RegularPumpkin(msg_id=msg.id, test=test)
         self.save(monster)
+
+    async def spawn_greedy_pumpkin(self, client, size: int, test: bool=False):
+        self.client = client
+        self.last_spawn = datetime.utcnow()
+        self.last_love = datetime.utcnow()
+        msg = await self.send_halloween_cube_sticker(client, self.channel_id, HalloweenConfig.pumpkin_greedy)
+        client.logger.info("Spawned greedy pumpkin ID {} in channel {}".format(msg.id, self.channel_id))
+        monster = HalloweenMonsters.GreedyPumpkin(msg_id=msg.id, hp=1, test=test)
+        self.save(monster)
+        client.loop.create_task(self.pumpkin_greedy_info_updater(client, msg))
+        self.calc_next_greedy_spawn()
 
     async def spawn_love_pumpkin(self, client, size: int, test: bool=False):
         self.client = client
@@ -339,21 +370,22 @@ class HalloweenChannel(EventChannel):
         client.loop.create_task(self.pumpkin_chestbox_info_updater(client, msg))
         self.calc_next_box_spawn()
 
-    async def send_halloween_sticker(self, client, channel_id, emote):
-        kryabot_stickers = await client.get_sticker_set('Halloweenkin')
-        for sticker in kryabot_stickers.packs:
+    async def send_sticker(self, client, channel_id, sticker_pack_name, emote):
+        stickers = await client.get_sticker_set(sticker_pack_name)
+        for sticker in stickers.packs:
             if sticker.emoticon == emote:
-                for pack in kryabot_stickers.documents:
+                for pack in stickers.documents:
                     if sticker.documents[0] == pack.id:
                         return await client.send_file(channel_id, pack)
 
+    async def send_halloween_sticker(self, client, channel_id, emote):
+        return await self.send_sticker(client, channel_id, 'Halloweenkin', emote)
+
+    async def send_halloween_cube_sticker(self, client, channel_id, emote):
+        return await self.send_sticker(client, channel_id, 'PumpkinCube', emote)
+
     async def send_kryabot_events_sticker(self, client, channel_id, emote):
-        kryabot_stickers = await client.get_sticker_set('KryaBotEvents')
-        for sticker in kryabot_stickers.packs:
-            if sticker.emoticon == emote:
-                for pack in kryabot_stickers.documents:
-                    if sticker.documents[0] == pack.id:
-                        return await client.send_file(channel_id, pack)
+        return await self.send_sticker(client, channel_id, 'KryaBotEvents', emote)
 
     def get_attackers(self, msg_id: int):
         if msg_id not in self.pumpkins:
@@ -489,6 +521,98 @@ class HalloweenChannel(EventChannel):
                     logger.exception(ex)
 
                 break
+            await asyncio.sleep(3)
+
+    async def pumpkin_greedy_info_updater(self, client, sticker_message):
+        self.client = client
+        start_ts = datetime.utcnow()
+        client.logger.info('Starting pumpkin_greedy_info_updater for message {} in channel {}'.format(sticker_message.id, self.channel_id))
+        default_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_INFO')
+        last_text = ""
+        info_message = None
+        alive_seconds = randint(60, 180)
+
+        while True:
+            await asyncio.sleep(1)
+
+            if start_ts + timedelta(seconds=alive_seconds) < datetime.utcnow():
+                self.calc_next_greedy_spawn()
+                self.pumpkins[sticker_message.id].kill()
+
+            attackers = self.get_attackers(sticker_message.id)
+            if self.is_active(sticker_message.id):
+                new_text = default_text.format(emotes=' '.join([HalloweenConfig.greedy_message_a, HalloweenConfig.greedy_message_b]), total=len(attackers.keys()))
+                if new_text == last_text:
+                    continue
+                else:
+                    try:
+                        last_text = new_text
+                        if info_message is None:
+                            info_message = await client.send_message(self.channel_id, new_text, reply_to=sticker_message.id)
+                        else:
+                            await info_message.edit(new_text)
+                    except Exception as ex:
+                        logger.exception(ex)
+            else:
+                try:
+                    self.delete_messages.append(info_message.id)
+                    self.delete_messages.append(sticker_message.id)
+                    logger.info("Deleting messages: {}".format(self.delete_messages))
+                    result = await client.delete_messages(entity=self.channel_id, message_ids=self.delete_messages)
+                except Exception as ex:
+                    logger.exception(ex)
+
+                self.delete_messages = []
+                total = 0
+                group_a = []
+                group_b = []
+                if attackers is not None and not self.is_test(sticker_message.id):
+                    for user_id in attackers.keys():
+                        total += 1
+                        if attackers.get(user_id) == 1:
+                            group_a.append(user_id)
+                        elif attackers.get(user_id) == 2:
+                            group_b.append(user_id)
+
+                if len(group_a + group_b) != total:
+                    self.get_logger().error("Something is wrong, incorrect grouping of teams. team_a = {}, team_b = {}, total = {}".format(group_a, group_b, attackers))
+
+                final_text = ''
+                if len(group_a) == 0 and len(group_b) == 0:
+                    self.channel_size = await client.get_group_member_count(int(self.channel_id))
+                    await client.db.add_currency_to_all_chat_users(HalloweenConfig.currency_key, sticker_message.to_id.channel_id, -3)
+                    client.loop.create_task(self.publish_pumpkin_amount_update(0))
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_EMPTY_TEAMS').format(total=self.channel_size, amt=3)
+                elif len(group_b) == len(group_a):
+                    for user_id in group_a + group_b:
+                        await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, -2)
+                        client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_EQUAL_TEAMS').format(total=total, amt=2)
+                elif len(group_b) < len(group_a):
+                    for user_id in group_b:
+                        await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, 2)
+                        client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
+                    for user_id in group_a:
+                        await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, -2)
+                        client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_TEAM_WON').format(team=HalloweenConfig.greedy_message_b, amt=2)
+                elif len(group_b) > len(group_a):
+                    for user_id in group_a:
+                        await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, 2)
+                        client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
+                    for user_id in group_b:
+                        await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, -2)
+                        client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_TEAM_WON').format(team=HalloweenConfig.greedy_message_a, amt=2)
+
+                final_text += ' ' + HalloweenConfig.pumpkin_greedy
+                try:
+                    await client.send_message(self.channel_id, final_text)
+                except Exception as ex:
+                    logger.exception(ex)
+
+                break
+
             await asyncio.sleep(3)
 
     async def pumpkin_love_info_updater(self, client, love_message):
@@ -815,11 +939,14 @@ class HalloweenConfig:
     pumpkin_number = '🤔'
     pumpkin_silent = '💑'
     pumpkin_scary = '👻'
+    pumpkin_greedy = '😈'
     chestbox = "📦"
     chestbox_keys = ["🗝", "🔑"]
     hit_message: List[str] = ["🪓", "🔨", "🗡", "🔪", "🏹", "🔫"]
     love_messages: List[str] = ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎"]
     scary_messages: List[str] = ['😨', '😱']
+    greedy_message_a: str = '🅰️'
+    greedy_message_b: str = '🅱️'
     currency_key: str = "pumpkin_2021"
     number_range_min = 1
     number_range_max = 7
@@ -846,6 +973,17 @@ class HalloweenConfig:
 
         for attr in message.media.document.attributes:
             if isinstance(attr, DocumentAttributeSticker) and attr.stickerset.id == 773947703670341645 and attr.alt == HalloweenConfig.pumpkin_heart:
+                return True
+
+        return False
+
+    @staticmethod
+    def is_event_greedy(message)->bool:
+        if not message.sticker:
+            return False
+
+        for attr in message.media.document.attributes:
+            if isinstance(attr, DocumentAttributeSticker) and attr.stickerset.id == 891885078961979404 and attr.alt == HalloweenConfig.pumpkin_greedy:
                 return True
 
         return False
@@ -894,6 +1032,10 @@ class HalloweenConfig:
     @staticmethod
     def is_event_love_reply(message)->bool:
         return message.text in HalloweenConfig.love_messages
+
+    @staticmethod
+    def is_event_greedy_reply(message)->bool:
+        return message.text in [HalloweenConfig.greedy_message_a, HalloweenConfig.greedy_message_b]
 
     @staticmethod
     def is_event_scary_reply(message)->bool:
