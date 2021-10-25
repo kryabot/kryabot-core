@@ -612,7 +612,7 @@ class HalloweenChannel(EventChannel):
                                                                                                                          a_size=len(group_a),
                                                                                                                          team_b=HalloweenConfig.greedy_message_b,
                                                                                                                          b_size=len(group_b),
-                                                                                                                         team=HalloweenConfig.greedy_message_b,
+                                                                                                                         team=HalloweenConfig.greedy_message_a,
                                                                                                                          amt=2)
 
                 final_text += ' ' + HalloweenConfig.pumpkin_greedy
