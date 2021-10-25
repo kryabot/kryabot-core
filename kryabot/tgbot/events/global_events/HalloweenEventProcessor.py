@@ -78,6 +78,8 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         if target_message.sender_id != event.client.me.id:
             return
 
+        self.get_logger().info("is_event_greedy_reply={} is_event_greedy={}".format(HalloweenConfig.is_event_greedy_reply(event.message), HalloweenConfig.is_event_greedy(target_message)))
+
         if HalloweenConfig.is_event_reply(event.message) and HalloweenConfig.is_event_boss(target_message):
             await self.process_boss(global_event, event, channel, target_message, sender)
         elif HalloweenConfig.is_event_box_reply(event.message) and HalloweenConfig.is_event_box(target_message):
