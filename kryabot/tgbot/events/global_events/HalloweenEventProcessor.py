@@ -201,10 +201,10 @@ class HalloweenEventProcessor(GlobalEventProcessor):
 
         try:
             target_message_id = target_message.id
-            # try:
-            #     await event.delete()
-            # except Exception as delete_ex:
-            #     self.get_logger().exception(delete_ex)
+            try:
+                await event.delete()
+            except Exception as delete_ex:
+                self.get_logger().exception(delete_ex)
 
             # Damage amount used to identify which group user selected
             damage = 0
