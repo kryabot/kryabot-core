@@ -595,7 +595,12 @@ class HalloweenChannel(EventChannel):
                     for user_id in group_a:
                         await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, -2)
                         client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
-                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_TEAM_WON').format(team=HalloweenConfig.greedy_message_b, amt=2)
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_TEAM_WON').format(team_a=HalloweenConfig.greedy_message_a,
+                                                                                                                         a_size=len(group_a),
+                                                                                                                         team_b=HalloweenConfig.greedy_message_b,
+                                                                                                                         b_size=len(group_b),
+                                                                                                                         team=HalloweenConfig.greedy_message_b,
+                                                                                                                         amt=2)
                 elif len(group_b) > len(group_a):
                     for user_id in group_a:
                         await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, 2)
@@ -603,7 +608,12 @@ class HalloweenChannel(EventChannel):
                     for user_id in group_b:
                         await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, -2)
                         client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
-                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_TEAM_WON').format(team=HalloweenConfig.greedy_message_a, amt=2)
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_TEAM_WON').format(team_a=HalloweenConfig.greedy_message_a,
+                                                                                                                         a_size=len(group_a),
+                                                                                                                         team_b=HalloweenConfig.greedy_message_b,
+                                                                                                                         b_size=len(group_b),
+                                                                                                                         team=HalloweenConfig.greedy_message_b,
+                                                                                                                         amt=2)
 
                 final_text += ' ' + HalloweenConfig.pumpkin_greedy
                 try:
