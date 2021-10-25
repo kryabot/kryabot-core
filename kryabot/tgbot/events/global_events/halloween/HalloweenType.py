@@ -545,9 +545,7 @@ class HalloweenChannel(EventChannel):
                 remaining_seconds = (finish_ts - datetime.utcnow()).seconds
                 remaining_seconds = max(remaining_seconds, 0)
                 new_text = default_text.format(emotes=' '.join([HalloweenConfig.greedy_message_a, HalloweenConfig.greedy_message_b]), total=len(attackers.keys()), time=remaining_seconds)
-                if new_text == last_text:
-                    continue
-                else:
+                if new_text != last_text:
                     try:
                         last_text = new_text
                         if info_message is None:
@@ -626,7 +624,7 @@ class HalloweenChannel(EventChannel):
 
                 break
 
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
 
     async def pumpkin_love_info_updater(self, client, love_message):
         self.client = client
