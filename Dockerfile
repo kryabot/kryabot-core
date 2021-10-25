@@ -26,8 +26,8 @@ RUN python --version &&\
 
 
 # Environment variables
-ENV WORK_DIR="/opt/app/kb" \
-    SECRET_DIR=$WORK_DIR/secret/ \
+ENV WORK_DIR="/opt/app/kb"
+ENV SECRET_DIR=$WORK_DIR/secret/ \
     LOG_DIR=$WORK_DIR/log/ \
     TZ=GMT-3
 
