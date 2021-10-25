@@ -18,4 +18,4 @@ class SpawnGreedy(BaseCommand):
 
         processor = HalloweenEventProcessor.get_instance()
         processor.channels.create(self.channel['tg_chat_id'], self.channel['bot_lang'])
-        await processor.channels.channels[self.channel['tg_chat_id']].spawn_greedy(self.client, 100, test=False)
+        await processor.channels.channels[self.channel['tg_chat_id']].spawn_greedy_pumpkin(self.client, 100, test=False)
