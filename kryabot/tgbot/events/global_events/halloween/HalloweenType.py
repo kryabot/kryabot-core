@@ -531,6 +531,7 @@ class HalloweenChannel(EventChannel):
         last_text = ""
         info_message = None
         alive_seconds = randint(60, 180)
+        finish_ts = start_ts + timedelta(seconds=alive_seconds)
 
         while True:
             await asyncio.sleep(1)
@@ -541,7 +542,9 @@ class HalloweenChannel(EventChannel):
 
             attackers = self.get_attackers(sticker_message.id)
             if self.is_active(sticker_message.id):
-                new_text = default_text.format(emotes=' '.join([HalloweenConfig.greedy_message_a, HalloweenConfig.greedy_message_b]), total=len(attackers.keys()))
+                remaining_seconds = (finish_ts - datetime.utcnow()).seconds
+                remaining_seconds = max(remaining_seconds, 0)
+                new_text = default_text.format(emotes=' '.join([HalloweenConfig.greedy_message_a, HalloweenConfig.greedy_message_b]), total=len(attackers.keys()), time=remaining_seconds)
                 if new_text == last_text:
                     continue
                 else:
