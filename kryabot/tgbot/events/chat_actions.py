@@ -1,6 +1,8 @@
 from telethon.tl.types import PeerUser
 from utils.formatting import format_html_user_mention
 from tgbot.commands.common.user_data import get_user_data, format_user_data
+from telethon.utils import get_peer_id
+from tgbot.constants import TG_TEST_GROUP_ID
 
 
 async def user_join_check(client, channel, tg_user_id, message_id=0):
@@ -111,3 +113,25 @@ async def is_kickable(user_data, channel):
         return True
 
     return False
+
+
+async def process_bot_chat(event):
+    if not event.mentioned:
+        return
+
+    if not event.message.text:
+        return
+
+    text = event.message.text
+    chat_id: int = int(get_peer_id(event.message.peer_id, add_mark=False))
+    user_id: int = event.message.sender_id
+
+    if chat_id != TG_TEST_GROUP_ID:
+        return
+
+    if '@twitchkryabot' in text.lower():
+        text = text.replace('@twitchkryabot', '')
+
+    resp = await event.client.api.yandex.do_yalm_bot_query(text, user_id)
+    if resp and 'text' in resp:
+        await event.reply(resp['text'])

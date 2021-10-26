@@ -7,6 +7,7 @@ from api.vk import VK
 from api.twitch import Twitch
 from api.guardbot import GuardBot
 from api.googlecloud import GoogleCloud
+from api.yandex import Yandex
 from object.BotConfig import BotConfig
 
 from utils.twitch import sub_check
@@ -26,6 +27,7 @@ class ApiHelper:
         self.instagram = Instagram(cfg=cfg)
         self.betterttv = Betterttv(cfg=cfg)
         self.frankerfacez = Frankerfacez(cfg=cfg)
+        self.yandex = Yandex(cfg=cfg)
         self.logger = self.vk.logger
         self.sub_check_false = 'sub_check_false'
         self.reporter = reporter

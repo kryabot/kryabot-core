@@ -3,7 +3,7 @@ from telethon.tl.types import InputMediaUploadedDocument, DocumentAttributeAudio
 from tgbot.events.global_events.common import process_global_events
 from tgbot.commands.commandbuilder import run
 from utils.array import get_first
-from tgbot.events.chat_actions import user_join_check, user_left
+from tgbot.events.chat_actions import user_join_check, user_left, process_bot_chat
 import aiohttp
 import aiofiles
 
@@ -33,6 +33,9 @@ async def event_group_message(event: events.NewMessage.Event):
     try:
         await moderate(event, False)
         await process_global_events(event)
+
+        if event.mentioned:
+            await process_bot_chat(event)
     except Exception as ex:
         event.client.logger.exception(event.stringify())
         await event.client.exception_reporter(ex, 'Error in event_group_message event')
