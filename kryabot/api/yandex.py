@@ -5,7 +5,7 @@ class Yandex(Core):
     def __init__(self, cfg=None):
         super().__init__(cfg=cfg)
         self.history = {}
-        self.max_user_history: int = 50
+        self.max_user_history: int = 200
 
     async def do_yalm_bot_query(self, query: str, user_id: int):
         user_history = []

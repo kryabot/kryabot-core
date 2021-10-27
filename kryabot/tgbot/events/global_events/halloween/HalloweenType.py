@@ -61,6 +61,7 @@ class HalloweenChannel(EventChannel):
         self.last_greedy: datetime = datetime.utcnow()
         self.delete_messages: List[int] = []
         self.client = None
+        self.next_regular: datetime = None
         self.next_boss: datetime = None
         self.next_box: datetime = None
         self.next_love: datetime = None
@@ -70,6 +71,7 @@ class HalloweenChannel(EventChannel):
         self.next_greedy: datetime = None
         self.channel_size: int = 1
         self.last_spawn: datetime = datetime.utcnow()
+        self.spawn_delay: int = 15
 
     def is_test(self, msg_id: int)->bool:
         if not int(msg_id) in self.pumpkins:
@@ -122,6 +124,14 @@ class HalloweenChannel(EventChannel):
             self.calc_next_boss_spawn()
 
         return died
+
+    def calc_next_regular_spawn(self):
+        ratio = HalloweenConfig.calc(self.channel_size)
+        min_time = max(int(ratio / 5), 10)
+        max_time = max(int(ratio / 4), 30)
+        delay = randint(min_time, max_time)
+        self.next_regular = datetime.utcnow() + timedelta(minutes=delay)
+        logger.info('Updated next regular spawn to {} for channel {} (now = {})'.format(self.next_regular, self.channel_id, datetime.utcnow()))
 
     def calc_next_greedy_spawn(self):
         ratio = HalloweenConfig.calc(self.channel_size, limit=200)
@@ -184,35 +194,39 @@ class HalloweenChannel(EventChannel):
         if channel_size < 20:
             return False
 
-        if self.has_active_pumpkin() or not self.spawn_delay_passed():
-            return False
-
         if self.next_boss is None:
             self.calc_next_boss_spawn()
+
+        if self.has_active_pumpkin() or not self.spawn_delay_passed():
+            return False
 
         return self.next_boss < datetime.utcnow()
 
     def can_spawn_regular(self, channel_size: int)->bool:
         self.channel_size = channel_size
+
+        if self.next_regular is None:
+            self.calc_next_regular_spawn()
+
         if self.has_active_pumpkin() or not self.spawn_delay_passed():
             return False
 
-        ratio = HalloweenConfig.calc(channel_size)
-        min_time = max(int(ratio / 5), 10)
-        max_time = max(int(ratio / 4), 30)
-        delay = randint(min_time, max_time)
-        if self.last_regular + timedelta(minutes=delay) < datetime.utcnow():
-            return True
+        if self.next_regular < datetime.utcnow():
+            other_spawns = [self.next_box, self.next_number, self.next_greedy, self.next_scary, self.next_love]
+            other_spawns_soon = next(filter(lambda item: item < datetime.utcnow() + timedelta(minutes=self.spawn_delay), other_spawns), None)
+            if other_spawns_soon:
+                self.get_logger().info('Skipping spawn regular spawn {} because have upcoming item {}'.format(self.next_regular, other_spawns_soon))
+            return other_spawns_soon is not None
 
         return False
 
     def can_spawn_box(self, channel_size: int)->bool:
         self.channel_size = channel_size
-        if self.has_active_pumpkin() or not self.spawn_delay_passed():
-            return False
-
         if self.next_box is None:
             self.calc_next_box_spawn()
+
+        if self.has_active_pumpkin() or not self.spawn_delay_passed():
+            return False
 
         return self.next_box < datetime.utcnow()
 
@@ -258,11 +272,12 @@ class HalloweenChannel(EventChannel):
 
     def can_spawn_silent(self, channel_size: int)->bool:
         self.channel_size = channel_size
-        if self.has_active_pumpkin() or not self.spawn_delay_passed():
-            return False
 
         if self.next_silent is None:
             self.calc_next_silent_spawn()
+
+        if self.has_active_pumpkin() or not self.spawn_delay_passed():
+            return False
 
         return self.next_silent < datetime.utcnow()
 
@@ -273,7 +288,7 @@ class HalloweenChannel(EventChannel):
         self.pumpkins[int(msg_id)] = None
 
     def spawn_delay_passed(self)->bool:
-        return self.last_spawn + timedelta(minutes=15) < datetime.utcnow()
+        return self.last_spawn + timedelta(minutes=self.spawn_delay) < datetime.utcnow()
 
     async def spawn_regular(self, client, size: int, test: bool=False):
         self.client = client
@@ -285,6 +300,7 @@ class HalloweenChannel(EventChannel):
 
         monster = HalloweenMonsters.RegularPumpkin(msg_id=msg.id, test=test)
         self.save(monster)
+        self.calc_next_regular_spawn()
 
     async def spawn_greedy_pumpkin(self, client, size: int, test: bool=False):
         self.client = client
@@ -475,9 +491,7 @@ class HalloweenChannel(EventChannel):
                         current_guesses.append(str(attackers[user_id]))
 
                 new_text = default_text.format(min=HalloweenConfig.number_range_min, max=HalloweenConfig.number_range_max, total=len(attackers.keys()), current=' '.join(current_guesses))
-                if new_text == last_text:
-                    continue
-                else:
+                if new_text != last_text:
                     try:
                         last_text = new_text
                         if info_message is None:
@@ -581,9 +595,9 @@ class HalloweenChannel(EventChannel):
                 final_text = ''
                 if len(group_a + group_b) < 3:
                     self.channel_size = await client.get_group_member_count(int(self.channel_id))
-                    await client.db.add_currency_to_all_chat_users(HalloweenConfig.currency_key, sticker_message.to_id.channel_id, -3)
+                    await client.db.add_currency_to_all_chat_users(HalloweenConfig.currency_key, sticker_message.to_id.channel_id, -2)
                     client.loop.create_task(self.publish_pumpkin_amount_update(0))
-                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_EMPTY_TEAMS').format(total=self.channel_size, amt=3)
+                    final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_EMPTY_TEAMS').format(total=self.channel_size, amt=2)
                 elif len(group_b) == len(group_a):
                     # for user_id in group_a + group_b:
                     #     await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, -2)
@@ -645,9 +659,7 @@ class HalloweenChannel(EventChannel):
             attackers = self.get_attackers(love_message.id)
             if self.is_active(love_message.id):
                 new_text = default_text.format(emotes=' '.join(HalloweenConfig.love_messages), total=len(attackers.keys()))
-                if new_text == last_text:
-                    continue
-                else:
+                if new_text != last_text:
                     try:
                         last_text = new_text
                         if info_message is None:
@@ -683,7 +695,7 @@ class HalloweenChannel(EventChannel):
 
                 break
 
-            await asyncio.sleep(3)
+            await asyncio.sleep(4)
 
     async def pumpkin_scary_info_updater(self, client, event_message):
         self.client = client
