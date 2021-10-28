@@ -25,6 +25,10 @@ class Yandex(Core):
         if user_id not in self.history:
             self.history[user_id] = []
 
+        if response and 'bad_query' in response and response['bad_query'] == 1:
+            response['text'] = 'Извините, нейросети запретили мне говорить на подобные темы. Может, поговорим о чем-то ещё?'
+            return response
+
         self.history[user_id].append(query)
         if response and 'text' in response:
             self.history[user_id].append(response['text'])
