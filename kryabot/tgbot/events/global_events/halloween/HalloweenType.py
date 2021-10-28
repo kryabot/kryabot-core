@@ -155,31 +155,31 @@ class HalloweenChannel(EventChannel):
         max_time = int(ratio * 2)
         delay = randint(min_time, max_time)
         self.next_scary = datetime.utcnow() + timedelta(minutes=delay)
-        logger.info('Updated next love spawn to {} for channel {} (now = {})'.format(self.next_scary, self.channel_id, datetime.utcnow()))
+        logger.info('Updated next scary spawn to {} for channel {} (now = {})'.format(self.next_scary, self.channel_id, datetime.utcnow()))
 
     def calc_next_boss_spawn(self):
         ratio = HalloweenConfig.calc(self.channel_size)
-        min_time = min(int(ratio), 120)
-        max_time = max(int(ratio), 180)
+        min_time = min(int(ratio), 160)
+        max_time = max(int(ratio), 220)
         delay = randint(min_time, max_time)
         self.next_boss = datetime.utcnow() + timedelta(minutes=delay)
         logger.info('Updated next boss spawn to {} for channel {} (now = {})'.format(self.next_boss, self.channel_id, datetime.utcnow()))
 
     def calc_next_number_spawn(self):
         ratio = HalloweenConfig.calc(self.channel_size)
-        min_time = min(int(ratio), 120)
-        max_time = max(int(ratio), 180)
+        min_time = min(int(ratio), 160)
+        max_time = max(int(ratio), 220)
         delay = randint(min_time, max_time)
         self.next_number = datetime.utcnow() + timedelta(minutes=delay)
         logger.info('Updated next number spawn to {} for channel {} (now = {})'.format(self.next_number, self.channel_id, datetime.utcnow()))
 
     def calc_next_silent_spawn(self):
         ratio = HalloweenConfig.calc(self.channel_size)
-        min_time = min(int(ratio), 120)
+        min_time = min(int(ratio), 160)
         max_time = max(int(ratio), 250)
         delay = randint(min_time, max_time)
         self.next_silent = datetime.utcnow() + timedelta(minutes=delay)
-        logger.info('Updated next number spawn to {} for channel {} (now = {})'.format(self.next_silent, self.channel_id, datetime.utcnow()))
+        logger.info('Updated next silent spawn to {} for channel {} (now = {})'.format(self.next_silent, self.channel_id, datetime.utcnow()))
 
     def calc_next_box_spawn(self):
         ratio = HalloweenConfig.calc(self.channel_size, limit=300)
@@ -311,7 +311,6 @@ class HalloweenChannel(EventChannel):
         monster = HalloweenMonsters.GreedyPumpkin(msg_id=msg.id, hp=1, test=test)
         self.save(monster)
         client.loop.create_task(self.pumpkin_greedy_info_updater(client, msg))
-        self.calc_next_greedy_spawn()
 
     async def spawn_love_pumpkin(self, client, size: int, test: bool=False):
         self.client = client
@@ -322,7 +321,6 @@ class HalloweenChannel(EventChannel):
         monster = HalloweenMonsters.LovePumpkin(msg_id=msg.id, hp=10000, test=test)
         self.save(monster)
         client.loop.create_task(self.pumpkin_love_info_updater(client, msg))
-        self.calc_next_love_spawn()
 
     async def spawn_scary(self, client, size: int, test: bool=False):
         self.client = client
@@ -333,7 +331,6 @@ class HalloweenChannel(EventChannel):
         monster = HalloweenMonsters.ScaryPumpkin(msg_id=msg.id, hp=10000, test=test)
         self.save(monster)
         client.loop.create_task(self.pumpkin_scary_info_updater(client, msg))
-        self.calc_next_scary_spawn()
 
     async def spawn_boss(self, client, size: int, test: bool=False):
         self.client = client
@@ -358,7 +355,6 @@ class HalloweenChannel(EventChannel):
         monster = HalloweenMonsters.NumberPumpkin(msg_id=msg.id, hp=0, test=test)
         self.save(monster)
         client.loop.create_task(self.pumpkin_number_info_updater(client, msg))
-        self.calc_next_number_spawn()
 
     async def spawn_silent(self, client, size: int, test: bool=False):
         self.client = client
@@ -371,7 +367,6 @@ class HalloweenChannel(EventChannel):
         monster = HalloweenMonsters.SilentPumpkin(msg_id=msg.id, hp=1, test=test)
         self.save(monster)
         client.loop.create_task(self.pumpkin_silent_info_updater(client, msg))
-        self.calc_next_silent_spawn()
 
     async def spawn_box(self, client, size: int, test: bool=False):
         self.client = client
@@ -384,7 +379,6 @@ class HalloweenChannel(EventChannel):
         monster = HalloweenMonsters.ChestBox(msg_id=msg.id, hp=1, test=test)
         self.save(monster)
         client.loop.create_task(self.pumpkin_chestbox_info_updater(client, msg))
-        self.calc_next_box_spawn()
 
     async def send_sticker(self, client, channel_id, sticker_pack_name, emote):
         stickers = await client.get_sticker_set(sticker_pack_name)
