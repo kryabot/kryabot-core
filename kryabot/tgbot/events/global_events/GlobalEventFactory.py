@@ -23,3 +23,11 @@ class GlobalEventFactory:
     def start_all(client)->None:
         for event in GlobalEventFactory.factory.keys():
             GlobalEventFactory.start(event, client)
+
+    @staticmethod
+    def is_in_use(tg_chat_id: int) -> bool:
+        for event in GlobalEventFactory.factory.keys():
+            if GlobalEventFactory.get(event).is_in_use(tg_chat_id):
+                return True
+
+        return False

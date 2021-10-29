@@ -1,4 +1,6 @@
 from telethon.tl.types import PeerUser
+
+from tgbot.events.global_events.GlobalEventFactory import GlobalEventFactory
 from utils.formatting import format_html_user_mention
 from tgbot.commands.common.user_data import get_user_data, format_user_data
 from telethon.utils import get_peer_id
@@ -132,6 +134,9 @@ async def process_bot_chat(event):
 
     channel = await get_first(await event.client.db.get_auth_subchat(chat_id))
     if not channel:
+        return
+
+    if GlobalEventFactory.is_in_use(chat_id):
         return
 
     if chat_id != TG_TEST_GROUP_ID and not bool(user['supporter']) and not channel['tw_id'] == user['tw_id']:

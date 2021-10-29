@@ -19,6 +19,9 @@ class HalloweenEventProcessor(GlobalEventProcessor):
         self.required_messages_total = 100
         self.required_messages_interval = 3
 
+    def is_in_use(self, tg_chat_id: int) -> bool:
+        return self.channels.has_active_pumpkin(tg_chat_id)
+
     async def pumpkin_spawner(self, client):
         client.logger.info('Starting pumpkin_spawner')
         delay = 60

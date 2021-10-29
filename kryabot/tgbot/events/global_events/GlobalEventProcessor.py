@@ -51,6 +51,9 @@ class GlobalEventProcessor(Base):
 
         return True
 
+    def is_in_use(self, tg_chat_id: int) -> bool:
+        return False
+
     def register_task(self, task):
         self.startup_tasks.append(task)
 

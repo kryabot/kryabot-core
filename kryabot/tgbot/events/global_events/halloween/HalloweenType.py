@@ -46,6 +46,10 @@ class HalloweenChannels(EventChannels):
         channel: HalloweenChannel = self.channels[channel_id]
         return channel.is_test(message_id)
 
+    def has_active_pumpkin(self, channel_id: int) -> bool:
+        if channel_id in self.channels:
+            return self.channels[channel_id].has_active_pumpkin()
+        return False
 
 class HalloweenChannel(EventChannel):
     def __init__(self, channel_id, lang):
