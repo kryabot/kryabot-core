@@ -123,7 +123,7 @@ async def process_bot_chat(event):
         text = 'мне кажется я тупой'
     else:
         text = event.message.text
-        
+
     chat_id: int = int(get_peer_id(event.message.peer_id, add_mark=False))
     user_id: int = event.message.sender_id
     user = await get_first(await event.client.db.getUserByTgChatId(user_id))
@@ -142,4 +142,5 @@ async def process_bot_chat(event):
 
     resp = await event.client.api.yandex.do_yalm_bot_query(text, user_id)
     if resp and 'text' in resp:
-        await event.reply(resp['text'])
+        filtered = filter(lambda word: not str(word).startswith('@'), resp['text'].split(' '))
+        await event.reply(' '.join(filtered))
