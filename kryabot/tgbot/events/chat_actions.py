@@ -120,16 +120,21 @@ async def process_bot_chat(event):
         return
 
     if not event.message.text:
-        return
-
-    text = event.message.text
+        text = 'мне кажется я тупой'
+    else:
+        text = event.message.text
+        
     chat_id: int = int(get_peer_id(event.message.peer_id, add_mark=False))
     user_id: int = event.message.sender_id
     user = await get_first(await event.client.db.getUserByTgChatId(user_id))
     if not user:
         return
 
-    if chat_id != TG_TEST_GROUP_ID and not bool(user['supporter']):
+    channel = await get_first(await event.client.db.get_auth_subchat(chat_id))
+    if not channel:
+        return
+
+    if chat_id != TG_TEST_GROUP_ID and not bool(user['supporter']) and not channel['tw_id'] == user['tw_id']:
         return
 
     if '@twitchkryabot' in text.lower():
