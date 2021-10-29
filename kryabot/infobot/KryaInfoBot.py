@@ -418,7 +418,7 @@ class KryaInfoBot(TelegramClient):
         if contains_changes:
             formatted_message += '\n\n🎮 Full stream duration: {}'.format(td_format(stream_duration))
 
-        active_chatters = await self.db.getChatMostActiveUser(channels[0]['channel_id'], 600)
+        active_chatters = await self.db.getChatMostActiveUser(channels[0]['channel_id'], stream_duration.seconds)
         if active_chatters and len(active_chatters) > 0:
             formatted_message += '\n\n💥 Most active chatter: {} with {} messages'.format(active_chatters[0]['dname'], active_chatters[0]['count'])
 

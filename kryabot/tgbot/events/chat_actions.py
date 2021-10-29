@@ -3,7 +3,7 @@ from utils.formatting import format_html_user_mention
 from tgbot.commands.common.user_data import get_user_data, format_user_data
 from telethon.utils import get_peer_id
 from tgbot.constants import TG_TEST_GROUP_ID
-
+from utils.array import get_first
 
 async def user_join_check(client, channel, tg_user_id, message_id=0):
     await client.db.update_tg_stats_join(channel['tg_chat_id'])
@@ -125,8 +125,11 @@ async def process_bot_chat(event):
     text = event.message.text
     chat_id: int = int(get_peer_id(event.message.peer_id, add_mark=False))
     user_id: int = event.message.sender_id
+    user = await get_first(await event.client.db.getUserByTgChatId(user_id))
+    if not user:
+        return
 
-    if chat_id != TG_TEST_GROUP_ID:
+    if chat_id != TG_TEST_GROUP_ID and not bool(user['supporter']):
         return
 
     if '@twitchkryabot' in text.lower():
