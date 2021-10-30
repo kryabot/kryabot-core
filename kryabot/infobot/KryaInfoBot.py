@@ -1,7 +1,7 @@
 import traceback
 import os
 import logging
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from telethon.errors import ChannelPrivateError, WebpageCurlFailedError
 from telethon.extensions import html
@@ -20,6 +20,7 @@ from infobot.twitch.TwitchEvents import TwitchEvent
 from object.Pinger import Pinger
 from object.System import System
 from object.Translator import Translator
+from scrape_word_cloud import get_word_cloud_screenshot
 from tgbot import constants
 from tgbot.FastTelethon import upload_file
 from tgbot.constants import TG_GROUP_MONITORING_ID_FULL
@@ -329,10 +330,20 @@ class KryaInfoBot(TelegramClient):
                     fileio.seek(0)
                     fileio.filename = "image.jpg"
                     await self.send_message(target.target_id, message=text, file=fileio, buttons=button, link_preview=False, parse_mode='html')
+
+                # TESTNG PART
                 try:
                     if event.finish and int(target.target_id) == int(TG_GROUP_MONITORING_ID_FULL):
-                        to_json = dict_to_json(event.summary)
-                        await self.send_file(target.target_id, file=to_json.encode(), caption=await self.format_stream_finish_message(target, event))
+                        file_to_send = None
+                        try:
+                            file_to_send = await self.generate_twitch_word_cloud_image(event)
+                        except Exception as wc_ex:
+                            self.logger.exception(wc_ex)
+
+                        if file_to_send is None:
+                            file_to_send = dict_to_json(event.summary)
+
+                        await self.send_file(target.target_id, file=file_to_send, caption=await self.format_stream_finish_message(target, event))
                 except Exception as testEx:
                     self.logger.exception(testEx)
             except ChannelPrivateError:
@@ -396,17 +407,17 @@ class KryaInfoBot(TelegramClient):
                 # Possible multiple finishes, interested in last one
                 stream_end = item['ts']
                 calc_from = last_resume_ts if last_resume_ts and last_resume_ts > previous_item['ts'] else previous_item['ts']
-                game_changes += '\n🎮 Played <b>{}</b> for {}'.format(previous_item['new_value'], td_format(stream_end - calc_from))
+                game_changes += '\n🎮 Played <b>{}</b>\n({})'.format(previous_item['new_value'], td_format(stream_end - calc_from))
             elif item['type'] == 'resume':
                 contains_changes = True
                 last_resume_ts = item['ts']
-                game_changes += '\n🎮 Technical break ({})'.format(td_format(item['ts'] - stream_end))
+                game_changes += '\n🎮 Technical break\n({})'.format(td_format(item['ts'] - stream_end))
             else:
                 # Game change
                 if previous_item:
                     contains_changes = True
                     calc_from = last_resume_ts if last_resume_ts and last_resume_ts > previous_item['ts'] else previous_item['ts']
-                    game_changes += '\n🎮 Played <b>{}</b> for {}'.format(previous_item['new_value'], td_format(item['ts'] - calc_from))
+                    game_changes += '\n🎮 Played <b>{}</b>\n({})'.format(previous_item['new_value'], td_format(item['ts'] - calc_from))
                 previous_item = item
 
         # if previous_item:
@@ -423,3 +434,37 @@ class KryaInfoBot(TelegramClient):
             formatted_message += '\n\n💥 Most active chatter: {} with {} messages'.format(active_chatters[0]['dname'], active_chatters[0]['count'])
 
         return formatted_message
+
+    async def generate_twitch_word_cloud_image(self, event) -> Union[bytes, None]:
+        channels = await self.db.get_channel_by_twitch_id(event.profile.twitch_id)
+        if channels is None or len(channels) == 0:
+            return None
+
+        rows = await self.manager.db.searchTwitchMessages(channels[0]['channel_id'], '%')
+        if rows is None or rows == () or len(rows) == 0:
+            raise ValueError("Not enough messages to generate word cloud (rows)")
+
+        words = {}
+        request_data = ""
+        for record in rows:
+            line = record['message']
+            word_list = line.split(' ')
+            for word in word_list:
+                if word in words.keys():
+                    words[word] += 1
+                else:
+                    words[word] = 1
+
+        sorted_words = dict(sorted(words.items(), key=lambda item: item[1], reverse=True))
+
+        i = 0
+        for word in sorted_words.keys():
+            if i > 200:
+                break
+            i += 1
+            request_data += '{}\t{}\n'.format(sorted_words[word], word)
+
+        if i == 0:
+            raise ValueError("Not enough messages to generate word cloud (i)")
+
+        return await get_word_cloud_screenshot(request_data)
