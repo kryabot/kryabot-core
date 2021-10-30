@@ -1,14 +1,14 @@
 import traceback
 import os
 import logging
-from typing import Dict, List, Union
+from typing import List, Union
 
 from telethon.errors import ChannelPrivateError, WebpageCurlFailedError
 from telethon.extensions import html
 from telethon.tl.functions.channels import GetParticipantRequest, GetFullChannelRequest
 from telethon.tl.functions.messages import GetFullChatRequest
-from telethon.tl.types import UpdateChannel, UpdateNewChannelMessage, MessageService, MessageActionChatDeleteUser, \
-    MessageActionChatAddUser, UpdateNewMessage, UpdateChatParticipants, InputMediaPhotoExternal, DocumentAttributeVideo
+from telethon.tl.types import UpdateChannel, MessageService, MessageActionChatDeleteUser, \
+    MessageActionChatAddUser, UpdateNewMessage, UpdateChatParticipants, InputMediaPhotoExternal
 
 from telethon import TelegramClient, events, Button
 
@@ -20,9 +20,8 @@ from infobot.twitch.TwitchEvents import TwitchEvent
 from object.Pinger import Pinger
 from object.System import System
 from object.Translator import Translator
-from scrape_word_cloud import get_word_cloud_screenshot
+from scrape.scrape_word_cloud import get_word_cloud_screenshot
 from tgbot import constants
-from tgbot.FastTelethon import upload_file
 from tgbot.constants import TG_GROUP_MONITORING_ID_FULL
 from utils.json_parser import dict_to_json
 from utils.formatting import td_format

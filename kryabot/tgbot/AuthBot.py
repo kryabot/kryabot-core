@@ -8,8 +8,10 @@ from object.ApiHelper import ApiHelper
 from object.Pinger import Pinger
 from object.System import System
 from object.Translator import Translator
+from scrape.twitch_gifter import twitch_gift_to_user
 from tgbot.constants import TG_GROUP_MONITORING_ID
 from utils.twitch import get_active_oauth_data
+from utils.array import get_first
 import logging
 import base64
 import asyncio
@@ -18,6 +20,8 @@ import traceback
 from datetime import datetime
 from urllib import parse
 
+PUMKPIN_EXCHANGE_PRICE = 500
+PUMKPIN_EXCHANGE_KEY = 'pumpkin_2021'
 
 @events.register(events.NewMessage(pattern='/ping', chats=[TG_GROUP_MONITORING_ID]))
 async def pong(event):
@@ -34,6 +38,24 @@ async def start(event):
     except Exception as ex:
         await event.client.exception_reporter(ex, 'Start event')
 
+
+@events.register(events.NewMessage(pattern='\/buygift', func=lambda e: e.is_private))
+async def start(event):
+    try:
+        await event.client.process_buy_gift(event)
+    except UserIsBlockedError as ex:
+        pass
+    except Exception as ex:
+        await event.client.exception_reporter(ex, 'Start buygift')
+
+@events.register(events.CallbackQuery(data=b'startexchange', func=lambda e: e.is_private and not e.via_inline))
+async def pushed_start_exchange(event: events.CallbackQuery.Event):
+    await event.client.process_start_exchange(event)
+
+
+@events.register(events.CallbackQuery(data=b'cancelexchange', func=lambda e: e.is_private))
+async def pushed_cancel_exchange(event: events.CallbackQuery.Event):
+    await event.delete()
 
 @events.register(events.NewMessage(pattern='/reloadtranslation', chats=[TG_GROUP_MONITORING_ID]))
 async def reloadtranslations(event):
@@ -275,3 +297,97 @@ class AuthBot(TelegramClient):
         raw = self.translator.getLangTranslation('ru', key)
         return raw.format(name=user_name, channel=channel_name)
 
+    async def process_buy_gift(self, event: events.NewMessage.Event):
+        user = await get_first(await self.db.getUserByTgChatId(event.message.chat_id, skip_cache=True))
+        if not user:
+            # Ignore not authorized users
+            return
+
+        currency_data = await get_first(await self.db.get_user_currency_amount(PUMKPIN_EXCHANGE_KEY, user['user_id']))
+        if not currency_data:
+            return
+
+        if currency_data['amount'] < PUMKPIN_EXCHANGE_PRICE:
+            await event.reply('Sorry, you do not have enough pumpkins for exchange!')
+            return
+
+        button = [Button.inline(text="Yes", data=b'startexchange'), Button.inline(text="No", data=b'cancelexchange')]
+        await event.reply('You have {} pumpkins, do you want to exchange {} pumpkins into Twitch sub-gift? Your amount of pumpkins will be reduced.'.format(currency_data['amount'], PUMKPIN_EXCHANGE_PRICE), buttons=button)
+
+    async def process_start_exchange(self, event: events.CallbackQuery.Event):
+        gift_user = ''
+        gift_channel = ''
+        confirmed = False
+        messages = []
+
+        await event.delete()
+
+        user = await get_first(await self.db.getUserByTgChatId(event.chat_id, skip_cache=True))
+        if not user:
+            # Ignore not authorized users
+            return
+
+        try:
+            async with self.conversation(await event.get_input_chat(), timeout=300) as conv:
+                channel_question = await conv.send_message('Please reply Twitch channel name where gift should be sent? It is case sensitive!')
+                gift_channel = await conv.get_response(message=channel_question)
+                await channel_question.delete()
+
+                user_question = await conv.send_message('Please reply Twitch user who should receive the gift? It is case sensitive!')
+                gift_user = await conv.get_response(message=user_question)
+                await user_question.delete()
+
+                confirm_text = 'Please confirm if I understood you correctly!\n\n'
+                confirm_text += 'Gift to user {} on channel {}?'.format(gift_user, gift_channel)
+
+                button = [Button.inline(text="Yes, i want to buy now!", data=b'exchangecontinue'),
+                          Button.inline(text="No!", data=b'cancelexchange')]
+                confirmation_question = await conv.send_message(confirm_text, buttons=button)
+                confirmation_answer = await conv.wait_event(events.CallbackQuery(chats=[event.sender_id]), timeout=300)
+                await confirmation_question.delete()
+
+                if confirmation_answer.data == b'cancelexchange':
+                    return
+                elif confirmation_answer.data == b'exchangecontinue':
+                    confirmed = True
+                else:
+                    await conv.send_message('Unhandled problem occurred :0')
+
+        except asyncio.TimeoutError as timeout:
+            await event.reply('Sorry, you run out of time! Please start over and be quicker!')
+
+        if not confirmed:
+            return
+
+        self.logger.info('Subgift ordered by user {}. To user {} in channel {}'.format(event.sender_id, gift_user, gift_channel))
+
+        info = await self.send_message(await event.get_input_chat(), "Processing your order, please wait a bit, it can take couple minutes!")
+        currency_data = await get_first(await self.db.get_user_currency_amount(PUMKPIN_EXCHANGE_KEY, user['user_id']))
+        if not currency_data:
+            return
+
+        if currency_data['amount'] < PUMKPIN_EXCHANGE_PRICE:
+            await event.answer('Sorry, you do not have enough pumpkins (2021) for exchange!')
+            return
+
+        await self.db.add_currency_to_user(PUMKPIN_EXCHANGE_KEY, user['user_id'], -1 * PUMKPIN_EXCHANGE_PRICE)
+        self.logger.info('User {} paid exchange price for subgift'.format(user['user_id']))
+
+        is_gifted = False
+        gift_error = ''
+
+        try:
+            is_gifted, gift_error = await twitch_gift_to_user(gift_channel, gift_user)
+            if is_gifted:
+                await self.send_message(await event.get_input_chat(), 'Your order completed! Gift was sent to {} on channel {}!'.format(gift_user, gift_channel), reply_to=info.id)
+            else:
+                if not gift_error or gift_error == 'SEARCH_ERROR':
+                    await self.send_message(await event.get_input_chat(), 'Your order cancelled due to technical reasons!', reply_to=info.id)
+                else:
+                    await self.send_message(await event.get_input_chat(), 'Your order cancelled, Twitch answer: {}'.format(gift_error), reply_to=info.id)
+        except Exception as ex:
+            self.logger.exception(ex)
+
+        if not is_gifted:
+            self.logger.info('User {} refunded because it was not gifted: {}'.format(user['user_id'], gift_error))
+            await self.db.add_currency_to_user(PUMKPIN_EXCHANGE_KEY, user['user_id'], PUMKPIN_EXCHANGE_PRICE)

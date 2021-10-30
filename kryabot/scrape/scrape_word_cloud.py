@@ -1,5 +1,4 @@
 import os
-from random import randint
 from time import sleep
 
 from selenium import webdriver
