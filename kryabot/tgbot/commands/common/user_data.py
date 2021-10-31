@@ -156,6 +156,7 @@ async def format_user_data(user_data, client, channel)->str:
         global_awards = ''
         for global_award in user_data['global_awards']:
             global_awards += client.get_translation(lang, global_award['label']).format(amt=global_award['amount'], val=global_award['val'])
+            global_awards += '\n'
 
         if len(global_awards) > 0:
             answer += '\n\n<b>{}</b>\n{}\n'.format(client.get_translation(lang, 'USER_GLOBAL_AWARDS'), global_awards)

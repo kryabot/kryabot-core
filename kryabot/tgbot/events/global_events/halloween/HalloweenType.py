@@ -616,10 +616,10 @@ class HalloweenChannel(EventChannel):
                                                                                                                          amt=2)
                 elif len(group_b) > len(group_a):
                     for user_id in group_a:
-                        # await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, 2)
+                        await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, 2)
                         client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
                     for user_id in group_b:
-                        # await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, -2)
+                        await client.db.add_currency_to_user(HalloweenConfig.currency_key, user_id, -2)
                         client.loop.create_task(self.publish_pumpkin_amount_update(user_id))
                     final_text = client.translator.getLangTranslation(self.lang, 'EVENT_PUMPKIN_GREEDY_TEAM_WON').format(team_a=HalloweenConfig.greedy_message_a[0],
                                                                                                                          a_size=len(group_a),
