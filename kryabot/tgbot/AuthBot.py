@@ -39,14 +39,15 @@ async def start(event):
         await event.client.exception_reporter(ex, 'Start event')
 
 
-@events.register(events.NewMessage(pattern='\/buygift', func=lambda e: e.is_private))
-async def start(event):
+@events.register(events.NewMessage(pattern='/buygift', func=lambda e: e.is_private))
+async def start_buy_gift(event):
     try:
         await event.client.process_buy_gift(event)
     except UserIsBlockedError as ex:
         pass
     except Exception as ex:
         await event.client.exception_reporter(ex, 'Start buygift')
+
 
 @events.register(events.CallbackQuery(data=b'startexchange', func=lambda e: e.is_private and not e.via_inline))
 async def pushed_start_exchange(event: events.CallbackQuery.Event):
@@ -83,6 +84,9 @@ class AuthBot(TelegramClient):
         self.add_event_handler(pong)
         self.add_event_handler(start)
         self.add_event_handler(reloadtranslations)
+        self.add_event_handler(start_buy_gift)
+        self.add_event_handler(pushed_start_exchange)
+        self.add_event_handler(pushed_cancel_exchange)
         self._parse_mode = html
         self.loop.create_task(self.db.db_activity())
         self.loop.create_task(Pinger(System.AUTHBOT_TELEGRAM, self.logger, self.db.redis).run_task())
@@ -311,7 +315,7 @@ class AuthBot(TelegramClient):
             await event.reply('Sorry, you do not have enough pumpkins for exchange!')
             return
 
-        button = [Button.inline(text="Yes", data=b'startexchange'), Button.inline(text="No", data=b'cancelexchange')]
+        button = [Button.inline(text="Yes", data='startexchange'), Button.inline(text="No", data='cancelexchange')]
         await event.reply('You have {} pumpkins, do you want to exchange {} pumpkins into Twitch sub-gift? Your amount of pumpkins will be reduced.'.format(currency_data['amount'], PUMKPIN_EXCHANGE_PRICE), buttons=button)
 
     async def process_start_exchange(self, event: events.CallbackQuery.Event):
@@ -338,14 +342,15 @@ class AuthBot(TelegramClient):
                 await user_question.delete()
 
                 confirm_text = 'Please confirm if I understood you correctly!\n\n'
-                confirm_text += 'Gift to user {} on channel {}?'.format(gift_user, gift_channel)
+                confirm_text += 'Gift to user {} on channel {}?'.format(gift_user.text, gift_channel.text)
 
-                button = [Button.inline(text="Yes, i want to buy now!", data=b'exchangecontinue'),
-                          Button.inline(text="No!", data=b'cancelexchange')]
+                button = [Button.inline(text="Yes, i want to buy now!", data='exchangecontinue'),
+                          Button.inline(text="No!", data='cancelexchange')]
                 confirmation_question = await conv.send_message(confirm_text, buttons=button)
                 confirmation_answer = await conv.wait_event(events.CallbackQuery(chats=[event.sender_id]), timeout=300)
                 await confirmation_question.delete()
 
+                print(str(confirmation_answer.data))
                 if confirmation_answer.data == b'cancelexchange':
                     return
                 elif confirmation_answer.data == b'exchangecontinue':
@@ -359,9 +364,9 @@ class AuthBot(TelegramClient):
         if not confirmed:
             return
 
-        self.logger.info('Subgift ordered by user {}. To user {} in channel {}'.format(event.sender_id, gift_user, gift_channel))
+        self.logger.info('Subgift ordered by user {}. To user {} in channel {}'.format(event.sender_id, gift_user.text, gift_channel.text))
 
-        info = await self.send_message(await event.get_input_chat(), "Processing your order, please wait a bit, it can take couple minutes!")
+        info = await self.send_message(event.sender_id, "Processing your order, please wait a bit, it can take couple minutes!")
         currency_data = await get_first(await self.db.get_user_currency_amount(PUMKPIN_EXCHANGE_KEY, user['user_id']))
         if not currency_data:
             return
@@ -377,7 +382,7 @@ class AuthBot(TelegramClient):
         gift_error = ''
 
         try:
-            is_gifted, gift_error = await twitch_gift_to_user(gift_channel, gift_user)
+            is_gifted, gift_error = await twitch_gift_to_user(gift_channel.text, gift_user.text)
             if is_gifted:
                 await self.send_message(await event.get_input_chat(), 'Your order completed! Gift was sent to {} on channel {}!'.format(gift_user, gift_channel), reply_to=info.id)
             else:
