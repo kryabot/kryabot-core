@@ -149,6 +149,9 @@ def interactive_login():
                     break
             except Exception as ex:
                 pass
+
+        sleep(3)
+        driver.save_screenshot("{}_interactive_login_done.png".format(datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")))
     except TwitchSearchError as search_error:
         driver.save_screenshot("{}_interactive_login_error.png".format(datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")))
         raise TwitchSearchError
