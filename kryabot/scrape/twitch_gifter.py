@@ -231,6 +231,22 @@ def gift_to_user(target_channel: str, target_nickname: str):
 
 def click_web_buttons(driver, target_nickname):
     tries = 0
+
+    while True:
+        if tries > 5:
+            break
+
+        tries += 1
+        sleep(1)
+        try:
+            buttons = driver.find_elements_by_xpath("//*[contains(text(), 'Gift a Sub')]")
+            if buttons:
+                buttons[0].click()
+                break
+        except Exception as ex:
+            pass
+
+    tries = 0
     print('searching for gifting option for specific user')
     while True:
         if tries > 20:
