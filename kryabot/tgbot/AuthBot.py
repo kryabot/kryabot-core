@@ -333,7 +333,7 @@ class AuthBot(TelegramClient):
 
         try:
             async with self.conversation(await event.get_input_chat(), timeout=300) as conv:
-                channel_question = await conv.send_message('Please reply Twitch channel name where gift should be sent? It is case sensitive!')
+                channel_question = await conv.send_message('Please reply Twitch channel name where gift should be sent?!')
                 gift_channel = await conv.get_response(message=channel_question)
                 await channel_question.delete()
 
@@ -382,7 +382,7 @@ class AuthBot(TelegramClient):
         gift_error = ''
 
         try:
-            is_gifted, gift_error = await twitch_gift_to_user(gift_channel.text, gift_user.text)
+            is_gifted, gift_error = await twitch_gift_to_user(gift_channel.text.lower(), gift_user.text)
             if is_gifted:
                 await self.send_message(await event.get_input_chat(), '✅ Your order completed! Gift was sent to {} on channel {}!'.format(gift_user.text, gift_channel.text), reply_to=info.id)
             else:
