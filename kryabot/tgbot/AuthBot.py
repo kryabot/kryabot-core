@@ -384,12 +384,12 @@ class AuthBot(TelegramClient):
         try:
             is_gifted, gift_error = await twitch_gift_to_user(gift_channel.text, gift_user.text)
             if is_gifted:
-                await self.send_message(await event.get_input_chat(), 'Your order completed! Gift was sent to {} on channel {}!'.format(gift_user, gift_channel), reply_to=info.id)
+                await self.send_message(await event.get_input_chat(), '✅ Your order completed! Gift was sent to {} on channel {}!'.format(gift_user.text, gift_channel.text), reply_to=info.id)
             else:
                 if not gift_error or gift_error == 'SEARCH_ERROR':
-                    await self.send_message(await event.get_input_chat(), 'Your order cancelled due to technical reasons!', reply_to=info.id)
+                    await self.send_message(await event.get_input_chat(), '⚠️Your order cancelled due to technical reasons!', reply_to=info.id)
                 else:
-                    await self.send_message(await event.get_input_chat(), 'Your order cancelled, Twitch answer: {}'.format(gift_error), reply_to=info.id)
+                    await self.send_message(await event.get_input_chat(), '⚠️Your order cancelled, Twitch answer: {}'.format(gift_error), reply_to=info.id)
         except Exception as ex:
             self.logger.exception(ex)
 
