@@ -1,11 +1,10 @@
 import datetime
 import os
-import random
 from time import sleep
 
 from selenium import webdriver
+from selenium.webdriver.common.action_chains import ActionChains
 import asyncio
-import base64
 
 
 class TwitchError(Exception):
@@ -32,16 +31,131 @@ def get_chrome_options():
     return options
 
 
-async def twitch_gift_to_user(target_channel: str, target_nickname: str):
-    return await asyncio.to_thread(gift_to_user, target_channel, target_nickname)
-
-
-def gift_to_user(target_channel: str, target_nickname: str):
+def get_driver():
+    # TODO: Lock mechanism
     if os.name == 'nt':
         driver = webdriver.Chrome(executable_path=r'C:\Users\Oskar\Downloads\chromedriver_win32\chromedriver.exe', options=get_chrome_options())
     else:
         driver = webdriver.Chrome(executable_path='/usr/bin/chromedriver', options=get_chrome_options())
 
+    return driver
+
+
+async def twitch_gift_to_user(target_channel: str, target_nickname: str):
+    return await asyncio.to_thread(gift_to_user, target_channel, target_nickname)
+
+
+def interactive_login():
+    username = input('Enter username:')
+    password = input('Enter password:')
+
+    driver = get_driver()
+    driver.get('https://www.twitch.tv/subs/{}'.format(username))
+    sleep(2)
+
+    try:
+        tries = 0
+        while True:
+            if tries > 20:
+                raise TwitchSearchError('Failed to find login button')
+
+            tries += 1
+            sleep(1)
+            try:
+                buttons = driver.find_elements_by_xpath("//*[contains(text(), 'Log in')]")
+                if buttons:
+                    buttons[0].click()
+                    break
+            except Exception as ex:
+                pass
+
+        tries = 0
+        while True:
+            if tries > 20:
+                raise TwitchSearchError('Input for nickname not found')
+
+            tries += 1
+            sleep(1)
+            try:
+                nickname_input = driver.find_element_by_id('login-username')
+                if nickname_input:
+                    nickname_input.send_keys(username)
+                    break
+            except Exception as ex:
+                pass
+
+        tries = 0
+        while True:
+            if tries > 20:
+                raise TwitchSearchError('Input for password not found')
+
+            tries += 1
+            sleep(1)
+            try:
+                password_input = driver.find_element_by_id('password-input')
+                if password_input:
+                    password_input.send_keys(password)
+                    break
+            except Exception as ex:
+                pass
+
+        tries = 0
+        while True:
+            if tries > 20:
+                raise TwitchSearchError('Login button not found')
+
+            tries += 1
+            sleep(1)
+            try:
+                login_button = driver.find_element_by_css_selector('button[data-a-target=passport-login-button]')
+                if login_button:
+                    login_button.click()
+                    break
+            except Exception as ex:
+                pass
+
+        sleep(3)
+        oauth_code = input('Enter oauth token:')
+        actions = ActionChains(driver)
+        actions.send_keys(oauth_code)
+        actions.perform()
+
+        # tries = 0
+        # while True:
+        #     if tries > 20:
+        #         raise TwitchSearchError('Oauth token input field not found')
+        #
+        #     tries += 1
+        #     sleep(1)
+        #     try:
+        #         oauth_token = driver.find_element_by_css_selector('button[data-a-target=tw-input][autocomplete=one-time-code][inputmode=numeric]')
+        #         if oauth_token:
+        #
+        #             break
+        #     except Exception as ex:
+        #         pass
+
+        tries = 0
+        while True:
+            if tries > 20:
+                raise TwitchSearchError('Oauth submit button not found')
+
+            tries += 1
+            sleep(1)
+            try:
+                login_button = driver.find_element_by_css_selector('button[screen=two_factor][target=submit_button]')
+                if login_button:
+                    login_button.click()
+                    break
+            except Exception as ex:
+                pass
+    except TwitchSearchError as search_error:
+        driver.save_screenshot("{}_interactive_login_error.png".format(datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")))
+        raise TwitchSearchError
+
+
+def gift_to_user(target_channel: str, target_nickname: str):
+    driver = get_driver()
     driver.get('https://www.twitch.tv/subs/{}'.format(target_channel))
     try:
         click_web_buttons(driver, target_nickname)
