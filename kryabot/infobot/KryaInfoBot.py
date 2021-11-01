@@ -281,6 +281,10 @@ class KryaInfoBot(TelegramClient):
         text_key = 'TWITCH_NOTIFICATION_START'
         if event.finish:
             text_key = 'TWITCH_NOTIFICATION_FINISH'
+            try:
+                file = await self.generate_twitch_word_cloud_image(event)
+            except Exception as ex:
+                self.logger.exception(ex)
         elif event.recovery:
             text_key = 'TWITCH_NOTIFICATION_RECOVERY'
             button = [Button.url(event.profile.twitch_name, url=event.get_channel_url())]
@@ -319,7 +323,12 @@ class KryaInfoBot(TelegramClient):
             elif event.start:
                 text = '<b>{}</b>\n🎮{}\n\n{}'.format(event.title, event.game_name, base_text)
             elif event.finish:
-                text = base_text.format(event.profile.twitch_name)
+                try:
+                    text = await self.format_stream_finish_message(target, event)
+                except Exception as ex:
+                    self.logger.exception(ex)
+                    # Fall-back to general one-liner text
+                    text = base_text.format(event.profile.twitch_name)
 
             try:
                 try:
@@ -329,22 +338,6 @@ class KryaInfoBot(TelegramClient):
                     fileio.seek(0)
                     fileio.filename = "image.jpg"
                     await self.send_message(target.target_id, message=text, file=fileio, buttons=button, link_preview=False, parse_mode='html')
-
-                # TESTNG PART
-                try:
-                    if event.finish and int(target.target_id) == int(TG_GROUP_MONITORING_ID_FULL):
-                        file_to_send = None
-                        try:
-                            file_to_send = await self.generate_twitch_word_cloud_image(event)
-                        except Exception as wc_ex:
-                            self.logger.exception(wc_ex)
-
-                        if file_to_send is None:
-                            file_to_send = dict_to_json(event.summary)
-
-                        await self.send_file(target.target_id, file=file_to_send, caption=await self.format_stream_finish_message(target, event))
-                except Exception as testEx:
-                    self.logger.exception(testEx)
             except ChannelPrivateError:
                 await self.report_to_monitoring('ChannelPrivateError. Target ID: {}, TG ID: {}'.format(target.id, target.target_id), True)
             except Exception as ex:
