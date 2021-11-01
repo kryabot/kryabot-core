@@ -1,11 +1,9 @@
 from telethon import events
-from telethon.tl.types import InputMediaUploadedDocument, DocumentAttributeAudio, PeerChat
+from telethon.tl.types import PeerChat
 from tgbot.events.global_events.common import process_global_events
 from tgbot.commands.commandbuilder import run
 from utils.array import get_first
 from tgbot.events.chat_actions import user_join_check, user_left, process_bot_chat
-import aiohttp
-import aiofiles
 
 from tgbot.events.moderate import moderate
 
@@ -83,7 +81,7 @@ async def event_chat_action(event: events.ChatAction.Event):
     if channel is None:
         return
 
-    event.client.logger.info(str(event.action_message))
+    # event.client.logger.info(str(event.action_message))
     if event.new_pin is True:
         await process_event_new_pin(event)
     elif event.new_photo is True and event.photo is not None:
@@ -97,6 +95,8 @@ async def event_chat_action(event: events.ChatAction.Event):
     elif event.user_kicked or event.created or event.unpin:
         # Ignored chat actions
         pass
+    elif event.new_title:
+        await process_event_new_title(event, channel)
     else:
         # Unknown type
         pass
@@ -112,3 +112,7 @@ async def process_event_new_photo(event: events.ChatAction.Event):
 
 async def process_event_new_user(event: events.ChatAction.Event):
     pass
+
+
+async def process_event_new_title(event: events.ChatAction.Event, channel):
+    await event.client.db.update_telegram_group_name(channel['tg_chat_id'], event.new_title)

@@ -180,6 +180,9 @@ class Database:
     async def updateUserTwitchId(self, user_id, twitch_id):
         return await self.query('update_user_twitch_id', [twitch_id, user_id])
 
+    async def update_telegram_group_name(self, tg_group_id: int, new_title: str):
+        return await self.query('update_tg_chat_name', [new_title, tg_group_id])
+
     async def getTgChatAvailChannelsWithAuth(self):
         return await self.query('find_all_tg_channels_with_auth', [])
 
