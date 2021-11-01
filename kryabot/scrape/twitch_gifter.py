@@ -1,10 +1,49 @@
 import datetime
+import functools
 import os
 from time import sleep
 
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 import asyncio
+
+
+class ProfileLock:
+    locked = False
+
+    @staticmethod
+    def lock():
+        max_sleep = 120
+        current_sleep = 0
+        while True:
+            if not ProfileLock.locked:
+                ProfileLock.locked = True
+                return
+
+            if current_sleep > max_sleep:
+                raise ValueError('Failed to lock selenium profile within {} seconds'.format(max_sleep))
+
+            sleep(1)
+            current_sleep += 1
+
+    @staticmethod
+    def unlock():
+        ProfileLock.locked = False
+
+
+def locked():
+    def decorator(f):
+        @functools.wraps(f)
+        def decorated_function(*args, **kwargs):
+            ProfileLock.lock()
+            try:
+                result = f(*args, **kwargs)
+            finally:
+                ProfileLock.unlock()
+            return result
+
+        return decorated_function
+    return decorator
 
 
 class TwitchError(Exception):
@@ -45,6 +84,7 @@ async def twitch_gift_to_user(target_channel: str, target_nickname: str):
     return await asyncio.to_thread(gift_to_user, target_channel, target_nickname)
 
 
+@locked()
 def interactive_login():
     username = input('Enter username:')
     password = input('Enter password:')
@@ -114,26 +154,36 @@ def interactive_login():
             except Exception as ex:
                 pass
 
+        # tries = 0
+        # while True:
+        #     if tries > 20:
+        #         print('Captcha not found, skipping')
+        #         break
+        #
+        #     tries += 1
+        #     sleep(1)
+        #     try:
+        #         captcha_button = driver.find_element_by_css_selector('button[aria-describedby=descriptionVerify]')
+        #         if captcha_button:
+        #             captcha_button.click()
+        #             sleep(2)
+        #             captcha_img_name = "{}_interactive_login_captcha.png".format(datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S"))
+        #             driver.save_screenshot(captcha_img_name)
+        #             print('Captcha saved to ' + captcha_img_name)
+        #             image_choice = input('Select which image to click (1-6):')
+        #             image_label = 'Image {}.'.format(image_choice)
+        #             image_area = driver.find_element_by_css_selector('a[aria-label={}]'.format(image_label))
+        #             image_area.click()
+        #             break
+        #     except Exception as ex:
+        #         pass
+
+
         sleep(3)
         oauth_code = input('Enter oauth token:')
         actions = ActionChains(driver)
         actions.send_keys(oauth_code)
         actions.perform()
-
-        # tries = 0
-        # while True:
-        #     if tries > 20:
-        #         raise TwitchSearchError('Oauth token input field not found')
-        #
-        #     tries += 1
-        #     sleep(1)
-        #     try:
-        #         oauth_token = driver.find_element_by_css_selector('button[data-a-target=tw-input][autocomplete=one-time-code][inputmode=numeric]')
-        #         if oauth_token:
-        #
-        #             break
-        #     except Exception as ex:
-        #         pass
 
         tries = 0
         while True:
@@ -153,10 +203,14 @@ def interactive_login():
         sleep(3)
         driver.save_screenshot("{}_interactive_login_done.png".format(datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")))
     except TwitchSearchError as search_error:
+        f = open("{}_interactive_login_error.html".format(datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")), 'w')
+        f.write(driver.page_source)
+        f.close()
         driver.save_screenshot("{}_interactive_login_error.png".format(datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")))
         raise TwitchSearchError
 
 
+@locked()
 def gift_to_user(target_channel: str, target_nickname: str):
     driver = get_driver()
     driver.get('https://www.twitch.tv/subs/{}'.format(target_channel))
