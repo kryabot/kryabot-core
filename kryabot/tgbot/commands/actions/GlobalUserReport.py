@@ -15,4 +15,4 @@ class GlobalUserReport(BaseCommand):
         if not (await self.can_process()):
             return
 
-        await self.client.event_user_statistics()
+        await self.client.task_global_user_report()
