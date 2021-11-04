@@ -70,7 +70,7 @@ class AuthBot(TelegramClient):
         self.cfg = cfg
         self.db = Database(None, 2, cfg=self.cfg)
         self.api = ApiHelper(cfg=self.cfg, redis=self.db.redis)
-        self.translator = None
+        self.translator = Translator.getInstance()
         self.me = None
         self.last_ping = datetime.now()
 
@@ -90,6 +90,7 @@ class AuthBot(TelegramClient):
         self._parse_mode = html
         self.loop.create_task(self.db.db_activity())
         self.loop.create_task(Pinger(System.AUTHBOT_TELEGRAM, self.logger, self.db.redis).run_task())
+        self.translator.setLogger(self.logger)
 
     async def run(self):
         await self.reload_translations()
@@ -99,7 +100,7 @@ class AuthBot(TelegramClient):
         #await self.run_until_disconnected()
 
     async def reload_translations(self):
-        self.translator = Translator(await self.db.getTranslations(), self.logger)
+        self.translator.push(await self.db.getTranslations())
 
     async def exception_reporter(self, err, info):
         await self.report_to_monitoring(message='Error: {}: {}\n\n{}\n\n<pre>{}</pre>'.format(type(err).__name__, err, info, ''.join(traceback.format_tb(err.__traceback__))))

@@ -1,10 +1,12 @@
 import enum
+from typing import List
 
 from telethon import events, Button
 from urllib.parse import urlparse
 from itertools import groupby
 
 from infobot.tg_event_helpers import required_admin, required_infobot
+from object.Translator import Translator
 from utils.array import get_first
 from infobot.LinkTable import LinkTable
 
@@ -16,13 +18,26 @@ class FollowConfig:
 
 
 class MenuButton(enum.Enum):
-    BUTTON_SHOW_FOLLOWING_TWITCH = Button.inline(text='Show Twitch.tv follows', data='menushowfollowstwitch')
-    BUTTON_SHOW_FOLLOWING_BOOSTY = Button.inline(text='Show Boosty.to follows', data='menushowfollowsboosty')
-    BUTTON_SHOW_FOLLOWING = Button.inline(text='Back', data='menushowfollowsoptions')
+    BUTTON_SHOW_FOLLOWING_TWITCH = 'menushowfollowstwitch'
+    BUTTON_SHOW_FOLLOWING_BOOSTY = 'menushowfollowsboosty'
+    BUTTON_SHOW_FOLLOWING = 'menushowfollowsoptions'
+    BUTTON_CLOSE = 'close'
 
     @staticmethod
-    def get_following_option_list():
-        return [MenuButton.BUTTON_SHOW_FOLLOWING_TWITCH.value, MenuButton.BUTTON_SHOW_FOLLOWING_BOOSTY.value]
+    def get_following_option_list(lang: str = 'en') -> List[Button]:
+        return [MenuButton.BUTTON_SHOW_FOLLOWING_TWITCH.get_button(lang),
+                MenuButton.BUTTON_SHOW_FOLLOWING_BOOSTY.get_button(lang)]
+
+    def translated(self, lang: str = 'en') -> Button:
+        return Button.inline(text=Translator.getInstance().getLangTranslation(lang, self.translator_key), data=self.data)
+
+    @property
+    def data(self) -> str:
+        return self.value
+
+    @property
+    def translator_key(self) -> str:
+        return 'IB_' + self.name
 
 
 def register_events(client):
@@ -34,16 +49,15 @@ def register_events(client):
     client.add_event_handler(pong)
 
 
-@events.register(events.NewMessage(pattern='/ping'))
+@events.register(events.NewMessage(pattern='^/ping$'))
 async def pong(event):
     await event.reply('pong')
 
 
-@events.register(events.NewMessage(pattern='/follow', func=lambda e: not e.is_private))
+@events.register(events.NewMessage(pattern='^/follow( |$)', func=lambda e: not e.is_private))
 @required_admin()
 @required_infobot()
 async def command_follow(event: events.NewMessage.Event, infobot):
-
     words = event.raw_text.split(' ')
     if len(words) != 2:
         await event.reply('Incorrect use of command.\nYou must provide url link to source which to follow\nFor example: /follow https://twitch.tv/kryabot')
@@ -106,17 +120,19 @@ async def command_follow(event: events.NewMessage.Event, infobot):
         pass
 
 
-@events.register(events.NewMessage(pattern='/following', func=lambda e: not e.is_private))
+@events.register(events.NewMessage(pattern="^/following$", func=lambda e: not e.is_private))
 @required_admin()
 @required_infobot()
 async def command_show_following(event: events.NewMessage.Event, infobot):
     buttons = []
-    for option in MenuButton.get_following_option_list():
-        buttons.append(option)
+    for option in MenuButton.get_following_option_list(infobot['lang']):
+        buttons.append([option])
+
+    buttons.append(MenuButton.BUTTON_CLOSE.get_button(infobot['lang']))
     await event.reply('Please choose which follows you want to view:', buttons=buttons)
 
 
-@events.register(events.CallbackQuery(pattern=MenuButton.BUTTON_SHOW_FOLLOWING.value.data, func=lambda e: not e.is_private))
+@events.register(events.CallbackQuery(data=MenuButton.BUTTON_SHOW_FOLLOWING.data, func=lambda e: not e.is_private))
 @required_admin()
 @required_infobot()
 async def query_show_following(event: events.CallbackQuery.Event, infobot):
@@ -127,13 +143,13 @@ async def query_show_following(event: events.CallbackQuery.Event, infobot):
     await event.edit('Please choose which follows you want to view:', buttons=buttons)
 
 
-@events.register(events.CallbackQuery(data=MenuButton.BUTTON_SHOW_FOLLOWING_TWITCH.value.data, func=lambda e: not e.is_private))
+@events.register(events.CallbackQuery(data=MenuButton.BUTTON_SHOW_FOLLOWING_TWITCH.data, func=lambda e: not e.is_private))
 @required_admin()
 @required_infobot()
 async def query_show_following_twitch(event: events.CallbackQuery.Event, infobot):
     infobot_links = await event.client.db.getInfobotLinks(infobot['infobot_id'])
     if infobot_links is None or len(infobot_links) == 0:
-        await event.edit('You do not have any registered Twitch follows, use command /follow to register one.', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.value])
+        await event.edit('You do not have any registered Twitch follows, use command /follow to register one.', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.translated(lang=infobot['lang'])])
         return
 
     reply_message = ''
@@ -146,19 +162,19 @@ async def query_show_following_twitch(event: events.CallbackQuery.Event, infobot
             reply_message += '\n'
 
     if reply_message == '':
-        await event.edit('You do not have any Twitch.lv follows!', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.value])
+        await event.edit('You do not have any Twitch.lv follows!', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.translated(lang=infobot['lang'])])
         return
 
     await event.edit(reply_message, buttons=None)
 
 
-@events.register(events.CallbackQuery(data=MenuButton.BUTTON_SHOW_FOLLOWING_BOOSTY.value.data, func=lambda e: not e.is_private))
+@events.register(events.CallbackQuery(data=MenuButton.BUTTON_SHOW_FOLLOWING_BOOSTY.data, func=lambda e: not e.is_private))
 @required_admin()
 @required_infobot()
 async def query_show_following_boosty(event: events.CallbackQuery.Event, infobot):
     infobot_links = await event.client.db.getInfobotLinks(infobot['infobot_id'])
     if infobot_links is None or len(infobot_links) == 0:
-        await event.edit('You do not have any registered Twitch follows, use command /follow to register one.', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.value])
+        await event.edit('You do not have any registered Twitch follows, use command /follow to register one.', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.translated(infobot['lang'])])
         return
 
     reply_message = ''
@@ -171,7 +187,7 @@ async def query_show_following_boosty(event: events.CallbackQuery.Event, infobot
             reply_message += '\n'
 
     if reply_message == '':
-        await event.edit('You do not have any Boosty.to follows!', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.value])
+        await event.edit('You do not have any Boosty.to follows!', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.translated(infobot['lang'])])
         return
 
     await event.edit(reply_message, buttons=None)

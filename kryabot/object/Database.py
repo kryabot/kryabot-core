@@ -271,6 +271,9 @@ class Database:
     async def getChatMostActiveUser(self, channel_id, within_last_seconds):
         return await self.query('get_twitch_message_most_active_user', [channel_id, within_last_seconds])
 
+    async def getChatMessageCount(self, channel_id, within_last_seconds):
+        return await self.query('get_twitch_message_message_count', [channel_id, within_last_seconds])
+
     async def deleteOldTwitchMessages(self):
         return await self.query('wipe_twitch_messages', [])
 

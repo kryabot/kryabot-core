@@ -44,7 +44,7 @@ class KryaClient(TelegramClient):
         self.cfg = cfg
         self.db = Database(loop=loop, size=self.cfg.getTelegramConfig()['MAX_SQL_POOL'])
         self.api = ApiHelper(reporter=self.exception_reporter, redis=self.db.redis)
-        self.translator = None
+        self.translator = Translator.getInstance()
         self.moderation = None
         self.moderation_queue = asyncio.Queue()
         self.me = None
@@ -78,6 +78,7 @@ class KryaClient(TelegramClient):
 
         global_logger = logger
         reporter = self.exception_reporter
+        self.translator.setLogger(self.logger)
 
     async def start_bot(self):
         await self.update_data()
@@ -111,7 +112,7 @@ class KryaClient(TelegramClient):
         await self.moderation.setWordList(words)
 
     async def init_translation(self):
-        self.translator = Translator(await self.db.getTranslations(), self.logger)
+        self.translator.push(await self.db.getTranslations())
 
     async def init_banned_media(self, channel_id=None):
         self.banned_media = await self.db.getBannedMedia()

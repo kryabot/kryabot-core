@@ -84,7 +84,7 @@ class KryaInfoBot(TelegramClient):
         self.manager = manager
         self.me = None
         self.logger = logging.getLogger('krya.infobot')
-        self.translator: Translator = None
+        self.translator: Translator = Translator.getInstance()
 
         # Path to session file
         path = os.getenv('SECRET_DIR')
@@ -94,11 +94,15 @@ class KryaInfoBot(TelegramClient):
         super().__init__(path + 'info_bot_session', base_logger=self.logger, api_id= self.cfg.getTelegramConfig()['API_ID'], api_hash=self.cfg.getTelegramConfig()['API_HASH'], flood_sleep_threshold=300)
         self._parse_mode = html
         self.loop.create_task(Pinger(System.INFOBOT_TELEGRAM, self.logger, self.db.redis).run_task())
+        self.translator.setLogger(self.logger)
+
+    async def refresh_translations(self):
+        self.translator.push(await self.db.getTranslations())
 
     async def run(self, wait=False):
         self.logger.debug('Starting TG info bot')
         register_events(self)
-        self.translator = Translator(await self.db.getTranslations(), self.logger)
+        await self.refresh_translations()
 
         await self.start(bot_token=self.cfg.getTelegramConfig()['INFO_BOT_API_KEY'])
         self.me = await self.get_me()
@@ -308,6 +312,9 @@ class KryaInfoBot(TelegramClient):
     async def format_stream_finish_message(self, target, event) -> str:
         formatted_message = '⏹ ' + self.translator.getLangTranslation(target.lang, 'TWITCH_NOTIFICATION_FINISH').format(event.profile.twitch_name)
 
+        label_played = self.translator.getLangTranslation(target.lang, 'IB_NOTIFICATION_TWITCH_PLAYED')
+        label_break = self.translator.getLangTranslation(target.lang, 'IB_NOTIFICATION_TWITCH_TECHNICAL_BREAK')
+
         channels = await self.db.get_channel_by_twitch_id(event.profile.twitch_id)
         if channels is None or len(channels) == 0:
             return formatted_message
@@ -328,31 +335,33 @@ class KryaInfoBot(TelegramClient):
                 # Possible multiple finishes, interested in last one
                 stream_end = item['ts']
                 calc_from = last_resume_ts if last_resume_ts and last_resume_ts > previous_item['ts'] else previous_item['ts']
-                game_changes += '\n🎮 Played <b>{}</b>\n({})'.format(previous_item['new_value'], td_format(stream_end - calc_from))
+                game_changes += '\n🎮 {} <b>{}</b>\n({})'.format(label_played, previous_item['new_value'], td_format(stream_end - calc_from))
             elif item['type'] == 'resume':
                 contains_changes = True
                 last_resume_ts = item['ts']
-                game_changes += '\n🎮 Technical break\n({})'.format(td_format(item['ts'] - stream_end))
+                game_changes += '\n🎮 {}\n({})'.format(label_break, td_format(item['ts'] - stream_end))
             else:
                 # Game change
                 if previous_item:
                     contains_changes = True
                     calc_from = last_resume_ts if last_resume_ts and last_resume_ts > previous_item['ts'] else previous_item['ts']
-                    game_changes += '\n🎮 Played <b>{}</b>\n({})'.format(previous_item['new_value'], td_format(item['ts'] - calc_from))
+                    game_changes += '\n🎮 {} <b>{}</b>\n({})'.format(label_played, previous_item['new_value'], td_format(item['ts'] - calc_from))
                 previous_item = item
-
-        # if previous_item:
-        #     game_changes += '\n🎮 Played <b>{}</b> for {}'.format(previous_item['new_value'], td_format(stream_end.replace(tzinfo=None) - previous_item['ts'].replace(tzinfo=None)))
 
         stream_duration = stream_end - stream_start
         formatted_message += '\n' + game_changes
 
         if contains_changes:
-            formatted_message += '\n\n🎮 Full stream duration: {}'.format(td_format(stream_duration))
+            formatted_message += '\n\n🎮 {}: {}'.format(self.translator.getLangTranslation(target.lang, 'IB_NOTIFICATION_TWITCH_DURATION'), td_format(stream_duration))
 
+        formatted_message += '\n'
         active_chatters = await self.db.getChatMostActiveUser(channels[0]['channel_id'], stream_duration.seconds)
         if active_chatters and len(active_chatters) > 0:
-            formatted_message += '\n\n💥 Most active chatter: {} with {} messages'.format(active_chatters[0]['dname'], active_chatters[0]['count'])
+            formatted_message += '\n💥 {}'.format(self.translator.getLangTranslation(target.lang, 'IB_NOTIFICATION_TWITCH_MESSAGE_MOST').format(active_chatters[0]['dname'], active_chatters[0]['count']))
+
+        message_count = await self.db.getChatMessageCount(channels[0]['channel_id'], stream_duration.seconds)
+        if message_count and len(message_count) > 0 and 'total' in message_count[0]:
+            formatted_message += '\n💥 {}'.format(self.translator.getLangTranslation(target.lang, 'IB_NOTIFICATION_TWITCH_MESSAGE_TOTAL').format(message_count[0]['total']))
 
         return formatted_message
 
