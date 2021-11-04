@@ -164,5 +164,5 @@ async def getSql(sqlType):
         'get_tg_historical_stats': 'SELECT * FROM stats_tg st WHERE st.channel_id = %s and st.type = %s and st.when_dt > NOW() - INTERVAL %s DAY',
         'update_tg_chat_name': 'UPDATE channel_subchat SET channel_subchat.tg_chat_name = %s WHERE channel_subchat.tg_chat_id = %s',
         'create_infobot': 'INSERT INTO infobot (target_id, target_name, target_type, lang) VALUES (%s, %s, "TG", %s)',
-        'create_infobot_link': 'INSERT INFO intobot_link (infobot_id, link_table, link_id) VALUES (%s, %s, %s)',
+        'create_infobot_link': 'INSERT INTO infobot_link (infobot_id, link_table, link_id) VALUES (%s, %s, %s)',
     }.get(sqlType, 'unknown_sql_type')
