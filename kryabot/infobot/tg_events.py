@@ -36,7 +36,7 @@ def register_events(client):
 
 @events.register(events.NewMessage(pattern='/ping'))
 async def pong(event):
-    await event.answer('pong')
+    await event.reply('pong')
 
 
 @events.register(events.NewMessage(pattern='/follow', func=lambda e: not e.is_private))
