@@ -159,7 +159,7 @@ async def getSql(sqlType):
         'get_channel_currency': 'SELECT ct.currency_key, tgi.amt FROM tg_group_inventory tgi LEFT JOIN currency_type ct ON tgi.currency_id = ct.currency_type_id WHERE tgi.channel_id = %s and ct.active = 1 and ct.public = 1',
         'add_currency_to_channel': 'CALL addCurrencyToChannel(%s, %s, %s)',
         'update_subchat_forced_pause': 'UPDATE channel_subchat SET channel_subchat.force_pause = %s WHERE channel_subchat.tg_chat_id = %s',
-        'register_profile_twitch': 'registerNewTwitchProfile(%s)',
+        'register_profile_twitch': 'CALL registerNewTwitchProfile(%s)',
         'set_subchat_auth_status': 'UPDATE channel_subchat cs SET cs.auth_status = %s WHERE cs.channel_subchat_id = %s',
         'get_tg_historical_stats': 'SELECT * FROM stats_tg st WHERE st.channel_id = %s and st.type = %s and st.when_dt > NOW() - INTERVAL %s DAY',
         'update_tg_chat_name': 'UPDATE channel_subchat SET channel_subchat.tg_chat_name = %s WHERE channel_subchat.tg_chat_id = %s',

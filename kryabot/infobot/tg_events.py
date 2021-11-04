@@ -22,7 +22,7 @@ class MenuButton(enum.Enum):
 
     @staticmethod
     def get_following_option_list():
-        return [MenuButton.BUTTON_SHOW_FOLLOWING_TWITCH, MenuButton.BUTTON_SHOW_FOLLOWING_BOOSTY]
+        return [MenuButton.BUTTON_SHOW_FOLLOWING_TWITCH.value, MenuButton.BUTTON_SHOW_FOLLOWING_BOOSTY.value]
 
 
 def register_events(client):
@@ -116,7 +116,7 @@ async def command_show_following(event: events.NewMessage.Event, infobot):
     await event.reply('Please choose which follows you want to view:', buttons=buttons)
 
 
-@events.register(events.CallbackQuery(pattern=MenuButton.BUTTON_SHOW_FOLLOWING.data, func=lambda e: not e.is_private))
+@events.register(events.CallbackQuery(pattern=MenuButton.BUTTON_SHOW_FOLLOWING.value.data, func=lambda e: not e.is_private))
 @required_admin()
 @required_infobot()
 async def query_show_following(event: events.CallbackQuery.Event, infobot):
@@ -127,13 +127,13 @@ async def query_show_following(event: events.CallbackQuery.Event, infobot):
     await event.edit('Please choose which follows you want to view:', buttons=buttons)
 
 
-@events.register(events.CallbackQuery(data=MenuButton.BUTTON_SHOW_FOLLOWING_TWITCH.data, func=lambda e: not e.is_private))
+@events.register(events.CallbackQuery(data=MenuButton.BUTTON_SHOW_FOLLOWING_TWITCH.value.data, func=lambda e: not e.is_private))
 @required_admin()
 @required_infobot()
 async def query_show_following_twitch(event: events.CallbackQuery.Event, infobot):
     infobot_links = await event.client.db.getInfobotLinks(infobot['infobot_id'])
     if infobot_links is None or len(infobot_links) == 0:
-        await event.edit('You do not have any registered Twitch follows, use command /follow to register one.', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING])
+        await event.edit('You do not have any registered Twitch follows, use command /follow to register one.', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.value])
         return
 
     reply_message = ''
@@ -146,7 +146,7 @@ async def query_show_following_twitch(event: events.CallbackQuery.Event, infobot
             reply_message += '\n'
 
     if reply_message == '':
-        await event.edit('You do not have any Twitch.lv follows!', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING])
+        await event.edit('You do not have any Twitch.lv follows!', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.value])
         return
 
     await event.edit(reply_message, buttons=None)
@@ -158,7 +158,7 @@ async def query_show_following_twitch(event: events.CallbackQuery.Event, infobot
 async def query_show_following_boosty(event: events.CallbackQuery.Event, infobot):
     infobot_links = await event.client.db.getInfobotLinks(infobot['infobot_id'])
     if infobot_links is None or len(infobot_links) == 0:
-        await event.edit('You do not have any registered Twitch follows, use command /follow to register one.', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING])
+        await event.edit('You do not have any registered Twitch follows, use command /follow to register one.', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.value])
         return
 
     reply_message = ''
@@ -171,7 +171,7 @@ async def query_show_following_boosty(event: events.CallbackQuery.Event, infobot
             reply_message += '\n'
 
     if reply_message == '':
-        await event.edit('You do not have any Boosty.to follows!', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING])
+        await event.edit('You do not have any Boosty.to follows!', buttons=[MenuButton.BUTTON_SHOW_FOLLOWING.value])
         return
 
     await event.edit(reply_message, buttons=None)
