@@ -152,7 +152,7 @@ async def query_show_following_twitch(event: events.CallbackQuery.Event, infobot
     await event.edit(reply_message, buttons=None)
 
 
-@events.register(events.CallbackQuery(data=MenuButton.BUTTON_SHOW_FOLLOWING_BOOSTY.data, func=lambda e: not e.is_private))
+@events.register(events.CallbackQuery(data=MenuButton.BUTTON_SHOW_FOLLOWING_BOOSTY.value.data, func=lambda e: not e.is_private))
 @required_admin()
 @required_infobot()
 async def query_show_following_boosty(event: events.CallbackQuery.Event, infobot):
