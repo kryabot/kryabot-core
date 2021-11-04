@@ -129,8 +129,11 @@ async def getSql(sqlType):
         'get_instagram_profiles': 'SELECT * FROM profile_instagram',
         'get_instagram_history': 'SELECT * FROM history_instagram ih ORDER BY ih.created_ts DESC',
         'get_all_info_bots_links': 'SELECT * FROM infobot_link',
+        'get_infobot_links': 'SELECT * FROM infobot_link WHERE infobot_link.infobot_id = %s',
+        'get_infobot_twitch_profile': 'SELECT * FROM profile_twitch WHERE profile_twitch.user_id = %s',
         'update_info_target_data': 'UPDATE infobot ib SET ib.target_type = "TG", ib.target_name = %s, ib.target_id = %s, ib.join_data = %s WHERE ib.infobot_id = %s',
         'get_infobot_by_user': 'SELECT * FROM infobot WHERE infobot.user_id = %s',
+        'get_infobot_by_chat': 'SELECT * FROM infobot WHERE infobot.target_id = %s',
         'save_instagram_event': 'INSERT INTO history_instagram (data_type, profile_instagram_id, media_id, object_date) VALUES (%s, %s, %s, %s)',
         'get_all_twitch_profiles': 'SELECT pt.profile_twitch_id, pt.user_id, u.tw_id, u.name, u.dname FROM profile_twitch pt LEFT JOIN user u on pt.user_id = u.user_id;',
         'get_all_twitch_history': 'SELECT * FROM history_twitch ht WHERE ht.create_ts >  NOW() - INTERVAL 1 WEEK;',
@@ -159,5 +162,7 @@ async def getSql(sqlType):
         'register_profile_twitch': 'registerNewTwitchProfile(%s)',
         'set_subchat_auth_status': 'UPDATE channel_subchat cs SET cs.auth_status = %s WHERE cs.channel_subchat_id = %s',
         'get_tg_historical_stats': 'SELECT * FROM stats_tg st WHERE st.channel_id = %s and st.type = %s and st.when_dt > NOW() - INTERVAL %s DAY',
-        'update_tg_chat_name': 'UPDATE channel_subchat SET channel_subchat.tg_chat_name = %s WHERE channel_subchat.tg_chat_id = %s'
+        'update_tg_chat_name': 'UPDATE channel_subchat SET channel_subchat.tg_chat_name = %s WHERE channel_subchat.tg_chat_id = %s',
+        'create_infobot': 'INSERT INTO infobot (target_id, target_name, target_type, lang) VALUES (%s, %s, "TG", %s)',
+        'create_infobot_link': 'INSERT INFO intobot_link (infobot_id, link_table, link_id) VALUES (%s, %s, %s)',
     }.get(sqlType, 'unknown_sql_type')

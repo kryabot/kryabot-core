@@ -84,7 +84,7 @@ class InfoManager:
         await self.db.redis.subscribe_event(redis_key.get_infobot_update_links_topic(), self.on_link_update)
         await self.db.redis.subscribe_event(redis_key.get_infobot_update_profile_topic(), self.on_profile_update)
 
-    async def update(self, message):
+    async def update(self, message, infobot_id: int = None):
         # TODO: implement update logic based on message value, avoid recreating links from scratch each time
         targets = await self.db.getAllActiveInfoBots()
         links = await self.db.getAllInfoBotLinks()
@@ -106,7 +106,7 @@ class InfoManager:
         for listener in self.listeners:
             await listener.on_update(update_object)
 
-    async def on_exception(self, ex: Exception, info: str=''):
+    async def on_exception(self, ex: Exception, info: str = ''):
         self.logger.error(info)
         self.logger.exception(ex)
         await self.tg_bot.exception_reporter(err=ex, info=info)

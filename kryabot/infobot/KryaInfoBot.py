@@ -1,3 +1,4 @@
+import enum
 import traceback
 import os
 import logging
@@ -8,7 +9,8 @@ from telethon.extensions import html
 from telethon.tl.functions.channels import GetParticipantRequest, GetFullChannelRequest
 from telethon.tl.functions.messages import GetFullChatRequest
 from telethon.tl.types import UpdateChannel, MessageService, MessageActionChatDeleteUser, \
-    MessageActionChatAddUser, UpdateNewMessage, UpdateChatParticipants, InputMediaPhotoExternal
+    MessageActionChatAddUser, UpdateNewMessage, UpdateChatParticipants, InputMediaPhotoExternal, Channel, Chat, \
+    ChannelParticipantCreator, ChannelParticipantAdmin
 
 from telethon import TelegramClient, events, Button
 
@@ -22,77 +24,120 @@ from object.System import System
 from object.Translator import Translator
 from scrape.scrape_word_cloud import get_word_cloud_screenshot
 from tgbot import constants
-from tgbot.constants import TG_GROUP_MONITORING_ID_FULL
-from utils.json_parser import dict_to_json
 from utils.formatting import td_format
+from urllib.parse import urlparse
+from utils.array import get_first
+from infobot.LinkTable import LinkTable
 
+
+async def is_admin(event) -> bool:
+    chat = await event.get_chat()
+    is_user_admin: bool = False
+
+    if isinstance(chat, Channel):
+        participant = await event.client(GetParticipantRequest(channel=chat, participant=event.sender_id))
+        is_user_admin = isinstance(participant.participant, (ChannelParticipantCreator, ChannelParticipantAdmin))
+    elif isinstance(chat, Chat):
+        # In chats, everyone is admin
+        is_user_admin = True
+    else:
+        event.client.logger.error('unknown chat instance type: {}'.format(type(chat)))
+
+    return is_user_admin
 
 @events.register(events.NewMessage(pattern='/ping'))
 async def pong(event):
     await event.reply('pong')
 
 
-@events.register(events.NewMessage(pattern='/link', func=lambda e: not e.is_private))
-async def link(event):
+@events.register(events.NewMessage(pattern='/follow', func=lambda e: not e.is_private))
+async def command_follow(event: events.NewMessage.Event):
+    can_access = await is_admin(event)
+    if not can_access:
+        return
+
+    twitch_hostname = 'twitch.tv'
+    boosty_hostname = 'boosty.to'
+    allowed_hostnames = [twitch_hostname, boosty_hostname]
+
     words = event.raw_text.split(' ')
     if len(words) != 2:
-        event.client.logger.debug('Incorrect use of command: {}'.format(event.raw_text))
+        await event.reply('Incorrect use of command.\nYou must provide url link to source which to follow\nFor example: /follow https://twitch.tv/kryabot')
         return
 
-    infos = await event.client.db.getAllNewInfoBots()
+    parsed = urlparse(words[1])
+    input_hostname = parsed.hostname
 
-    user_info = None
-    for info in infos:
-        if info['auth_key'] == words[1]:
-            user_info = info
+    # Remove www
+    if input_hostname.startswith('www.'):
+        input_hostname = input_hostname[4:]
 
-    if user_info is None:
-        event.client.logger.debug('Received auth key {} but no records found'.format(words[1]))
+    # Validate if allowed hostname
+    if input_hostname not in allowed_hostnames:
+        await event.reply('Sorry, website <pre>{}</pre> is not supported!\n\nSupported websites: {}'.format(input_hostname, ', '.join(allowed_hostnames)))
         return
-
-    if user_info['target_id'] is not None:
-        event.client.logger.debug('Cannot link because infobot {} already linked to {}'.format(user_info['infobot_id'], user_info['target_id']))
-        return
-
-    username = None
 
     try:
         channel = await event.client(GetFullChannelRequest(channel=event.chat_id))
         username = channel.chats[0].username
+        name = channel.chats[0].title
     except:
         channel = await event.client(GetFullChatRequest(chat_id=event.chat_id))
+        name = channel.chats[0].title
+        username = None
 
-    event.client.logger.debug(channel.stringify())
-    event.client.logger.info('event.chat_id = {}'.format(event.chat_id))
-    name = channel.chats[0].title
-    await event.client.db.updateInfoTargetData(user_info['infobot_id'], event.chat_id, name, username)
+    infobot = await get_first(await event.client.db.getInfoBotByChat(event.chat_id))
+    if not infobot:
+        await event.client.db.createInfoBot(event.chat_id, name)
+        infobot = await get_first(await event.client.db.getInfoBotByChat(event.chat_id))
 
-    reporter = await event.client.db.getResponseByUserId(int(user_info['user_id']))
-    if reporter is None or len(reporter) == 0:
-        event.client.logger.debug('Failed to report link status to user ID {}'.format(user_info['user_id']))
+    if not infobot:
+        event.client.logger.info('Failed to find infobot record for TG ID {}'.format(event.chat_id))
         return
 
-    reporter = reporter[0]
-    event.client.logger.debug(reporter)
-    await event.client.send_message(int(reporter['tg_id']), 'Successfully linked "{}"!'.format(name))
-
-
-@events.register(events.NewMessage(pattern='/unlink', func=lambda e: e.is_private))
-async def unlink(event):
-    user_record = await event.client.db.getUserByTgChatId(event.message.sender_id)
-    if user_record is None or len(user_record) == 0:
-        event.client.logger.debug('Unauthorized unlink attempt from user {}'.format(event.message.sender_id))
+    current_links = await event.client.db.getInfobotLinks(infobot['infobot_id'])
+    if current_links and len(current_links) > 5:
+        await event.reply('Cannot create new follow because already at limit of 5 follows.')
         return
 
-    user_record = user_record[0]
-    info = await event.client.db.getInfoBotByUser(user_record['user_id'])
-    if info is None or len(info) == 0:
-        event.client.logger.debug('Info record not found for user ID {}'.format(user_record['user_id']))
-        return
+    if input_hostname == twitch_hostname:
+        # Remove `/` from the beginning
+        twitch_username = parsed.path[1:]
+        twitch_user_request = await event.client.manager.api.twitch.get_users(usernames=[twitch_username])
+        if 'data' not in twitch_user_request or len(twitch_user_request['data']) == 0:
+            await event.reply('Twitch channel {} not found, initiated by {}'.format(twitch_username, event.message.text))
+            return
 
-    info = info[0]
-    await event.client.db.updateInfoTargetData(info['infobot_id'], None, None, None)
-    await event.reply('Unlink successful')
+        twitch_user = twitch_user_request['data'][0]
+        user = await get_first(await event.client.db.getUserRecordByTwitchId(twitch_user['id']))
+        if user is None:
+            await event.client.db.createUserRecord(twitch_user['id'], twitch_user['login'], twitch_user['display_name'])
+            user = await get_first(await event.client.db.getUserRecordByTwitchId(twitch_user['id']))
+
+        if not user:
+            event.client.logger.info('Failed to find kb user for Twitch ID {}, initiated by {}'.format(twitch_user['id'], event.message.text))
+            return
+
+        # Create profile in profile_twitch table if not created yet
+        await event.client.db.registerTwitchProfile(user['user_id'])
+        twitch_profile = await get_first(await event.client.db.getTwitchProfileByUserId(user['user_id']))
+        if twitch_profile is None:
+            event.client.logger.info('Failed to find profile_twitch record for user {}, initiated by {}'.format(user['user_id'], event.message.text))
+            return
+
+        # Check if already linked
+        for current_link in current_links:
+            if current_link['link_table'] == LinkTable.TWITCH.value and current_link['link_id'] == twitch_profile['profile_twitch_id']:
+                await event.reply('This channel already followed!')
+                return
+
+        await event.client.db.createInfobotProfileLink(infobot['infobot_id'], LinkTable.TWITCH.value, twitch_profile['profile_twitch_id'])
+        await event.client.manager.update(None, infobot_id=infobot['infobot_id'])
+        await event.reply('Success!')
+    elif input_hostname == boosty_hostname:
+        pass
+    else:
+        pass
 
 
 @events.register(events.Raw)
@@ -165,8 +210,8 @@ class KryaInfoBot(TelegramClient):
     async def run(self, wait=False):
         self.logger.debug('Starting TG info bot')
         self.add_event_handler(pong)
-        self.add_event_handler(link)
-        self.add_event_handler(unlink)
+        self.add_event_handler(command_follow)
+        # self.add_event_handler(unlink)
         #self.add_event_handler(raw)
 
         self.translator = Translator(await self.db.getTranslations(), self.logger)

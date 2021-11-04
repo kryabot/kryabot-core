@@ -598,11 +598,20 @@ class Database:
     async def getUserRightsInChannel(self, channel_id, user_id):
         return await self.query('get_user_rights_in_channel', [channel_id, user_id])
 
+    async def createInfoBot(self, tg_chat_id: int, name: str, lang: str = 'ru'):
+        return await self.query('create_infobot', [tg_chat_id, name, lang])
+
+    async def getInfobotLinks(self, infobot_id: int):
+        return await self.query('get_infobot_links', [infobot_id])
+
     async def updateInfoTargetData(self, infobot_id, target_id, target_name, join_data):
         await self.query('update_info_target_data', [target_name, target_id, join_data, infobot_id])
 
     async def getInfoBotByUser(self, user_id):
         return await self.query('get_infobot_by_user', [user_id])
+
+    async def getInfoBotByChat(self, tg_chat_id):
+        return await self.query('get_infobot_by_chat', [tg_chat_id])
 
     async def saveInstagramPostEvent(self, profile_id, media_id, date):
         await self.query('save_instagram_event', ['POST', profile_id, media_id, date])
@@ -652,6 +661,12 @@ class Database:
 
     async def registerTwitchProfile(self, user_id):
         await self.query('register_profile_twitch', [user_id])
+
+    async def getTwitchProfileByUserId(self, user_id):
+        return await self.query('get_infobot_twitch_profile', [user_id])
+
+    async def createInfobotProfileLink(self, infobot_id: int, profile_type: str, profile_id: int):
+        return await self.query('create_infobot_link', [infobot_id, profile_type, profile_id])
 
     async def updateSubchatAuthStatus(self, subchat_id, status):
         await self.query('set_subchat_auth_status', [status, subchat_id])
