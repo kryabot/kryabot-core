@@ -188,3 +188,7 @@ def get_infobot_update_profile_topic():
 
 def get_twitch_channel_update(twitch_id: int):
     return 'twitch.channel.update.{}'.format(twitch_id)
+
+
+def get_infobot_target(tg_chat_id: int):
+    return 'infobot.target.{}'.format(tg_chat_id)

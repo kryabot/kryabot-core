@@ -72,13 +72,13 @@ class InfoManager:
         self.logger.debug('Common event received')
         await event.save(self.db)
 
-        targets = []
+        links = []
         for link in self.links:
             if link.link_table == event.profile.link_table and link.link_id == event.profile.profile_id:
-                targets.append(link.target)
+                links.append(link)
 
-        if targets:
-            await self.process_event(targets, event)
+        if links:
+            await self.process_event(links, event)
 
     async def subscribe(self):
         await self.db.redis.subscribe_event(redis_key.get_infobot_update_links_topic(), self.on_link_update)
@@ -111,8 +111,8 @@ class InfoManager:
         self.logger.exception(ex)
         await self.tg_bot.exception_reporter(err=ex, info=info)
 
-    async def process_event(self, targets: List[Target], event):
-        tg_targets = [t for t in targets if t.is_target_telegram()]
+    async def process_event(self, links: List[TargetLink], event):
+        tg_links = [link for link in links if link.target.is_target_telegram()]
 
-        if tg_targets:
-            self.loop.create_task(self.tg_bot.info_event(tg_targets, event))
+        if tg_links:
+            self.loop.create_task(self.tg_bot.info_event(tg_links, event))

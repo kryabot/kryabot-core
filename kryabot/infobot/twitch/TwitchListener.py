@@ -6,6 +6,7 @@ from infobot.Listener import Listener
 from infobot.twitch.TwitchEvents import TwitchEvent
 from infobot.twitch.TwitchProfile import TwitchProfile
 import utils.redis_key as redis_key
+from utils.array import split_array_into_parts, get_first
 
 
 class TwitchListener(Listener):
@@ -18,6 +19,7 @@ class TwitchListener(Listener):
 
     async def start(self):
         await super().start()
+        await self.recover_status()
         await self.subscribe_all()
         self.period = 3
 
@@ -131,3 +133,22 @@ class TwitchListener(Listener):
 
     async def handle_new_profile(self, profile: TwitchProfile):
         await self.subscribe_profile(profile)
+
+    async def recover_status(self):
+        full_ids = list(map(lambda p: p.twitch_id, self.profiles))
+        ids_parts = split_array_into_parts(full_ids, 50)
+        stream_datas = []
+        for ids in ids_parts:
+            data = await self.manager.api.twitch.get_stream_info_by_ids(ids)
+            for info in data['data']:
+                stream_datas.append(info)
+
+        for profile in self.profiles:
+            stream_info = next(filter(lambda row: int(row['user_id']) == int(profile.twitch_id), stream_datas), None)
+            if stream_info is None:
+                continue
+
+            # Create event, add data and mark it as start
+            event = TwitchEvent(profile, {'event': stream_info})
+            event.parse_stream_data(stream_info)
+            event.set_start()

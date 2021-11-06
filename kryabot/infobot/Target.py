@@ -1,4 +1,11 @@
 from object.Base import Base
+import enum
+from typing import List
+
+
+class InfobotLang(enum.Enum):
+    EN = 'en'
+    RU = 'ru'
 
 
 class Target(Base):
@@ -13,7 +20,10 @@ class Target(Base):
         self.status_message: str = str(self.get_raw('status_message'))
         self.enabled: bool = bool(self.get_raw('enabled'))
         self.auth_key: str = str(self.get_raw('auth_key'))
-        self.lang: str = str(self.get_raw('lang'))
+        self.lang: InfobotLang = InfobotLang((self.get_raw('lang')))
+        self.selected_links: List[any] = []
+        self.selected_id: int = 0
+
 
         # Instagram
         self.insta_stories: bool = True
@@ -50,3 +60,11 @@ class Target(Base):
         if key:
             return self.get_attr(self.raw, key)
         return self.raw
+
+    def get_lang(self):
+        return self.lang.value
+
+    def get_selected_link(self):
+        if not self.selected_links:
+            raise ValueError('Infobot({}) got no entries in selected links, but should exist atleast one entry! Maybe you forgot to add @required_infobot_link decorator?'.format(self.id))
+        return next(filter(lambda link: self.selected_id == link.link_id, self.selected_links), None)

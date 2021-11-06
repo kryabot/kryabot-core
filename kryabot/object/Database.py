@@ -153,7 +153,8 @@ class Database:
 
         if data is None:
             data = await self.query('find_user_by_tw_id', [twitch_id])
-            await self.redis.set_parsed_value_by_key(cache_key, data, expire=redis_key.ttl_day)
+            if data is not None:
+                await self.redis.set_parsed_value_by_key(cache_key, data, expire=redis_key.ttl_day)
         return data
 
     async def get_admins(self):
@@ -607,14 +608,37 @@ class Database:
     async def getInfobotLinks(self, infobot_id: int):
         return await self.query('get_infobot_links', [infobot_id])
 
+    async def getInfobotLinksByType(self, infobot_id: int, link_table: str):
+        return await self.query('get_infobot_links_by_type', [infobot_id, link_table])
+
+    async def getInfobotTwitchLinks(self, infobot_id: int):
+        return await self.query('get_infobot_twich_links', [infobot_id])
+
+    async def saveInfoBotLinkConfig(self, infobot_id: int, link_type: str, link_id: int, new_config):
+        return await self.query('save_infobot_config', [new_config, infobot_id, link_type, link_id])
+
+    async def deleteInfoBotLink(self, infobot_id: int, link_type: str, link_id: int):
+        return await self.query('delete_infobot_link', [infobot_id, link_type, link_id])
+
     async def updateInfoTargetData(self, infobot_id, target_id, target_name, join_data):
         await self.query('update_info_target_data', [target_name, target_id, join_data, infobot_id])
 
     async def getInfoBotByUser(self, user_id):
         return await self.query('get_infobot_by_user', [user_id])
 
-    async def getInfoBotByChat(self, tg_chat_id):
-        return await self.query('get_infobot_by_chat', [tg_chat_id])
+    async def getInfoBotByChat(self, tg_chat_id, skip_cache=False):
+        cache_key = redis_key.get_infobot_target(tg_chat_id)
+        data = None
+
+        if not skip_cache:
+            data = await self.redis.get_parsed_value_by_key(cache_key)
+
+        if data is None:
+            data = await self.query('get_infobot_by_chat', [tg_chat_id])
+            if data:
+                await self.redis.set_parsed_value_by_key(cache_key, data[0], redis_key.ttl_day)
+
+        return data
 
     async def saveInstagramPostEvent(self, profile_id, media_id, date):
         await self.query('save_instagram_event', ['POST', profile_id, media_id, date])

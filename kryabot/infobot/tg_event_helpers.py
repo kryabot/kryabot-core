@@ -1,10 +1,13 @@
 import functools
+
+from telethon import events
 from telethon.tl.functions.channels import GetParticipantRequest, GetFullChannelRequest
 from telethon.tl.functions.messages import GetFullChatRequest
-from telethon.tl.types import UpdateChannel, MessageService, MessageActionChatDeleteUser, \
-    MessageActionChatAddUser, UpdateNewMessage, UpdateChatParticipants, InputMediaPhotoExternal, Channel, Chat, \
-    ChannelParticipantCreator, ChannelParticipantAdmin
+from telethon.tl.types import Channel, Chat, ChannelParticipantCreator, ChannelParticipantAdmin
 from utils.array import get_first
+from infobot.LinkTable import LinkTable
+from infobot.Target import Target
+from infobot.TargetLink import TargetLink
 
 
 async def is_group_admin(event) -> bool:
@@ -28,6 +31,8 @@ def required_admin():
         @functools.wraps(func)
         async def wrapped(event, *args):
             if not(await is_group_admin(event)):
+                if isinstance(event, events.CallbackQuery.Event):
+                    await event.answer('Only group admins can change my configuration!', alert=True)
                 return
 
             return await func(event, *args)
@@ -39,8 +44,8 @@ def required_infobot():
     def wrapper(func):
         @functools.wraps(func)
         async def wrapped(event, *args):
-            infobot = await get_first(await event.client.db.getInfoBotByChat(event.chat_id))
-            if not infobot:
+            infobot_raw = await get_first(await event.client.db.getInfoBotByChat(event.chat_id))
+            if not infobot_raw:
                 try:
                     channel = await event.client(GetFullChannelRequest(channel=event.chat_id))
                     name = channel.chats[0].title
@@ -49,9 +54,40 @@ def required_infobot():
                     name = channel.chats[0].title
 
                 await event.client.db.createInfoBot(event.chat_id, name)
-                infobot = await get_first(await event.client.db.getInfoBotByChat(event.chat_id))
+                infobot_raw = await get_first(await event.client.db.getInfoBotByChat(event.chat_id))
 
-            # infobot_links = await event.client.db.getInfobotLinks(infobot['infobot_id'])
+            return await func(event, Target(infobot_raw), *args)
+        return wrapped
+    return wrapper
+
+
+# Most be used together with required_infobot(), because expects infobot as input param
+def required_infobot_link():
+    def wrapper(func):
+        @functools.wraps(func)
+        async def wrapped(event, infobot: Target, *args):
+            if not isinstance(event, events.CallbackQuery.Event):
+                # Interested only in callback queries (button presses)
+                return
+
+            data = event.query.data.decode().split(':')
+            link_table: LinkTable = LinkTable(data[1])
+
+            try:
+                infobot.selected_id = int(data[2])
+            except IndexError:
+                pass
+
+            if link_table == LinkTable.TWITCH:
+                infobot_links = await event.client.db.getInfobotTwitchLinks(infobot.id)
+            # elif link_table == LinkTable.BOOSTY:
+            #     infobot_links = await event.client.db.getInfobotLinksByType(infobot.id, link_table.value)
+            else:
+                infobot_links = await event.client.db.getInfobotLinksByType(infobot.id, link_table.value)
+
+            for link_raw in infobot_links:
+                infobot.selected_links.append(TargetLink(link_raw, None))
+
             return await func(event, infobot, *args)
         return wrapped
     return wrapper
