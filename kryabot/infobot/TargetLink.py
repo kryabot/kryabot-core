@@ -53,10 +53,13 @@ class TargetLink(Base):
 
         if raw['config']:
             parsed = json_to_dict(raw['config'])
-            if self.link_table == LinkTable.TWITCH:
-                self.config = TwitchLinkConfig(parsed)
-            else:
-                self.config = LinkConfig(parsed)
+        else:
+            parsed = {}
+
+        if self.link_table == LinkTable.TWITCH:
+            self.config = TwitchLinkConfig(parsed)
+        else:
+            self.config = LinkConfig(parsed)
 
     def get_table(self) -> str:
         return self.link_table.value
