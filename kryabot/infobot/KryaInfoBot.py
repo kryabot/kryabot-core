@@ -106,11 +106,7 @@ class KryaInfoBot(TelegramClient):
         register_events(self)
         await self.refresh_translations()
         await self.register_commands()
-
-        await self.start(bot_token='873162948:AAFIinisSuQfZhAefup7v2KDI4aTr9GkgeU')
-        #await self.start(bot_token=self.cfg.getTelegramConfig()['INFO_BOT_API_KEY'])
-
-
+        await self.start(bot_token=self.cfg.getTelegramConfig()['INFO_BOT_API_KEY'])
         if wait:
             await self.run_until_disconnected()
 
