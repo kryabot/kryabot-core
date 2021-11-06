@@ -34,7 +34,7 @@ class InfoBotUpdate(object):
         self.topic: UpdateTopic = topic if isinstance(topic, UpdateTopic) else UpdateTopic(topic)
 
     # Best would be to have _json methods in utils, but these implementations are fully dependent on object and enums from update functionality
-    def to_json(self)->str:
+    def to_json(self) -> str:
         return json.dumps(self, cls=UpdaterEncoder)
 
     @staticmethod
@@ -73,8 +73,9 @@ class InstagramUpdate(InfoBotUpdate):
         self.username: str = username
 
 
-# TODO: link update implementation
-# class LinkUpdate(InfoBotUpdate):
-#     def __init__(self, action: UpdateAction, infobot_id: id, link):
-#         super().__init__(action, UpdateTopic.INSTAGRAM)
-#         self.username: str = username
+class LinkUpdate(InfoBotUpdate):
+    def __init__(self, action: UpdateAction, infobot_id: int, link_table: str, link_id: int):
+        super().__init__(action, UpdateTopic.PROFILE_LINK)
+        self.infobot_id: int = infobot_id
+        self.link_table: str = link_table
+        self.link_id: int = link_id

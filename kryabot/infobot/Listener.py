@@ -58,7 +58,7 @@ class Listener:
     async def on_update(self, data):
         if isinstance(data, self.update_type):
             self.logger.info("Received update: {}".format(data.to_json()))
-            self.update_data()
+            await self.handle_profile_update(data)
 
     @classmethod
     def repeatable(cls, f):
@@ -135,4 +135,7 @@ class Listener:
         :param profile:
         :return:
         """
+        pass
+
+    async def handle_profile_update(self, data):
         pass

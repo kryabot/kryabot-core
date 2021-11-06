@@ -137,6 +137,7 @@ async def getSql(sqlType):
         'get_infobot_twitch_profile': 'SELECT * FROM profile_twitch WHERE profile_twitch.user_id = %s',
         'update_info_target_data': 'UPDATE infobot ib SET ib.target_type = "TG", ib.target_name = %s, ib.target_id = %s, ib.join_data = %s WHERE ib.infobot_id = %s',
         'get_infobot_by_user': 'SELECT * FROM infobot WHERE infobot.user_id = %s',
+        'get_infobot_by_id': 'SELECT * FROM infobot WHERE infobot.infobot_id = %s',
         'get_infobot_by_chat': 'SELECT * FROM infobot WHERE infobot.target_id = %s',
         'save_instagram_event': 'INSERT INTO history_instagram (data_type, profile_instagram_id, media_id, object_date) VALUES (%s, %s, %s, %s)',
         'get_all_twitch_profiles': 'SELECT pt.profile_twitch_id, pt.user_id, u.tw_id, u.name, u.dname FROM profile_twitch pt LEFT JOIN user u on pt.user_id = u.user_id;',

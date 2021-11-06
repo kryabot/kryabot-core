@@ -626,6 +626,9 @@ class Database:
     async def getInfoBotByUser(self, user_id):
         return await self.query('get_infobot_by_user', [user_id])
 
+    async def getInfobotById(self, infobot_id: int):
+        return await self.query('get_infobot_by_id', [infobot_id])
+
     async def getInfoBotByChat(self, tg_chat_id, skip_cache=False):
         cache_key = redis_key.get_infobot_target(tg_chat_id)
         data = None

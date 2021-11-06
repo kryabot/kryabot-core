@@ -4,8 +4,10 @@ from typing import List
 from telethon import events, Button
 from urllib.parse import urlparse
 
+from infobot import UpdateBuilder
 from infobot.tg_event_helpers import required_admin, required_infobot, required_infobot_link
 from object.Translator import Translator
+from utils import redis_key
 from utils.array import get_first
 from infobot.LinkTable import LinkTable
 from infobot.Target import Target
@@ -122,6 +124,9 @@ async def command_follow(event: events.NewMessage.Event, infobot: Target):
 
         # Create profile in profile_twitch table if not created yet
         await event.client.db.registerTwitchProfile(user['user_id'])
+        message = UpdateBuilder.TwitchUpdate(UpdateBuilder.UpdateAction.UPDATE, user['user_id'])
+        await event.client.db.redis.publish_event(redis_key.get_infobot_update_profile_topic(), message.to_json())
+
         twitch_profile = await get_first(await event.client.db.getTwitchProfileByUserId(user['user_id']))
         if twitch_profile is None:
             event.client.logger.info('Failed to find profile_twitch record for user {}, initiated by {}'.format(user['user_id'], event.message.text))
@@ -136,8 +141,10 @@ async def command_follow(event: events.NewMessage.Event, infobot: Target):
 
         await event.client.db.createInfobotProfileLink(infobot.id, LinkTable.TWITCH.value, twitch_profile['profile_twitch_id'])
         await event.client.db.saveInfoBotLinkConfig(infobot.id, LinkTable.TWITCH.value, twitch_profile['profile_twitch_id'], TwitchLinkConfig({}).export())
-        await event.client.manager.update(None, infobot_id=infobot.id)
         await event.reply('Success!')
+
+        message = UpdateBuilder.LinkUpdate(UpdateBuilder.UpdateAction.UPDATE, infobot.id, LinkTable.TWITCH.value, 0)
+        await event.client.db.redis.publish_event(redis_key.get_infobot_update_links_topic(), message.to_json())
     elif input_hostname == FollowConfig.boosty_hostname:
         await event.reply('Sorry, new boosty follows currently are not allowed!')
     else:
@@ -233,6 +240,10 @@ async def query_link_delete(event: events.CallbackQuery.Event, infobot: Target):
     text = event.client.translator.getLangTranslation(infobot.get_lang(), 'IB_VIEW_FOLLOW_REMOVED').format(link.get_display_text())
     await event.edit(text, buttons=buttons)
 
+    # Publish changes
+    message = UpdateBuilder.LinkUpdate(UpdateBuilder.UpdateAction.REMOVE, infobot.id, link.get_table(), link.link_id)
+    await event.client.db.redis.publish_event(redis_key.get_infobot_update_links_topic(), message.to_json())
+
 
 @required_admin()
 @required_infobot()
@@ -246,3 +257,7 @@ async def query_link_config_update(event: events.CallbackQuery.Event, infobot: T
     link.config.set_field(field_name=parts[3], field_value=new_value)
     await event.client.db.saveInfoBotLinkConfig(infobot.id, link.get_table(), link.link_id, link.config.export())
     await query_select_link(event)
+
+    # Publish changes
+    message = UpdateBuilder.LinkUpdate(UpdateBuilder.UpdateAction.UPDATE, infobot.id, link.get_table(), link.link_id)
+    await event.client.db.redis.publish_event(redis_key.get_infobot_update_links_topic(), message.to_json())
