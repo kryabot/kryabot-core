@@ -18,7 +18,7 @@ class UpdateTopic(Enum):
 
 class UpdaterEncoder(json.JSONEncoder):
     def default(self, o):
-        if not isinstance(o, (TwitchUpdate, BoostyUpdate, InstagramUpdate, UpdateTopic, UpdateAction)):
+        if not isinstance(o, (TwitchUpdate, BoostyUpdate, InstagramUpdate, LinkUpdate, UpdateTopic, UpdateAction)):
             return super(UpdaterEncoder, self).default(o)
 
         if isinstance(o, Enum):
