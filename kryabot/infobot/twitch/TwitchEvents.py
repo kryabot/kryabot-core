@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from typing import List, Dict
 
-from api.twitch_events import EventSubType
 from infobot.Event import Event
 from infobot.twitch.TwitchProfile import TwitchProfile
 
@@ -22,7 +21,6 @@ class TwitchEvent(Event):
         self.type: str = None
         self.twitch_event_id: str = None
         self.event_id = None
-        self.start_raw = start_event
         self.summary: [Dict] = []
 
         self.start: bool = False
@@ -101,7 +99,7 @@ class TwitchEvent(Event):
         if self.finish:
             return None
 
-        custom_url = 'https://static-cdn.jtvnw.net/previews-ttv/live_user_{}-1920x1080.jpg'.format(self.start_raw['event']['broadcaster_user_login'])
+        custom_url = 'https://static-cdn.jtvnw.net/previews-ttv/live_user_{}-1920x1080.jpg'.format(self.profile.twitch_name)
         custom_url += '?id={tmp_id}{seed}'.format(tmp_id=self.twitch_event_id, seed=str(int(datetime.now().timestamp())))
         return custom_url
 

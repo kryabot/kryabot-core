@@ -8,6 +8,7 @@ import utils.redis_key as redis_key
 class TwitchProfile(Profile):
     def __init__(self, raw, ts):
         self.twitch_name: str = None
+        self.display_name: str = None
         self.twitch_id: int = None
         self.user_id: int = None
         self.stream_history: List = []
@@ -21,6 +22,7 @@ class TwitchProfile(Profile):
     def update(self, raw, ts):
         super().update(raw, ts)
         self.twitch_name = str(raw['name'])
+        self.display_name = str(raw['dname'])
         self.twitch_id = int(raw['tw_id'])
         self.user_id = int(raw['user_id'])
 
