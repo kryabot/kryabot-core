@@ -51,7 +51,7 @@ class InfoBotUpdate(object):
             return BoostyUpdate(**json_dict)
         elif object_type == UpdateTopic.INSTAGRAM.value:
             return InstagramUpdate(**json_dict)
-        elif object_type == UpdateTopic.LINK:
+        elif object_type == UpdateTopic.LINK.value:
             return LinkUpdate(**json_dict)
 
         raise ValueError("Unknown update message: {}".format(json_message))
