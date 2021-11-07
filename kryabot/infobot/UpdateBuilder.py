@@ -10,7 +10,7 @@ class UpdateAction(Enum):
 
 
 class UpdateTopic(Enum):
-    PROFILE_LINK = "LINK"
+    LINK = "LINK"
     TWITCH = "TWITCH"
     INSTAGRAM = "INSTAGRAM"
     BOOSTY = "BOOSTY"
@@ -51,6 +51,8 @@ class InfoBotUpdate(object):
             return BoostyUpdate(**json_dict)
         elif object_type == UpdateTopic.INSTAGRAM.value:
             return InstagramUpdate(**json_dict)
+        elif object_type == UpdateTopic.LINK:
+            return LinkUpdate(**json_dict)
 
         raise ValueError("Unknown update message: {}".format(json_message))
 
@@ -75,7 +77,7 @@ class InstagramUpdate(InfoBotUpdate):
 
 class LinkUpdate(InfoBotUpdate):
     def __init__(self, action: UpdateAction, infobot_id: int, link_table: str, link_id: int):
-        super().__init__(action, UpdateTopic.PROFILE_LINK)
+        super().__init__(action, UpdateTopic.LINK)
         self.infobot_id: int = infobot_id
         self.link_table: str = link_table
         self.link_id: int = link_id
