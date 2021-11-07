@@ -1,4 +1,5 @@
 from typing import List
+from dateutil.parser import parse
 
 from api.twitch_events import EventSubType
 from infobot.UpdateBuilder import TwitchUpdate
@@ -147,6 +148,9 @@ class TwitchListener(Listener):
             stream_info = next(filter(lambda row: int(row['user_id']) == int(profile.twitch_id), stream_datas), None)
             if stream_info is None:
                 continue
+
+            if isinstance(stream_info['started_at'], str):
+                stream_info['started_at'] = parse(stream_info['started_at'])
 
             # Create event, add data and mark it as start
             event = TwitchEvent(profile, {'event': stream_info})
