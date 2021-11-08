@@ -183,7 +183,6 @@ class TwitchEvents(Core):
                     self.logger.error('Conflict with existing event: {}'.format(event))
                     raise responseException
 
-
     @app_auth()
     async def delete(self, message_id: str):
         params = [('id', message_id)]

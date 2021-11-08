@@ -2,7 +2,7 @@ from typing import List
 from dateutil.parser import parse
 
 from api.twitch_events import EventSubType
-from infobot.UpdateBuilder import TwitchUpdate
+from infobot.UpdateBuilder import TwitchUpdate, UpdateAction
 from infobot.Listener import Listener
 from infobot.twitch.TwitchEvents import TwitchEvent
 from infobot.twitch.TwitchProfile import TwitchProfile
@@ -17,6 +17,7 @@ class TwitchListener(Listener):
         self.profiles: List[TwitchProfile] = []
         self.last_subscribe = None
         self.update_type = TwitchUpdate
+        self.unsubscribes: List[int] = []
 
     async def start(self):
         await super().start()
@@ -27,6 +28,7 @@ class TwitchListener(Listener):
     @Listener.repeatable
     async def listen(self):
         while True:
+            self.loop.create_task(self.unsubscribe_all())
             data = await self.manager.db.redis.get_one_from_list_parsed(redis_key.get_streams_data())
             if data is None:
                 break
@@ -159,4 +161,38 @@ class TwitchListener(Listener):
 
     async def on_update(self, data: TwitchUpdate):
         self.logger.info('TwitchListener update: {}'.format(data.to_json()))
-        await self.update_data()
+        if data.action == UpdateAction.UPDATE:
+            await self.update_data()
+        elif data.action == UpdateAction.REMOVE:
+            profile = next(filter(lambda p: p.user_id == data.user_id, self.profiles), None)
+            if profile and self.has_link(profile):
+                self.logger.info('Skipping remove of profile {} because link exist'.format(profile.twitch_name))
+                return
+
+            self.logger.info('Removing profile {}'.format(profile.twitch_name))
+            self.unsubscribes.append(profile.twitch_id)
+            await self.remove_profile(profile)
+        else:
+            self.logger.error('Unhandled update action: {}'.format(data.action))
+
+    async def unsubscribe_all(self):
+        if not self.unsubscribes:
+            return
+
+        current_on = await self.manager.api.twitch_events.get_all(topic=EventSubType.STREAM_ONLINE)
+        current_off = await self.manager.api.twitch_events.get_all(topic=EventSubType.STREAM_OFFLINE)
+        current_updates = await self.manager.api.twitch_events.get_all(topic=EventSubType.CHANNEL_UPDATE)
+
+        all_subscribes = current_on['data'] + current_off['data'] + current_updates['data']
+        for remove_twitch_id in self.unsubscribes:
+            self.logger.info('Unsubscribing twitch ID {}'.format(remove_twitch_id))
+            profile = next(filter(lambda p: p.twitch_id == remove_twitch_id, self.profiles), None)
+            if profile:
+                self.logger.info('Received removal of twitch ID {}, but profile {} {} still exists'.format(remove_twitch_id, profile.twitch_id, profile.twitch_name))
+                continue
+
+            existing_subscribes = filter(lambda event: int(event['condition']['broadcaster_user_id']) == int(remove_twitch_id), all_subscribes)
+            for sub in existing_subscribes:
+                await self.manager.api.twitch_events.delete(sub['id'])
+
+        self.unsubscribes = []

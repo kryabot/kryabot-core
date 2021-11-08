@@ -79,6 +79,16 @@ class Listener:
 
         return inner
 
+    async def remove_profile(self, profile: Profile):
+        self.profiles.remove(profile)
+
+    def has_link(self, profile) -> bool:
+        for link in self.manager.links.links:
+            if link.link_table == profile.link_table and link.link_id == profile.profile_id:
+                return True
+
+        return False
+
     async def update_profiles(self, profiles, histories, start: bool=False):
         """
         Main logic how profiles are stored in profile list.
@@ -137,7 +147,4 @@ class Listener:
         :param profile:
         :return:
         """
-        pass
-
-    async def handle_profile_update(self, data):
         pass
