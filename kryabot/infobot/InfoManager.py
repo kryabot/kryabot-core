@@ -157,7 +157,7 @@ class InfoManager:
     async def on_profile_update(self, message):
         update_object = UpdateBuilder.InfoBotUpdate.from_json(message)
         for listener in self.listeners:
-            await listener.on_update(update_object)
+            await listener.push_update(update_object)
 
     async def on_exception(self, ex: Exception, info: str = ''):
         self.logger.error(info)

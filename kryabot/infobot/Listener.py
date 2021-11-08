@@ -55,10 +55,12 @@ class Listener:
 
         await asyncio.sleep(sleep_time)
 
-    async def on_update(self, data):
+    async def push_update(self, data):
         if isinstance(data, self.update_type):
-            self.logger.info("Received update: {}".format(data.to_json()))
-            await self.handle_profile_update(data)
+            await self.on_update(data)
+
+    async def on_update(self, data):
+        pass
 
     @classmethod
     def repeatable(cls, f):

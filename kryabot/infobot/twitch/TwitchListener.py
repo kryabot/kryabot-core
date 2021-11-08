@@ -156,3 +156,7 @@ class TwitchListener(Listener):
             event = TwitchEvent(profile, {'event': stream_info})
             event.parse_stream_data(stream_info)
             event.set_start()
+
+    async def on_update(self, data: TwitchUpdate):
+        self.logger.info('TwitchListener update: {}'.format(data.to_json()))
+        await self.update_data()
