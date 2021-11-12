@@ -44,7 +44,8 @@ class TwitchListener(Listener):
             event = None
 
             if topic.eq(EventSubType.STREAM_ONLINE):
-                if profile.last_event and profile.last_event.is_recovery():
+                is_live = data['event']['type'] == 'live'
+                if is_live and profile.last_event and profile.last_event.is_recovery():
                     event = profile.last_event
                     event.set_recovery()
                 else:

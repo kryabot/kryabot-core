@@ -33,6 +33,7 @@ class TwitchLinkConfig(LinkConfig):
                 {'name': 'show_start', 'default': True},
                 {'name': 'show_update', 'default': True},
                 {'name': 'show_end', 'default': True},
+                {'name': 'show_rerun', 'default': False},
                 {'name': 'pin_start', 'default': False}
             ]
 

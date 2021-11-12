@@ -257,6 +257,8 @@ class KryaInfoBot(TelegramClient):
             text_key = 'TWITCH_NOTIFICATION_START'
 
         for link in links:
+            if event.rerun and not link.config.get_field_value('show_rerun'):
+                continue
             if event.update and not link.config.get_field_value('show_update'):
                 continue
             if event.start and not link.config.get_field_value('show_start'):
@@ -266,8 +268,12 @@ class KryaInfoBot(TelegramClient):
 
             base_text = self.translator.getLangTranslation(link.target.get_lang(), text_key)
             text = ''
+
+            if event.rerun:
+                text += '🔁 Twitch rerun 🔄\n\n'
+
             if event.recovery:
-                text = base_text.format(event.profile.twitch_name)
+                text = '↪️' + base_text.format(event.profile.twitch_name)
             elif event.update:
                 for upd in event.updated_data:
                     if 'title' in upd:
@@ -275,9 +281,9 @@ class KryaInfoBot(TelegramClient):
                     if 'game' in upd:
                         text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(link.target.get_lang(), 'TWITCH_NOTIFICATION_UPDATED_GAME'), event.game_name)
 
-                text = '{}\n{}'.format(base_text, text)
+                text = '🔄 {}\n{}'.format(base_text, text)
             elif event.start:
-                text = '<b>{}</b>\n🎮{}\n\n{}'.format(event.title, event.game_name, base_text)
+                text = '▶️ <b>{}</b>\n🎮{}\n\n{}'.format(event.title if event.title else '', event.game_name if event.game_name else '', base_text)
             elif event.finish:
                 try:
                     text = await self.format_stream_finish_message(link.target, event)
@@ -289,12 +295,12 @@ class KryaInfoBot(TelegramClient):
             try:
                 try:
                     event_message = await self.send_message(link.target.target_id, message=text, file=file, buttons=button, link_preview=False, parse_mode='html')
-                    if event.start and not event.recovery and link.config.get_field_value('pin_start'):
+                    if event.live and event.start and not event.recovery and link.config.get_field_value('pin_start'):
                         await event_message.pin(notify=True)
                 except WebpageCurlFailedError:
                     fileio = await self.manager.api.twitch.download_file_io(file.url)
                     fileio.seek(0)
-                    fileio.filename = "image.jpg"
+                    fileio.name = "image.jpg"
                     await self.send_message(link.target.target_id, message=text, file=fileio, buttons=button, link_preview=False, parse_mode='html')
             except ChannelPrivateError:
                 await self.report_to_monitoring('ChannelPrivateError. Target ID: {}, TG ID: {}'.format(link.target.id, link.target.target_id), True)

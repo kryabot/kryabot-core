@@ -85,7 +85,7 @@ class TwitchEvent(Event):
         self.game_name = game_name
 
     def is_recovery(self)->bool:
-        if self.profile.last_stream_finish is None:
+        if self.profile.last_stream_finish is None or self.profile.last_event.rerun:
             return False
 
         self.profile.logger.info('Checking of recovery for stream of {}, last stream = {}, utcnow = {}'.format(self.profile.twitch_name, self.profile.last_stream_finish.replace(tzinfo=None), datetime.utcnow()))
@@ -167,3 +167,11 @@ class TwitchEvent(Event):
         self.update = False
         self.finish = False
         self.recovery = True
+
+    @property
+    def live(self)->bool:
+        return self.type == 'live'
+
+    @property
+    def rerun(self)->bool:
+        return self.type == 'rerun'
