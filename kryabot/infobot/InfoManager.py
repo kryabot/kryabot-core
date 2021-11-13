@@ -137,22 +137,31 @@ class InfoManager:
         update: UpdateBuilder.LinkUpdate = UpdateBuilder.InfoBotUpdate.from_json(message)
         infobot_links = await self.db.getInfobotLinksByType(update.infobot_id, update.link_table)
 
+        self.logger.info('Existing links: {}'.format(infobot_links))
         try:
+            self.logger.info('Searching target for infobot ID {}'.format(update.infobot_id))
             target = self.links.get_target(update.infobot_id)
         except ValueError:
+            self.logger.info('Search failed with ValueError')
             target_raw = await self.db.getInfobotById(update.infobot_id)
             target = Target(target_raw[0])
             self.links.add_target(target)
 
         if update.link_id:
-            link_raw = next(filter(
-                lambda link: link['link_id'] == update.link_id,
-                infobot_links), None)
-            if link_raw:
-                self.links.add(TargetLink(link_raw, target))
+            if update.action == UpdateBuilder.UpdateAction.UPDATE:
+                link_raw = next(filter(
+                    lambda link: link['link_id'] == update.link_id,
+                    infobot_links), None)
+                self.logger.info('Single Link raw: {}'.format(link_raw))
+                if link_raw:
+                    self.links.add(TargetLink(link_raw, target))
+            else:
+                self.links.remove(update.infobot_id, update.link_table, update.link_id)
         else:
-            for link_raw in infobot_links:
-                self.links.add(TargetLink(link_raw, target))
+            # Missing link_id should be only for adding, REMOVE must have value in update.link_id
+            if update.action == UpdateBuilder.UpdateAction.UPDATE:
+                for link_raw in infobot_links:
+                    self.links.add(TargetLink(link_raw, target))
 
     async def on_profile_update(self, message):
         update_object = UpdateBuilder.InfoBotUpdate.from_json(message)
