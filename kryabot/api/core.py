@@ -25,6 +25,7 @@ class Core:
         if headers is None:
             headers = await self.get_headers(token)
 
+        last_exception = None
         for i in range(self.max_retries):
             try:
                 async with aiohttp.ClientSession(headers=headers, timeout=self.default_client_timeout) as session:
@@ -51,11 +52,14 @@ class Core:
                             resp_data = None
 
                         return resp_data
-            except asyncio.exceptions.TimeoutError:
+            except asyncio.exceptions.TimeoutError as ex:
+                last_exception  = ex
                 self.logger.info('[GET] {sta} {url} [{i}]'.format(sta='TimeoutError', url=url, i=i))
                 continue
 
         self.logger.error('All retries failed for {url}'.format(url=url))
+        if last_exception:
+            raise last_exception
         return None
 
     async def make_post_request(self, url, token=None, body=None, headers=None):

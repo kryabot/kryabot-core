@@ -37,6 +37,8 @@ class ApiHelper:
     async def sub_check(self, auth_token, channel_id, users):
         try:
             response = await self.twitch.get_channel_subs(token=auth_token, channel_id=channel_id, users=users)
+            if response is None:
+                raise Exception("Twitch failed to return data object, response is none")
             return response, None
         except Exception as e:
             self.twitch.logger.error(str(e))
