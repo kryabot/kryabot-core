@@ -370,7 +370,8 @@ class WebsocketConnection:
         except AttributeError:
             code = None
 
-        if code == 376 or code == 1:
+        # Removed 376 because both - 376 and 001 are fired - duplicated ready events
+        if code == 1:
             log.info('Successfully logged onto Twitch WS | %s', self.nick)
 
             futures = [fut for chan, fut in self._pending_joins.items() if chan.lower() in
@@ -459,6 +460,9 @@ class WebsocketConnection:
             action = badges['action']
         # elif not action:
         #     action = 'PING'
+
+        if not action and raw.startswith('PING '):
+            action = 'PING'
 
         try:
             author = self.regex["author"].match(data).group("author")

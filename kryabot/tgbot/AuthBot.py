@@ -39,7 +39,7 @@ async def start(event):
         await event.client.exception_reporter(ex, 'Start event')
 
 
-@events.register(events.NewMessage(pattern='/buygift', func=lambda e: e.is_private))
+#@events.register(events.NewMessage(pattern='/buygift', func=lambda e: e.is_private))
 async def start_buy_gift(event):
     try:
         await event.client.process_buy_gift(event)
