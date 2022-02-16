@@ -287,7 +287,13 @@ class AuthBot(TelegramClient):
         reply = self.format_translation(currentChannel['channel_name'], twitch_display_name, 'AUTH_JOIN_SUCCESS')
         self.logger.info('Result: join_success')
 
-        msg = await event.reply(message=reply, buttons=Button.url(currentChannel['channel_name'], 'tg://join?invite={link}'.format(link=currentChannel['join_link'])))
+        link = ""
+        if currentChannel['join_link'].startsWith('http'):
+            link = currentChannel['join_link']
+        else:
+            link = 'tg://join?invite={link}'.format(link=currentChannel['join_link'])
+        
+        msg = await event.reply(message=reply, buttons=Button.url(currentChannel['channel_name'], link))
         await asyncio.sleep(300)
         await msg.delete()
 
