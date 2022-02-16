@@ -288,11 +288,11 @@ class AuthBot(TelegramClient):
         self.logger.info('Result: join_success')
 
         link = ""
-        if currentChannel['join_link'].startsWith('http'):
+        if currentChannel['join_link'].startswith('http'):
             link = currentChannel['join_link']
         else:
             link = 'tg://join?invite={link}'.format(link=currentChannel['join_link'])
-        
+
         msg = await event.reply(message=reply, buttons=Button.url(currentChannel['channel_name'], link))
         await asyncio.sleep(300)
         await msg.delete()
