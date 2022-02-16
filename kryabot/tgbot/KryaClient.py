@@ -246,6 +246,12 @@ class KryaClient(TelegramClient):
             await self.report_to_monitoring(report + '\nStatus: Failed\nReason: Empty telegram chat')
             return
 
+        # Force stop if want to kick >90% users
+        kick_ratio = data['summary']['subs'] / (data['summary']['total'] - data['summary']['bots'])
+        if kick and kick_ratio < 0.1:
+            await self.report_to_monitoring('Force stopping mass-kick for channel {} because kick ratio is {}'.format(channel['channel_name'], kick_ratio))
+            return
+
         kickNonVerified = False
         kickNonSub = False
         kickDeleted = False
