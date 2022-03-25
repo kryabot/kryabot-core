@@ -84,9 +84,8 @@ class AuthBot(TelegramClient):
         self.add_event_handler(pong)
         self.add_event_handler(start)
         self.add_event_handler(reloadtranslations)
-        self.add_event_handler(start_buy_gift)
-        self.add_event_handler(pushed_start_exchange)
-        self.add_event_handler(pushed_cancel_exchange)
+        #self.add_event_handler(pushed_start_exchange)
+        #self.add_event_handler(pushed_cancel_exchange)
         self._parse_mode = html
         self.loop.create_task(self.db.db_activity())
         self.loop.create_task(Pinger(System.AUTHBOT_TELEGRAM, self.logger, self.db.redis).run_task())
