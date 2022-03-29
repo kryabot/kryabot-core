@@ -23,7 +23,7 @@ async def process_easter(event_data, tg_event, channel):
 
     if await client.db.is_global_event_cooldown(tg_event.message.to_id.channel_id, tg_event.message.sender_id, cache_cooldown_key):
         await tg_event.message.delete()
-        tg_event.client.logger.debug('Skipping event because of cooldown: {} - {}'.format(tg_event.message.to_id.channel_id, tg_event.message.sender_id))
+        client.logger.debug('Skipping event because of cooldown: {} - {}'.format(tg_event.message.to_id.channel_id, tg_event.message.sender_id))
         return
 
     await client.db.set_global_event_cooldown(tg_event.message.to_id.channel_id, tg_event.message.sender_id, cache_cooldown_key, event_data['cd'])
@@ -64,8 +64,11 @@ async def process_easter(event_data, tg_event, channel):
         to_event_data_amount = to_event_data_amount + 1
         roll_type = 4
 
-    await client.db.add_currency_to_user(counter_currency_key, sender['user_id'], from_event_data_amount)
-    await client.db.add_currency_to_user(counter_currency_key, target_user['user_id'], to_event_data_amount)
+    if from_event_data_amount > 0:
+        await client.db.add_currency_to_user(reward_currency_key, sender['user_id'], from_event_data_amount)
+
+    if to_event_data_amount > 0:
+        await client.db.add_currency_to_user(reward_currency_key, target_user['user_id'], to_event_data_amount)
 
     sender_entity = await client.get_entity(tg_event.message.sender_id)
     target_entity = await client.get_entity(target_message.sender_id)
