@@ -84,11 +84,11 @@ async def process_easter(event_data, tg_event, channel):
     winner_total_wins = 0
     if roll_type == 1:
         winner_label = sender_label
-        current_data = await client.db.get_user_currency_amount(counter_currency_key, sender['user_id'])
+        current_data = await client.db.get_user_currency_amount(reward_currency_key, sender['user_id'])
         winner_total_wins = int(current_data[0]['amount']) if current_data else 1
     elif roll_type == 2:
         winner_label = target_label
-        current_data = await client.db.get_user_currency_amount(counter_currency_key, target_user['user_id'])
+        current_data = await client.db.get_user_currency_amount(reward_currency_key, target_user['user_id'])
         winner_total_wins = int(current_data[0]['amount']) if current_data else 1
 
     text = client.translator.getLangTranslation(channel['bot_lang'], 'GLOBAL_EVENT_EASTER_ROLL_{}'.format(roll_type))
