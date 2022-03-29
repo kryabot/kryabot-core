@@ -24,16 +24,13 @@ async def event_group_message(event: events.NewMessage.Event):
     if isinstance(event.message.to_id, PeerChat):
         return
 
-    # IF for TEST only
-    # if event.message.to_id.channel_id != 1144972862 and event.sender_id != owner_id:
-    #     return
     await event.mark_read()
     try:
         await moderate(event, False)
         await process_global_events(event)
 
-        if event.mentioned:
-            await process_bot_chat(event)
+        # if event.mentioned:
+        #     await process_bot_chat(event)
     except Exception as ex:
         event.client.logger.exception(event.stringify())
         await event.client.exception_reporter(ex, 'Error in event_group_message event')
@@ -43,9 +40,7 @@ async def event_group_message(event: events.NewMessage.Event):
 async def event_group_message_edit(event: events.MessageEdited.Event):
     if isinstance(event.message.to_id, PeerChat):
         return
-    # IF for TEST only
-    # if event.message.to_id.channel_id != 1144972862 and event.sender_id != owner_id:
-    #     return
+
     await event.mark_read()
     try:
         await moderate(event, True)
