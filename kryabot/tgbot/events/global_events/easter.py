@@ -70,6 +70,10 @@ async def process_easter(event_data, tg_event, channel):
     if to_event_data_amount > 0:
         await client.db.add_currency_to_user(reward_currency_key, target_user['user_id'], to_event_data_amount)
 
+    # Increase try count by 1
+    await client.db.add_currency_to_user(counter_currency_key, sender['user_id'], 1)
+    await client.db.add_currency_to_user(counter_currency_key, target_user['user_id'], 1)
+
     sender_entity = await client.get_entity(tg_event.message.sender_id)
     target_entity = await client.get_entity(target_message.sender_id)
 
@@ -80,20 +84,17 @@ async def process_easter(event_data, tg_event, channel):
     winner_total_wins = 0
     if roll_type == 1:
         winner_label = sender_label
-        winner_total_wins = from_event_data_amount
+        current_data = await client.db.get_user_currency_amount(counter_currency_key, sender['user_id'])
+        winner_total_wins = current_data[0]['amount'] if current_data else 1
     elif roll_type == 2:
         winner_label = target_label
-        winner_total_wins = to_event_data_amount
+        current_data = await client.db.get_user_currency_amount(counter_currency_key, target_user['user_id'])
+        winner_total_wins = current_data[0]['amount'] if current_data else 1
 
     text = client.translator.getLangTranslation(channel['bot_lang'], 'GLOBAL_EVENT_EASTER_ROLL_{}'.format(roll_type))
     text = text.format(sender=sender_label, target=target_label, winner=winner_label, winner_wins=winner_total_wins if winner_total_wins > 0 else '')
 
     msg = await tg_event.reply(text)
-
-    # Increase try count by 1
-    await client.db.add_currency_to_user(counter_currency_key, sender['user_id'], 1)
-    await client.db.add_currency_to_user(counter_currency_key, target_user['user_id'], 1)
-
     await asyncio.sleep(60)
     await msg.delete()
 
