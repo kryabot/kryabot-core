@@ -68,6 +68,8 @@ class Notice:
         self.msg_param_gifter_id = None
         self.msg_param_gift_month_being_redeemed = None
         self.msg_param_anon_gift = None
+        # "msg-param-color": "PRIMARY"
+        self.msg_param_color = None
 
 
         self.bits = None
@@ -133,6 +135,7 @@ class Notice:
                            'msg-param-gifter-id',
                            'msg-param-gift-month-being-redeemed',
                            'msg-param-anon-gift',
+                           'msg-param-color',
                            'badge-info',
                            'bits',
                            'room-id',
@@ -203,6 +206,7 @@ class Notice:
         self.msg_param_gifter_id = await self.get_value('msg-param-gifter-id')
         self.msg_param_gift_month_being_redeemed = await self.get_value('msg-param-gift-month-being-redeemed')
         self.msg_param_anon_gift = await self.get_value('msg-param-anon-gift')
+        self.msg_param_color = await self.get_value('msg-param-color')
 
         self.bits = await self.get_value('bits')
         self.room_id = await self.get_value('room-id')
@@ -322,6 +326,10 @@ class Notice:
     def is_submessage_from_massgift(self):
         return self.msg_param_origin_id is not None and self.msg_param_mass_gift_count is None
 
+    def is_announcement(self):
+        return self.msg_id == 'announcement'
+
     # Disable messaging of mass-gifting, avoid crashes
+    # Skip announcements
     def can_react(self):
-        return not self.is_submessage_from_massgift()
+        return not self.is_submessage_from_massgift() and not self.is_announcement()
