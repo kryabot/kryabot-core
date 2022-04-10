@@ -231,6 +231,11 @@ class AuthBot(TelegramClient):
             self.logger.info('Result: join_reject_closed')
             return
 
+        if (not skip_checks) and currentChannel['auth_status'] == 0:
+            await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_GROUP_CLOSED'))
+            self.logger.info('Result: join_reject_closed')
+            return
+
         if (not skip_checks) and currentChannel['join_follower_only'] == 1:
             try:
                 follower_info = await self.api.twitch.check_channel_following(currentChannel['tw_id'], requestor[0]['tw_id'])
