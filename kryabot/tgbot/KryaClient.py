@@ -573,7 +573,11 @@ class KryaClient(TelegramClient):
         report += "\nChannel ID: " + str(chat_data['channel_id'])
 
         try:
-            chat_check = await self(CheckChatInviteRequest(chat_data['join_link']))
+            invite_hash = chat_data['join_link']
+            if 't.me' in invite_hash:
+                invite_hash = invite_hash.split('/')[-1]
+
+            chat_check = await self(CheckChatInviteRequest(invite_hash))
             # Existing channel
             if type(chat_check) is ChatInviteAlready:
                 if chat_check.chat.id == chat_data['tg_chat_id']:
