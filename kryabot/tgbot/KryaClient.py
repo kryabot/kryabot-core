@@ -76,6 +76,7 @@ class KryaClient(TelegramClient):
         self.add_event_handler(krya_events.event_group_message_command)
         self.add_event_handler(krya_events.event_chat_action)
         self.add_event_handler(krya_events.event_monitoring_message)
+        self.add_event_handler(krya_events.event_group_migrate)
 
         # For decorators
         global global_logger
@@ -1041,6 +1042,7 @@ class KryaClient(TelegramClient):
                 pass
                 # TODO: migrate database id? need to check response fields
         else:
+            self.logger.info("Checking database ID integrity...")
             # Already migrated to Channel type, but still need to verify if ID updated in database
             if channel is None:
                 self.logger.info("Searching for for migrated chats due to request from {}".format(event_chat_id))
@@ -1061,6 +1063,8 @@ class KryaClient(TelegramClient):
 
                         self.logger.info("Migrating channel_subchat_id {} telegram ID: from {} to {} ".format(outdated_channel['channel_subchat_id'], outdated_channel['tg_chat_id'], updated_chat.id))
                         await self.db.updateSubchatAfterJoin(outdated_channel['channel_subchat_id'], updated_chat.id, updated_chat.title, outdated_channel['join_link'])
+            else:
+                self.logger.info("Skipping migrate command because already migrated and linked")
 
     async def get_group_participant_full_data(self, channel, need_subs=True, need_follows=True, kick_not_verified=True, kick_deleted=True):
         self.logger.info('Collecting full data for channel {}'.format(channel['channel_id']))
