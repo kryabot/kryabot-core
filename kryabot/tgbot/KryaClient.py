@@ -602,7 +602,7 @@ class KryaClient(TelegramClient):
                         await self.db.updateSubchatAfterJoin(chat_data['channel_subchat_id'], chat_data['tg_chat_id'], chat_data['tg_chat_name'], '')
                 # New channel provided
                 elif type(chat_check) is ChatInvite:
-                    new_chat = await self(ImportChatInviteRequest(chat_data['join_link']))
+                    new_chat = await self(ImportChatInviteRequest(invite_hash))
 
                     if chat_data['tg_chat_id'] > 0:
                         # Leave previous channel
