@@ -568,48 +568,60 @@ class KryaClient(TelegramClient):
             await self.report_to_monitoring(report + " \n\nFailed, no chat found by user id!")
             return
 
-        route = ''
         chat_data = chat_data[0]
         report += "\nChannel ID: " + str(chat_data['channel_id'])
 
-        try:
-            invite_hash = chat_data['join_link']
-            if 't.me' in invite_hash:
-                invite_hash = invite_hash.split('/')[-1]
+        if chat_data['tg_chat_id'] == 0 and (chat_data['join_link'] is None or chat_data['join_link'] == ""):
+            # Skip and do not report it
+            return
+        elif chat_data['tg_chat_id'] > 0 and (chat_data['join_link'] is None or chat_data['join_link'] == ""):
+            # Removed invite link, need to leave
+            await self.db.updateSubchatAfterJoin(chat_data['channel_subchat_id'], 0, '', '')
+            report += 'Removing bot from telegram group {}'.format(chat_data['tg_chat_id'])
+            try:
+                old_entity = await self.get_input_entity(PeerChannel(int(chat_data['tg_chat_id'])))
+                await self(LeaveChannelRequest(old_entity))
+            except Exception as ex:
+                report += "Error during channel leave: {}".format(ex)
+        else:
+            try:
+                invite_hash = chat_data['join_link']
+                if 't.me' in invite_hash:
+                    invite_hash = invite_hash.split('/')[-1]
 
-            chat_check = await self(CheckChatInviteRequest(invite_hash))
-            # Existing channel
-            if type(chat_check) is ChatInviteAlready:
-                if chat_check.chat.id == chat_data['tg_chat_id']:
-                    await self.db.updateSubchatAfterJoin(chat_data['channel_subchat_id'], chat_check.chat.id, chat_check.chat.title.encode(), chat_data['join_link'])
-                else:
-                    # Tried to join other user channel, delete link and keep old ID
-                    await self.db.updateSubchatAfterJoin(chat_data['channel_subchat_id'], chat_data['tg_chat_id'], chat_data['tg_chat_name'], '')
-            # New channel provided
-            elif type(chat_check) is ChatInvite:
-                new_chat = await self(ImportChatInviteRequest(chat_data['join_link']))
+                chat_check = await self(CheckChatInviteRequest(invite_hash))
+                # Existing channel
+                if type(chat_check) is ChatInviteAlready:
+                    if chat_check.chat.id == chat_data['tg_chat_id']:
+                        await self.db.updateSubchatAfterJoin(chat_data['channel_subchat_id'], chat_check.chat.id, chat_check.chat.title.encode(), chat_data['join_link'])
+                    else:
+                        # Tried to join other user channel, delete link and keep old ID
+                        await self.db.updateSubchatAfterJoin(chat_data['channel_subchat_id'], chat_data['tg_chat_id'], chat_data['tg_chat_name'], '')
+                # New channel provided
+                elif type(chat_check) is ChatInvite:
+                    new_chat = await self(ImportChatInviteRequest(chat_data['join_link']))
 
-                if chat_data['tg_chat_id'] > 0:
-                    # Leave previous channel
-                    try:
-                        old_entity = await self.get_input_entity(PeerChannel(int(chat_data['tg_chat_id'])))
-                        await self(LeaveChannelRequest(old_entity))
-                    except Exception as e:
-                        await self.report_exception(e, 'Channel leave from {} ({})'.format(chat_data['tg_chat_id'], chat_data['tg_chat_name']))
+                    if chat_data['tg_chat_id'] > 0:
+                        # Leave previous channel
+                        try:
+                            old_entity = await self.get_input_entity(PeerChannel(int(chat_data['tg_chat_id'])))
+                            await self(LeaveChannelRequest(old_entity))
+                        except Exception as e:
+                            await self.report_exception(e, 'Channel leave from {} ({})'.format(chat_data['tg_chat_id'], chat_data['tg_chat_name']))
+                            pass
+                    else:
+                        # First time join
                         pass
+                    await self.send_message(new_chat.chats[0].id, message='HoHoHo')
+                    await self.db.updateSubchatAfterJoin(chat_data['channel_subchat_id'], new_chat.chats[0].id, new_chat.chats[0].title.encode(), chat_data['join_link'])
                 else:
-                    # First time join
+                    # TODO: ?
                     pass
-                await self.send_message(new_chat.chats[0].id, message='HoHoHo')
-                await self.db.updateSubchatAfterJoin(chat_data['channel_subchat_id'], new_chat.chats[0].id, new_chat.chats[0].title.encode(), chat_data['join_link'])
-            else:
-                # TODO: ?
-                pass
 
-            await self.update_data()
-        except Exception as e:
-            self.logger.info(str(e))
-            report += '\nJoin with error: ' + str(e)
+                await self.update_data()
+            except Exception as e:
+                self.logger.info(str(e))
+                report += '\nJoin with error: ' + str(e)
 
         await self.report_to_monitoring(report + '\nStatus: Done')
 
