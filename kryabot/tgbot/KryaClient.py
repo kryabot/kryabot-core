@@ -1049,15 +1049,15 @@ class KryaClient(TelegramClient):
 
                 channels = await event.client.db.get_auth_subchats()
                 dialogs = await self.get_dialogs()
-                migrated_chats = [dialog for dialog in dialogs if isinstance(dialog.entity, Chat) and dialog.migrated_to is not None]
+                migrated_chats = [dialog for dialog in dialogs if isinstance(dialog.entity, Chat) and dialog.entity.migrated_to is not None]
 
                 for migrated_chat in migrated_chats:
-                    if isinstance(migrated_chat.migrated_to, InputChannel):
+                    if isinstance(migrated_chat.entity.migrated_to, InputChannel):
                         outdated_channel = next(filter(lambda row: row['tg_chat_id'] == migrated_chat.id, channels), None)
                         if not outdated_channel:
                             continue
 
-                        updated_chat = next(filter(lambda row: isinstance(row.entity, Channel) and row.entity.id == migrated_chat.migrated_to.channel_id, dialogs), None)
+                        updated_chat = next(filter(lambda row: isinstance(row.entity, Channel) and row.entity.id == migrated_chat.entity.migrated_to.channel_id, dialogs), None)
                         if not updated_chat:
                             continue
 
