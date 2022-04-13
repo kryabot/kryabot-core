@@ -2,17 +2,21 @@ from aiohttp import ClientResponseError
 from telethon import TelegramClient
 from telethon.errors import UserNotParticipantError, InviteHashInvalidError, InviteHashExpiredError
 from telethon.extensions import html
+from telethon.tl import functions
 from telethon.tl.functions.channels import LeaveChannelRequest, EditBannedRequest, GetParticipantRequest, \
     GetFullChannelRequest
 from telethon.tl.types import PeerUser, PeerChannel, InputStickerSetID, \
     ChatInviteAlready, ChatInvite, ChatBannedRights, ChannelParticipantsAdmins, InputPeerChannel, ChatInvitePeek, \
-    DocumentAttributeFilename
+    DocumentAttributeFilename, PeerChat, Chat, InputChannel, Channel
 from telethon.tl.functions.messages import ImportChatInviteRequest, GetAllStickersRequest, GetStickerSetRequest, \
     CheckChatInviteRequest, ExportChatInviteRequest
 import os
 import asyncio
 import traceback
 from datetime import datetime, date, timedelta
+
+from telethon.utils import get_peer_id
+
 from object.Database import Database
 from object.ApiHelper import ApiHelper
 from object.Pinger import Pinger
@@ -26,7 +30,7 @@ from tgbot.events.global_events.GlobalEventFactory import GlobalEventFactory
 from utils.formatting import format_html_user_mention
 from utils.decorators.exception import log_exception_ignore
 from utils.value_check import avoid_none, is_empty_string, map_kick_setting
-from utils.array import split_array_into_parts
+from utils.array import split_array_into_parts, get_first
 from utils.twitch import refresh_channel_token, sub_check, get_active_oauth_data, sub_check_many, \
     refresh_channel_token_no_client
 from tgbot.commands.commandbuilder import update_command_list
@@ -1017,6 +1021,46 @@ class KryaClient(TelegramClient):
             await self.db.deleteOldAuths()
         except Exception as ex:
             await self.exception_reporter(ex, 'task_delete_old_auths')
+
+    async def migrate_chat_to_group(self, event):
+        event_chat_id: int = int(get_peer_id(event.message.peer_id, add_mark=False))
+        channel = await get_first(await event.client.db.get_auth_subchat(event_chat_id, skip_cache=True))
+
+        if isinstance(event.message.to_id, PeerChat):
+            # Is Chat type, need to migrate.
+            try:
+                self.logger.info("Migrating telegram Chat {} to telegram Channel".format(event_chat_id))
+                migrated = self(functions.messages.MigrateChatRequest(chat_id=event_chat_id))
+                self.logger.info(migrated)
+                await event.reply('Done!')
+            except Exception as ex:
+                await self.report_exception(ex, "MigrateChatRequest for ID {} failed: \n".format(event_chat_id))
+                await event.reply('Failed')
+
+            if channel is not None:
+                pass
+                # TODO: migrate database id? need to check response fields
+        else:
+            # Already migrated to Channel type, but still need to verify if ID updated in database
+            if channel is None:
+                self.logger.info("Searching for for migrated chats due to request from {}".format(event_chat_id))
+
+                channels = await event.client.db.get_auth_subchats()
+                dialogs = await self.get_dialogs()
+                migrated_chats = [dialog for dialog in dialogs if isinstance(dialog.entity, Chat) and dialog.migrated_to is not None]
+
+                for migrated_chat in migrated_chats:
+                    if isinstance(migrated_chat.migrated_to, InputChannel):
+                        outdated_channel = next(filter(lambda row: row['tg_chat_id'] == migrated_chat.id, channels), None)
+                        if not outdated_channel:
+                            continue
+
+                        updated_chat = next(filter(lambda row: isinstance(row.entity, Channel) and row.entity.id == migrated_chat.migrated_to.channel_id, dialogs), None)
+                        if not updated_chat:
+                            continue
+
+                        self.logger.info("Migrating channel_subchat_id {} telegram ID: from {} to {} ".format(outdated_channel['channel_subchat_id'], outdated_channel['tg_chat_id'], updated_chat.id))
+                        await self.db.updateSubchatAfterJoin(outdated_channel['channel_subchat_id'], updated_chat.id, updated_chat.title, outdated_channel['join_link'])
 
     async def get_group_participant_full_data(self, channel, need_subs=True, need_follows=True, kick_not_verified=True, kick_deleted=True):
         self.logger.info('Collecting full data for channel {}'.format(channel['channel_id']))
