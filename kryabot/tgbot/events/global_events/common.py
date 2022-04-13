@@ -1,4 +1,4 @@
-from tgbot.events.chat_actions import is_valid_channel
+from tgbot.events.utils import is_valid_channel
 from tgbot.events.global_events.GlobalEventFactory import GlobalEventFactory
 from tgbot.events.global_events.GlobalEventProcessor import GlobalEventProcessor
 from tgbot.constants import TG_TEST_GROUP_ID

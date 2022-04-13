@@ -1,6 +1,7 @@
 from telethon.tl.types import PeerUser
 
 from tgbot.events.global_events.GlobalEventFactory import GlobalEventFactory
+from tgbot.events.utils import is_valid_channel
 from utils.formatting import format_html_user_mention
 from tgbot.commands.common.user_data import get_user_data, format_user_data
 from telethon.utils import get_peer_id
@@ -116,25 +117,6 @@ async def is_kickable(user_data, channel):
         return True
 
     return False
-
-
-def is_valid_channel(channel, check_global_events: bool=False) -> bool:
-    if channel is None:
-        return False
-
-    if channel['tg_chat_id'] == 0:
-        return False
-
-    if check_global_events and channel['global_events'] == 0:
-        return False
-
-    if channel['auth_status'] == 0:
-        return False
-
-    if channel['force_pause'] == 1:
-        return False
-
-    return True
 
 async def process_bot_chat(event):
     if not event.mentioned:

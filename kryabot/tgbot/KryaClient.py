@@ -20,7 +20,7 @@ from object.System import System
 from object.Translator import Translator
 from tgbot.Moderation import Moderation
 import tgbot.events.handlers as krya_events
-from tgbot.events.chat_actions import is_valid_channel
+from tgbot.events.utils import is_valid_channel
 from tgbot.events.global_events.GlobalEventFactory import GlobalEventFactory
 
 from utils.formatting import format_html_user_mention

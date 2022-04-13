@@ -5,7 +5,7 @@ from typing import Dict
 
 from object.Base import Base
 from tgbot.constants import TG_TEST_GROUP_ID
-from tgbot.events.chat_actions import is_valid_channel
+from tgbot.events.utils import is_valid_channel
 
 
 class GlobalEventProcessor(Base):
