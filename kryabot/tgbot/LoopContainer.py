@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from object.BotConfig import BotConfig
 from tgbot.AuthBot import AuthBot
 from tgbot.KryaClient import KryaClient
+from tgbot.events.chat_actions import is_valid_channel
 from webserver.WebHandler import WebHandler
 import aioschedule as schedule
 from telethon.errors import ChannelPrivateError
@@ -104,13 +105,10 @@ class LoopContainer:
         self.guard_bot.in_refresh = True
 
         for channel in await self.guard_bot.db.get_auth_subchats():
-            if channel['tg_chat_id'] == 0:
+            if not is_valid_channel(channel):
                 continue
 
             if channel['refresh_status'] != 'DONE':
-                continue
-
-            if channel['auth_status'] == 0:
                 continue
 
             try:
@@ -141,10 +139,7 @@ class LoopContainer:
                 self.guard_bot.in_refresh = True
 
                 for channel in await self.guard_bot.db.get_auth_subchats():
-                    if channel['tg_chat_id'] == 0:
-                        continue
-
-                    if channel['auth_status'] == 0:
+                    if not is_valid_channel(channel):
                         continue
 
                     if int(channel['auto_mass_kick']) > 0:

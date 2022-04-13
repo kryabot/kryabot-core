@@ -105,6 +105,10 @@ class BaseCommand:
             await self.reply_fail(self.get_translation('GENERAL_MISSING_AUTH'))
             return False
 
+        if self.channel['force_pause'] == 1:
+            await self.reply_fail(self.get_translation('GENERAL_TG_GROUP_MISSCONFIGURED'))
+            return False
+
         if self.must_be_reply and not self.event.message.is_reply:
             await self.reply_fail(self.get_translation('CMD_NOT_REPLY'))
             return False

@@ -20,6 +20,7 @@ from object.System import System
 from object.Translator import Translator
 from tgbot.Moderation import Moderation
 import tgbot.events.handlers as krya_events
+from tgbot.events.chat_actions import is_valid_channel
 from tgbot.events.global_events.GlobalEventFactory import GlobalEventFactory
 
 from utils.formatting import format_html_user_mention
@@ -218,16 +219,11 @@ class KryaClient(TelegramClient):
         else:
             channel = channel[0]
 
-        if channel is None:
-            self.logger.error('Channel record not found for user ID {} and chat ID {}'.format(kb_user_id, chat_id[0]['tg_chat_id']))
+        if not is_valid_channel(channel):
             return
 
         if channel['refresh_status'] == 'WAIT':
             self.logger.info('Skipping channel {} refresh because current status is WAIT'.format(channel['tg_chat_id']))
-            return
-
-        if channel['auth_status'] == 0:
-            self.logger.info('Skipping channel {} refresh because auth status is 0'.format(channel['tg_chat_id']))
             return
 
         await self.run_channel_refresh_new(channel, is_kick, params)
@@ -876,22 +872,25 @@ class KryaClient(TelegramClient):
             if chat['tg_chat_id'] == 0:
                 continue
 
-            # Already paused
-            if chat['force_pause'] == 1:
-                continue
-
             await asyncio.sleep(60)
             try:
                 full_info = await self(GetFullChannelRequest(channel=chat['tg_chat_id']))
                 channel = full_info.chats[0]
-                if full_info.full_chat.linked_chat_id is not None and full_info.full_chat.linked_chat_id > 0:
+                if chat['force_pause'] == 0 and full_info.full_chat.linked_chat_id is not None and full_info.full_chat.linked_chat_id > 0:
+                    # Linked to channel
                     self.logger.info("Group {} linked to {}".format(chat['tg_chat_id'], full_info.full_chat.linked_chat_id))
                     await self.report_to_monitoring("Force pausing channel {} ({}) because linked to channel {}".format(channel.title, channel.id,full_info.full_chat.linked_chat_id))
                     await self.db.updateChatForcePause(chat['tg_chat_id'], True)
-                elif channel.username is not None and len(channel.username) > 0:
+                elif chat['force_pause'] == 0 and channel.username is not None and len(channel.username) > 0:
+                    # Public username was given
                     self.logger.info("Group {} has username {}".format(chat['tg_chat_id'], channel.username))
                     await self.report_to_monitoring("Force pausing channel {} ({}) because it has username {}".format(channel.title, channel.id, channel.username))
                     await self.db.updateChatForcePause(chat['tg_chat_id'], True)
+                elif chat['force_pause'] == 1:
+                    # Link/username was removed
+                    self.logger.info("Group {} removing force pause".format(chat['tg_chat_id']))
+                    await self.report_to_monitoring("Force un-pausing channel {} ({})".format(channel.title, channel.id))
+                    await self.db.updateChatForcePause(chat['tg_chat_id'], False)
             except Exception as ex:
                 await self.report_exception(ex, info=chat)
 

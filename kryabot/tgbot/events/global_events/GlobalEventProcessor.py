@@ -5,6 +5,7 @@ from typing import Dict
 
 from object.Base import Base
 from tgbot.constants import TG_TEST_GROUP_ID
+from tgbot.events.chat_actions import is_valid_channel
 
 
 class GlobalEventProcessor(Base):
@@ -67,11 +68,7 @@ class GlobalEventProcessor(Base):
         try:
             tg_channels = await client.db.get_auth_subchats()
             for tg_channel in tg_channels:
-                if tg_channel['tg_chat_id'] == 0:
-                    await self.remove_channel(tg_channel)
-                    continue
-
-                if tg_channel['auth_status'] == 0:
+                if not is_valid_channel(tg_channel):
                     await self.remove_channel(tg_channel)
                     continue
 

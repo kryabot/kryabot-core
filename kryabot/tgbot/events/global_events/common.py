@@ -1,3 +1,4 @@
+from tgbot.events.chat_actions import is_valid_channel
 from tgbot.events.global_events.GlobalEventFactory import GlobalEventFactory
 from tgbot.events.global_events.GlobalEventProcessor import GlobalEventProcessor
 from tgbot.constants import TG_TEST_GROUP_ID
@@ -16,10 +17,7 @@ async def process_global_events(event):
     if channel is None:
         return
 
-    if channel['global_events'] == 0:
-        return
-
-    if channel['auth_status'] == 0:
+    if not is_valid_channel(channel, check_global_events=True):
         return
 
     for global_event in global_events:

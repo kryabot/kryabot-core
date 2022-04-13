@@ -7,6 +7,7 @@ from telethon.utils import get_peer_id
 from tgbot.constants import TG_TEST_GROUP_ID
 from utils.array import get_first
 
+
 async def user_join_check(client, channel, tg_user_id, message_id=0):
     await client.db.update_tg_stats_join(channel['tg_chat_id'])
 
@@ -65,7 +66,7 @@ async def user_join_check(client, channel, tg_user_id, message_id=0):
 
 
 async def user_left(client, channel, tg_user_id):
-    if channel['auth_status'] == 0:
+    if not is_valid_channel(channel):
         return
 
     user_entity = await client.get_entity(PeerUser(int(tg_user_id)))
@@ -116,6 +117,24 @@ async def is_kickable(user_data, channel):
 
     return False
 
+
+def is_valid_channel(channel, check_global_events: bool=False) -> bool:
+    if channel is None:
+        return False
+
+    if channel['tg_chat_id'] == 0:
+        return False
+
+    if check_global_events and channel['global_events'] == 0:
+        return False
+
+    if channel['auth_status'] == 0:
+        return False
+
+    if channel['force_pause'] == 1:
+        return False
+
+    return True
 
 async def process_bot_chat(event):
     if not event.mentioned:
