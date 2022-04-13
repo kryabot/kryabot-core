@@ -577,17 +577,20 @@ class KryaClient(TelegramClient):
         elif chat_data['tg_chat_id'] > 0 and (chat_data['join_link'] is None or chat_data['join_link'] == ""):
             # Removed invite link, need to leave
             await self.db.updateSubchatAfterJoin(chat_data['channel_subchat_id'], 0, '', '')
-            report += 'Removing bot from telegram group {}'.format(chat_data['tg_chat_id'])
+            report += '\nRemoving bot from telegram group {}'.format(chat_data['tg_chat_id'])
             try:
                 old_entity = await self.get_input_entity(PeerChannel(int(chat_data['tg_chat_id'])))
                 await self(LeaveChannelRequest(old_entity))
             except Exception as ex:
-                report += "Error during channel leave: {}".format(ex)
+                report += '\nError during channel leave: {}'.format(ex)
         else:
             try:
                 invite_hash = chat_data['join_link']
                 if 't.me' in invite_hash:
                     invite_hash = invite_hash.split('/')[-1]
+
+                if invite_hash.startswith('+'):
+                    invite_hash = invite_hash[1:]
 
                 chat_check = await self(CheckChatInviteRequest(invite_hash))
                 # Existing channel
