@@ -910,7 +910,7 @@ class KryaClient(TelegramClient):
                     self.logger.info("Group {} has username {}".format(chat['tg_chat_id'], channel.username))
                     await self.report_to_monitoring("Force pausing channel {} ({}) because it has username {}".format(channel.title, channel.id, channel.username))
                     await self.db.updateChatForcePause(chat['tg_chat_id'], True)
-                elif chat['force_pause'] == 1:
+                elif chat['force_pause'] == 1 and full_info.full_chat.linked_chat_id is None and channel.username is None:
                     # Link/username was removed
                     self.logger.info("Group {} removing force pause".format(chat['tg_chat_id']))
                     await self.report_to_monitoring("Force un-pausing channel {} ({})".format(channel.title, channel.id))
