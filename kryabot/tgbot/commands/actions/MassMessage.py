@@ -1,5 +1,6 @@
 from tgbot.commands.UserAccess import UserAccess
 from tgbot.commands.base import BaseCommand
+from tgbot.events.utils import is_valid_channel
 
 
 class MassMessage(BaseCommand):
@@ -21,7 +22,7 @@ class MassMessage(BaseCommand):
 
         for chat in chats:
             try:
-                if chat['tg_chat_id'] == 0:
+                if not is_valid_channel(chat):
                     continue
 
                 await self.client.send_message(chat['tg_chat_id'], self.reply_message)
