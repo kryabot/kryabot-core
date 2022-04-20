@@ -4,7 +4,7 @@ from utils.array import get_first
 from utils.formatting import format_html_user_mention
 
 cache_cooldown_key = 'easter'
-reward_currency_key = 'egg_demo'
+reward_currency_key = 'egg_2021'
 counter_currency_key = 'egg_tries'
 
 

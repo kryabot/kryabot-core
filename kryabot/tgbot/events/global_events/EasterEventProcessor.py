@@ -13,5 +13,4 @@ class EasterEventProcessor(GlobalEventProcessor):
         self.get_logger().info("Started easter")
 
     async def process(self, global_event, event, channel):
-        self.get_logger().info("Processing in EasterEventProcessor")
         await process_easter(global_event, event, channel)

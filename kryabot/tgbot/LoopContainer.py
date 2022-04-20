@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from object.BotConfig import BotConfig
 from tgbot.AuthBot import AuthBot
 from tgbot.KryaClient import KryaClient
-from tgbot.events.chat_actions import is_valid_channel
+from tgbot.events.utils import is_valid_channel
 from webserver.WebHandler import WebHandler
 import aioschedule as schedule
 from telethon.errors import ChannelPrivateError
