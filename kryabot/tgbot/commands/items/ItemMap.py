@@ -1,5 +1,6 @@
 
 item_map = {"egg": "🥚",
+            "egg_2021": "🥚",
             "pumpkin": "🎃",
             "pumpkin_2021": "🎃",
             "snowball": "⚪️",
