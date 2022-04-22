@@ -171,4 +171,5 @@ async def getSql(sqlType):
         'update_tg_chat_name': 'UPDATE channel_subchat SET channel_subchat.tg_chat_name = %s WHERE channel_subchat.tg_chat_id = %s',
         'create_infobot': 'INSERT INTO infobot (target_id, target_name, target_type, lang) VALUES (%s, %s, "TG", %s)',
         'create_infobot_link': 'INSERT INTO infobot_link (infobot_id, link_table, link_id) VALUES (%s, %s, %s)',
+        'get_top_currency_owners': 'SELECT uc.user_id, uc.amount, user.dname, user.name FROM user_currency uc LEFT JOIN user ON user.user_id = uc.user_id WHERE uc.currency_type_id = (SELECT currency_type.currency_type_id FROM currency_type WHERE currency_type.currency_key = %s) ORDER BY uc.amount DESC LIMIT %s',
     }.get(sqlType, 'unknown_sql_type')

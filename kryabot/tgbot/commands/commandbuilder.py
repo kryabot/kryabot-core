@@ -29,6 +29,7 @@ command_list.append(SetMyVk)
 command_list.append(SetMyUt)
 command_list.append(SetMyInst)
 command_list.append(Inventory)
+command_list.append(TopEggs)
 # Chat admin
 command_list.append(Whois)
 command_list.append(Banmedia)

@@ -953,6 +953,9 @@ class Database:
     async def save_tg_stats_bots(self, channel_id, when_dt, counter):
         return await self.query('save_tg_stats', [channel_id, 'bots', counter, when_dt])
 
+    async def get_top_currency_owners(self, currency_key, top=10):
+        return await self.query('get_top_currency_owners', [currency_key, top])
+
     async def save_twitch_sub_count_to_cache(self, tw_channel_id, tw_user_id, count):
         await self.redis.set_value_by_key(redis_key.get_tw_sub_month(tw_chat_id=tw_channel_id, tw_user_id=tw_user_id), count, expire=redis_key.ttl_week * 2)
 
