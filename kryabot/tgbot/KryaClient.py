@@ -889,14 +889,14 @@ class KryaClient(TelegramClient):
         return int(data) if data else 0
 
     @log_exception_ignore(log=global_logger)
-    async def task_check_chat_publicity(self):
+    async def task_check_chat_publicity(self, sleep=60):
         chats = await self.get_all_auth_channels()
 
         for chat in chats:
             if chat['tg_chat_id'] == 0:
                 continue
 
-            await asyncio.sleep(60)
+            await asyncio.sleep(sleep)
             try:
                 full_info = await self(GetFullChannelRequest(channel=chat['tg_chat_id']))
                 channel = full_info.chats[0]
@@ -915,6 +915,8 @@ class KryaClient(TelegramClient):
                     self.logger.info("Group {} removing force pause".format(chat['tg_chat_id']))
                     await self.report_to_monitoring("Force un-pausing channel {} ({})".format(channel.title, channel.id))
                     await self.db.updateChatForcePause(chat['tg_chat_id'], False)
+                else:
+                    self.logger.info('Unhandled publicity check state for group {}: {}, {}'.format(chat['tg_chat_id'], full_info.full_chat.linked_chat_id, channel.username))
             except Exception as ex:
                 await self.report_exception(ex, info=chat)
 

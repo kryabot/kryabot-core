@@ -97,6 +97,7 @@ command_list.append(SpawnGreedy)
 command_list.append(SpawnSnowing)
 command_list.append(NewUserReport)
 command_list.append(DryMassKick)
+command_list.append(RecheckPublicity)
 
 
 async def build(command_name, event, parsed):

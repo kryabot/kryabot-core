@@ -30,3 +30,4 @@ from tgbot.commands.actions.SpawnGreedy import SpawnGreedy
 from tgbot.commands.actions.SpawnSnowing import SpawnSnowing
 from tgbot.commands.actions.NewUserReport import NewUserReport
 from tgbot.commands.actions.DryMassKick import DryMassKick
+from tgbot.commands.actions.RecheckPublicity import RecheckPublicity
