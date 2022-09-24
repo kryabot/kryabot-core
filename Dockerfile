@@ -22,7 +22,7 @@ RUN python --version &&\
 	
 	
 COPY requirements.txt .
-RUN pip install -r requirements.txt && pip install -U https://github.com/LonamiWebs/Telethon/archive/master.zip && ln -s /usr/share/zoneinfo/Etc/GMT+3 /etc/localtime
+RUN pip install -r requirements.txt && ln -s /usr/share/zoneinfo/Etc/GMT+3 /etc/localtime
 
 # Environment variables
 ENV WORK_DIR="/opt/app/kb"
