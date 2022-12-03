@@ -39,7 +39,9 @@ class TwitchListener(Listener):
 
             profile = next(filter(lambda p: p.twitch_id == broadcaster_id, self.profiles), None)
             if not profile:
+                self.unsubscribes.append(broadcaster_id)
                 self.logger.info('Received event for Twitch ID {} but profile not found'.format(broadcaster_id))
+                continue
 
             event = None
 
@@ -86,7 +88,7 @@ class TwitchListener(Listener):
             # Publish event to Twitch/Telegram bot
             await self.manager.db.redis.publish_event(redis_key.get_streams_forward_data(), event.export())
 
-    async def subscribe_all(self)->None:
+    async def subscribe_all(self) -> None:
         current_on = await self.manager.api.twitch_events.get_all(topic=EventSubType.STREAM_ONLINE)
         current_off = await self.manager.api.twitch_events.get_all(topic=EventSubType.STREAM_OFFLINE)
         current_updates = await self.manager.api.twitch_events.get_all(topic=EventSubType.CHANNEL_UPDATE)

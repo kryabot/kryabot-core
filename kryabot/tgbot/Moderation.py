@@ -1,14 +1,18 @@
-from datetime import datetime, timedelta
-from telethon.tl.types import ChatBannedRights, PeerChannel, PeerUser, MessageMediaDice
-from object.RedisHelper import RedisHelper
-from tgbot.WordModeration import is_forbidden, setLogger
 import json
+import logging
+from datetime import datetime, timedelta
+
+from telethon.tl.types import PeerChannel, PeerUser
+
+from object.RedisHelper import RedisHelper
+from tgbot.WordModeration import is_forbidden
 from tgbot.commands.common.media import get_media_info
 from utils.formatting import format_html_user_mention
 
+
 class Moderation:
     def __init__(self, logger, queue, tg, cfg):
-        self.logger = logger
+        self.logger: logging.Logger = logger
         self.warning_history = {}
         self.word_list = None
         self.queue = queue
@@ -36,14 +40,10 @@ class Moderation:
             return
 
         if channel['channel_subchat_id'] not in self.word_list:
-            # Channel has no resticted words
+            # Channel has no restricted words
             return False
 
         for word in self.word_list[channel['channel_subchat_id']]:
-            #self.logger.info('word encode:')
-            #self.logger.info(word['word'].lower().encode())
-            #self.logger.info('message encode:')
-            #self.logger.info(message.raw_text.lower().encode())
             forbidden = await is_forbidden(word['word'].lower(), message.raw_text.lower())
 
             if forbidden > 0:
@@ -104,13 +104,16 @@ class Moderation:
     async def cache_get_user_warns(self, chat_id, user_id):
         try:
             existing_warns = await self.rh.get_value_by_key('tg.warns:{chatid}:{userid}'.format(chatid=chat_id, userid=user_id))
+            if existing_warns is None:
+                return []
+
             datas = json.loads(existing_warns)
             for data in datas:
                 data['ts'] = datetime.strptime(data['ts'], self.datetime_string_format)
 
             return datas
         except Exception as e:
-            self.logger.error(str(e))
+            self.logger.exception(e)
             return []
 
     async def cache_set_user_warns(self, chat_id, user_id, warns, expire_after):

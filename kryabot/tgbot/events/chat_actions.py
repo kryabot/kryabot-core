@@ -80,6 +80,10 @@ async def is_kickable(user_data, channel):
     if user_data['is_admin'] is True:
         return False
 
+    # Allow linked twitch channel owner
+    if user_data['is_chat_owner'] is True:
+        return False
+
     # Allowed to add bots anytime
     if user_data['is_bot'] is True:
         return False
