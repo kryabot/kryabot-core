@@ -142,6 +142,7 @@ class TwitchHandler(Base):
             return
 
         scheduler = self.loop.create_task(self.run_scheduler())
+        eventsubs = self.loop.create_task(self.receive_twitch_events())
         listener = self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
         triggers = scheduler_utils.schedule_task_periodically(5, self.timed_task_processor, logger=self.logger)
         ping = self.loop.create_task(Pinger(System.KRYABOT_TWITCH, self.logger, self.db.redis).run_task())
@@ -150,6 +151,23 @@ class TwitchHandler(Base):
         self.tasks.append(listener)
         self.tasks.append(ping)
         self.tasks.append(scheduler)
+        self.tasks.append(eventsubs)
+
+    async def receive_twitch_events(self):
+        self.logger.info('Starting queue listener: receive_twitch_events')
+        try:
+            while True:
+                data = await self.db.redis.get_one_from_list_parsed(redis_key.get_twitch_eventsub_queue())
+                if data:
+                    self.loop.create_task(await self.api.twitch_events.handle_event(event=data))
+                else:
+                    await asyncio.sleep(2)
+        except Exception as any_ex:
+            self.logger.exception(any_ex)
+            await asyncio.sleep(5)
+
+            # On error, Recreate this task again
+            self.loop.create_task(self.receive_twitch_events())
 
     # List of subscribes executed during initialization
     async def redis_subscribe(self)->None:

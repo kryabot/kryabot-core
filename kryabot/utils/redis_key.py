@@ -126,14 +126,6 @@ def get_twitch_stream_cache(id):
     return 'twitch.stream.cache.{}'.format(id)
 
 
-def get_twitch_spam_detector_request_topic():
-    return 'spam.detector.request'
-
-
-def get_twitch_spam_detector_response_topic():
-    return 'spam.detector.response'
-
-
 # All twitch received messages gets published here
 def get_irc_topic_notice():
     return 'irc.request.notice'
@@ -192,3 +184,7 @@ def get_twitch_channel_update(twitch_id: int):
 
 def get_infobot_target(tg_chat_id: int):
     return 'infobot.target.{}'.format(tg_chat_id)
+
+
+def get_twitch_eventsub_queue() -> str:
+    return 'twitch-event-sub-queue'

@@ -11,7 +11,6 @@ from tgbot.events.moderate import moderate
 monitoring_id = 1255287898
 owner_id = 766888597
 
-kryabot_audio = None
 
 @events.register(events.NewMessage(func=lambda e: e.is_private))
 async def event_private_message(event: events.NewMessage.Event):

@@ -3,7 +3,6 @@ from datetime import datetime
 import logging
 from typing import Dict, List, Union
 
-from api.twitch import Twitch
 from object.Pinger import Pinger
 from object.System import System
 from twbot.ResponseAction import ResponseAction
@@ -47,17 +46,15 @@ class ChatAdapter(Base, commands.Bot):
                 try:
                     jc = JoinedChannel(channel['channel_name'])
                     jc.working = True
-                    jc.scan_in_spam_detector = bool(channel['scan_messages'] > 0)
-                    jc.on_detection_enable_sub_only_chat = bool(channel['scan_messages'] > 1)
-                    jc.on_detection_ban_self = bool(channel['on_spam_detect'] > 0)
-                    jc.on_detection_ban_other = bool(channel['on_spam_detect'] > 2)
 
                     self.logger.info('Joining to {} (working)'.format(jc.channel_name))
                     await self.join_channels([jc.channel_name])
                     self.channels.add(jc)
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(1)
                 except Exception as ex:
                     self.logger.exception(ex)
+
+            self.logger.info('Size of channels: {}'.format(len(self.channels.channels)))
 
     async def disconnect(self):
         self.logger.info('Disconnecting...')
@@ -73,14 +70,9 @@ class ChatAdapter(Base, commands.Bot):
         if self.tasks:
             return
 
-        # auto_task = schedule.schedule_task_periodically(wait_time=redis_key.ttl_hour,
-        #                                                 func=self.auto_join_channels,
-        #                                                 logger=self.logger)
-
         redis_task = self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
         response_task = self.loop.create_task(self.listen_responses())
 
-        # self.tasks.append(auto_task)
         self.tasks.append(redis_task)
         self.tasks.append(response_task)
 
@@ -98,55 +90,13 @@ class ChatAdapter(Base, commands.Bot):
         self.logger.info(f'Adapter is ready now, {self.nick}')
         self.in_update = False
 
-    async def on_spam_detector_response(self, body: Dict)->None:
-        self.logger.info(body)
-
-        channel: Channel = self._ws._channel_cache[body['channel']]['channel']
-        bot: User = self._ws._channel_cache[body['channel']]['bot']
-        # if not bot.is_mod:
-        #     self.logger.info('Ignoring response to channel {} because I not mod!'.format(channel.name))
-        #     return
-
-        jc = self.channels.get_by_name(channel.name)
-        if jc is None:
-            self.logger.info('JoinedChannel not found for channel {}'.format(channel.name))
-            return
-
-        action = body['action']
-
-        if action == 'message' and bot.is_mod:
-            await channel.send(body['text'])
-        elif action == 'ban':
-            if body['users']:
-                for event in body['users']:
-                    if jc.on_detection_ban_self and bot.is_mod:
-                        await channel.ban(event['sender'], reason="Spambot")
-
-                    # TODO: ban queue, currently ban in onlyashaa channel.
-                    #await self._ws.send_privmsg('olyashaa', ".ban {} Spambot, detected in channel {}".format(event['sender'], body['channel']))
-        elif action == 'unban':
-            if body['users']:
-                for event in body['users']:
-                    if bot.is_mod:
-                        await channel.unban(event['sender'])
-        elif action == 'detection':
-            if jc.on_detection_enable_sub_only_chat and bot.is_mod:
-                if body['status'] == 1:
-                    await channel.send(".subscribers")
-                    await channel.send("Enabling subonly chat to avoid spam!")
-                elif body['status'] == 0:
-                    await channel.send(".subscribersoff")
-                    await channel.send("Disabling subonly chat!")
-
     async def redis_subscribe(self)->None:
         self.logger.info('Subscribing redis topics...')
-        await self.db.redis.subscribe_event(redis_key.get_twitch_spam_detector_response_topic(), self.on_spam_detector_response)
 
     async def event_message(self, message: Message)->None:
         context: Context = await self.get_context(message)
 
         await self.publish_message(context)
-        await self.send_to_spam_detector(context)
 
     async def event_mode(self, channel, user, status)->None:
         # DEPRECATED BY TWITCH
@@ -216,48 +166,6 @@ class ChatAdapter(Base, commands.Bot):
 
         await self.db.redis.publish_event(redis_key.get_irc_topic_part(), body)
 
-    async def send_to_spam_detector(self, context: Context):
-        # Skip such users
-        if context.author.is_mod or context.author.is_subscriber or context.author.is_turbo:
-            return
-
-        # If user has any badge, skip
-        if context.author.badges != {}:
-            return
-
-        body={
-            "channel": context.channel.name,
-            "sender": context.author.name,
-            "twitch_emotes": context.author.tags.get('emotes', None),
-            "message": context.message.content,
-            "ts": datetime.utcnow()
-        }
-        await self.db.redis.publish_event(redis_key.get_twitch_spam_detector_request_topic(), body)
-
-    async def auto_join_channels(self)->None:
-        self.logger.info('Auto join check...')
-        api = Twitch(self.db.redis, cfg=self.cfg)
-
-        streams = await api.get_streams(first=100, language='ru')
-        for stream in streams['data']:
-            await asyncio.sleep(0.3)
-            existing = self.channels.get_by_name(stream['user_name'])
-            if existing:
-                existing.touch()
-            else:
-                new = JoinedChannel(stream['user_name'])
-                self.logger.info('Joining to {} (auto)'.format(new.channel_name))
-                self.channels.add(new)
-                try:
-                    await self.join_channels([new.channel_name])
-                except Exception as ex:
-                    self.logger.exception(ex)
-
-        for channel in self.channels.channels:
-            if channel.can_leave():
-                self.logger.info('Leaving inactive channel {}'.format(channel.channel_name))
-                await self.part_channels([channel.channel_name])
-
     async def listen_responses(self)->None:
         while True:
             try:
@@ -286,10 +194,6 @@ class ChatAdapter(Base, commands.Bot):
 class JoinedChannel(Base):
     def __init__(self, channel_name):
         self.channel_name: str = channel_name
-        self.scan_in_spam_detector: bool = True
-        self.on_detection_ban_self: bool = False
-        self.on_detection_ban_other: bool = False
-        self.on_detection_enable_sub_only_chat: bool = False
         self.working: bool = False
         self.mod: bool = False
         self.slow: int = 0

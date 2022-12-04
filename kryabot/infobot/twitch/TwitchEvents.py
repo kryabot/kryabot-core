@@ -75,7 +75,7 @@ class TwitchEvent(Event):
             self.updated_data.append({'language': language})
         if self.game_id and self.game_id != game_id:
             self.updated_data.append({'game': game_id})
-        if self.game_name and self.game_name != game_name:
+        if self.game_name and str(self.game_name).lower() != str(game_name).lower():
             self.updated_data.append({'game_name': game_name})
             self.add_summary_category(game_name)
 
