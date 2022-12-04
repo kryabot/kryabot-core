@@ -159,7 +159,7 @@ class TwitchHandler(Base):
             while True:
                 data = await self.db.redis.get_one_from_list_parsed(redis_key.get_twitch_eventsub_queue())
                 if data:
-                    self.loop.create_task(await self.api.twitch_events.handle_event(event=data))
+                    self.loop.create_task(self.api.twitch_events.handle_event(event=data))
                 else:
                     await asyncio.sleep(2)
         except Exception as any_ex:
