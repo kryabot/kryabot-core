@@ -29,7 +29,7 @@ from tgbot.events.utils import is_valid_channel
 from tgbot.events.global_events.GlobalEventFactory import GlobalEventFactory
 
 from utils.formatting import format_html_user_mention
-from utils.decorators.exception import log_exception_ignore
+from utils.decorators.exception import log_exception_ignore, log_exception
 from utils.value_check import avoid_none, is_empty_string, map_kick_setting
 from utils.array import split_array_into_parts, get_first
 from utils.twitch import refresh_channel_token, sub_check, get_active_oauth_data, sub_check_many, \
@@ -109,11 +109,11 @@ class KryaClient(TelegramClient):
 
         self.logger.info('Updating command list')
         self.loop.create_task(update_command_list(self))
+        self.loop.create_task(self.on_remote_request())
 
     # List of subscribes executed during initialization
     async def redis_subscribe(self):
         await self.db.redis.subscribe_event(redis_key.get_streams_forward_data(), self.on_stream_update)
-        self.loop.create_task(self.on_remote_request())
 
     async def init_moderation(self, channel_id=None):
         words = await self.db.getTgWords()
@@ -1212,7 +1212,7 @@ class KryaClient(TelegramClient):
         data['summary'] = summary
         return data
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception(log=global_logger, reporter=reporter)
     @listen_queue(redis_client=redis_client, queue_name=redis_key.get_tg_bot_requests())
     async def on_remote_request(self, event):
         if event['task'] == 'kick':
