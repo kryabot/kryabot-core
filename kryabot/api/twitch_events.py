@@ -289,12 +289,13 @@ class TwitchEvents(Core):
             user = await get_first(await self.db.getUserRecordByTwitchId(user_id, skip_cache=True))
 
         if user is None:
-            self.logger.info('Failed to find user record for event: {}'.format(data))
+            self.logger.error('Failed to find user record for event: {}'.format(data))
             return
 
         channel = await get_first(await self.db.get_channel_by_twitch_id(broadcaster_id))
         if channel is None:
-            self.logger.info('Failed to find channel record for event: {}'.format(data))
+            self.logger.error('Failed to find channel record for event: {}'.format(data))
+            # TODO: Send event removal to Twitch?
             return
 
         try:
@@ -313,6 +314,33 @@ class TwitchEvents(Core):
             tier = ''
 
         await self.db.saveTwitchSubEvent(channel['channel_id'], user['user_id'], '', event_type, datetime.utcnow(), gifted, tier, message)
+
+    async def handle_unsubscribe(self, event):
+        unsubscribed_user = await get_first(await self.db.getLinkageDataByTwitchId(event['user_id']))
+        if not unsubscribed_user:
+            # Not verified user
+            return
+
+        broadcaster = await get_first(await self.db.getUserRecordByTwitchId(event['broadcaster_user_id']))
+        if not broadcaster:
+            # streamer does not exist as user. It must exist when subchat exists.
+            return
+
+        subchat = await get_first(await self.db.getSubchatByUserId(broadcaster['user_id']))
+        if not subchat:
+            # streamer has no subchat
+            return
+
+        if subchat['kick_mode'] != 'ONLINE':
+            # we interested only in online mode
+            return
+
+        request = {"task": "kick",
+                   "tg_chat_id": subchat['tg_chat_id'],
+                   "tg_user_id": unsubscribed_user['tg_id'],
+                   "cause": "unsubscribe"}
+
+        await self.redis.push_list_to_right(redis_key.get_tg_bot_requests(), dict_to_json(request))
 
     async def handle_revoked(self, data):
         broadcaster_id = int(data['subscription']['condition']['broadcaster_user_id'])

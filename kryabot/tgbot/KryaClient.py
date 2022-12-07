@@ -20,6 +20,7 @@ from telethon.utils import get_peer_id
 from object.Database import Database
 from object.ApiHelper import ApiHelper
 from object.Pinger import Pinger
+from object.RedisHelper import listen_queue
 from object.System import System
 from object.Translator import Translator
 from tgbot.Moderation import Moderation
@@ -40,6 +41,7 @@ from utils import redis_key
 
 global_logger = None
 reporter = None
+redis_client = None
 super_admins = TG_SUPER_ADMINS
 
 
@@ -81,7 +83,9 @@ class KryaClient(TelegramClient):
         # For decorators
         global global_logger
         global reporter
+        global redis_client
 
+        redis_client = self.db.redis
         global_logger = logger
         reporter = self.exception_reporter
         self.translator.setLogger(self.logger)
@@ -109,6 +113,7 @@ class KryaClient(TelegramClient):
     # List of subscribes executed during initialization
     async def redis_subscribe(self):
         await self.db.redis.subscribe_event(redis_key.get_streams_forward_data(), self.on_stream_update)
+        self.loop.create_task(self.on_remote_request())
 
     async def init_moderation(self, channel_id=None):
         words = await self.db.getTgWords()
@@ -1201,8 +1206,16 @@ class KryaClient(TelegramClient):
 
         summary['is_authorised'] = is_authorized
         summary['non_subs'] = summary['total'] - summary['subs'] - summary['bots'] - summary['deleted']
-        if channel['auto_mass_kick'] and channel['auto_mass_kick'] > 0:
+        if channel['kick_mode'] == 'PERIOD' and channel['auto_mass_kick'] and channel['auto_mass_kick'] > 0:
             summary['next_mk'] = channel['last_auto_kick'] + timedelta(days=channel['auto_mass_kick'])
 
         data['summary'] = summary
         return data
+
+    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @listen_queue(redis_client=redis_client, queue_name=redis_key.get_tg_bot_requests())
+    async def on_remote_request(self, event):
+        if event['task'] == 'kick':
+            self.logger.info(event)
+        else:
+            self.logger.info("Unhandled request type: ", event)

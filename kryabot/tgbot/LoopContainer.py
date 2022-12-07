@@ -142,33 +142,35 @@ class LoopContainer:
                     if not is_valid_channel(channel):
                         continue
 
-                    if int(channel['auto_mass_kick']) > 0:
-                        next_mass_kick = channel['last_auto_kick'] + timedelta(days=channel['auto_mass_kick'])
-                        self.logger.info(
-                            'Next planned auto mass kick for channel {chn}: {dt}'.format(chn=channel['channel_name'],
-                                                                                         dt=str(next_mass_kick)))
+                    if channel['kick_mode'] == 'PERIOD':
+                        if int(channel['auto_mass_kick']) > 0:
+                            # Enabled
+                            next_mass_kick = channel['last_auto_kick'] + timedelta(days=channel['auto_mass_kick'])
+                            self.logger.info('Next planned auto mass kick for channel {chn}: {dt}'.format(chn=channel['channel_name'], dt=str(next_mass_kick)))
 
-                        if now > next_mass_kick - timedelta(hours=6):
-                            self.logger.info(
-                                'Starting automated mass kick for channel {chn}'.format(chn=channel['channel_name']))
-                            await self.guard_bot.report_to_monitoring(
-                                '[Daily] Starting automated mass kick for channel {chn}'.format(
-                                    chn=channel['channel_name']))
-                            params = []
-                            params.append({'key': 'not_verified', 'enabled': 1})
-                            params.append({'key': 'not_sub', 'enabled': channel['join_sub_only']})
-                            params.append({'key': 'not_follower', 'enabled': channel['join_follower_only']})
-                            params.append({'key': 'not_active', 'enabled': 1})
-                            try:
-                                await self.guard_bot.run_channel_refresh_new(channel, True, params)
-                                next_date = datetime(now.year, now.month, now.day, 20, 00)
-                                await self.guard_bot.db.updateAutoMassKickTs(channel['channel_subchat_id'], next_date)
-                            except Exception as err:
-                                await self.guard_bot.exception_reporter(err, '20 daily task for {}'.format(
-                                    channel['channel_name']))
+                            if not (now > next_mass_kick - timedelta(hours=6)):
+                                continue
                         else:
-                            self.logger.info('Skipping automated mass kick, too early')
-                    await asyncio.sleep(10)
+                            # Period with turned off
+                            continue
+
+                    self.logger.info('Starting automated mass kick for channel {}'.format(channel['channel_name']))
+                    if channel['kick_mode'] == 'PERIOD':
+                        # Avoid spamming monitoring channel when online mode because we run it on each day
+                        await self.guard_bot.report_to_monitoring('[Daily] Starting automated mass kick for channel {chn}'.format(chn=channel['channel_name']))
+
+                    params = [{'key': 'not_verified', 'enabled': 1},
+                              {'key': 'not_sub', 'enabled': channel['join_sub_only']},
+                              {'key': 'not_follower', 'enabled': channel['join_follower_only']},
+                              {'key': 'not_active', 'enabled': 1}]
+
+                    try:
+                        silent_run = channel['kick_mode'] == 'ONLINE'
+                        await self.guard_bot.run_channel_refresh_new(channel, True, params, silent=silent_run)
+                        next_date = datetime(now.year, now.month, now.day, 20, 00)
+                        await self.guard_bot.db.updateAutoMassKickTs(channel['channel_subchat_id'], next_date)
+                    except Exception as err:
+                        await self.guard_bot.exception_reporter(err, '20 daily task for {}'.format(channel['channel_name']))
                 self.guard_bot.in_refresh = False
             except Exception as e:
                 await self.guard_bot.report_exception(e, 'Error during daily task:')

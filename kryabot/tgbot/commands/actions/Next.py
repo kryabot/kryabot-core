@@ -17,7 +17,7 @@ class Next(BaseCommand):
         if not (await self.can_process()):
             return
 
-        if self.channel['auto_mass_kick'] is None or self.channel['auto_mass_kick'] == 0:
+        if self.channel['kick_mode'] != 'PERIOD' or self.channel['auto_mass_kick'] is None or self.channel['auto_mass_kick'] == 0:
             await self.event.reply(self.get_translation('CMD_NEXT_OFF'))
             return
 

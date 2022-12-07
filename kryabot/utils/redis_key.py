@@ -188,3 +188,7 @@ def get_infobot_target(tg_chat_id: int):
 
 def get_twitch_eventsub_queue() -> str:
     return 'twitch-event-sub-queue'
+
+
+def get_tg_bot_requests() -> str:
+    return 'tgbot.remote-requests'

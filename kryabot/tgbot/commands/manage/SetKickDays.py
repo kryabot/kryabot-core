@@ -15,6 +15,10 @@ class SetKickDays(BaseCommand):
         if not (await self.can_process()):
             return
 
+        if self.channel['kick_mode'] != 'PERIOD':
+            await self.reply_fail(self.get_translation('CMD_MK_PERIOD_WRONG_KICK_MODE'))
+            return
+
         try:
             new_period = int(self.parsed.pop(1))
         except:

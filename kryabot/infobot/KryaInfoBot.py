@@ -278,7 +278,7 @@ class KryaInfoBot(TelegramClient):
                 for upd in event.updated_data:
                     if 'title' in upd:
                         text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(link.target.get_lang(), 'TWITCH_NOTIFICATION_UPDATED_TITLE'), event.title)
-                    if 'game_name' in upd or 'game' in upd:
+                    if 'game_name' in upd:
                         text += '\n{} <b>{}</b>'.format(self.translator.getLangTranslation(link.target.get_lang(), 'TWITCH_NOTIFICATION_UPDATED_GAME'), event.game_name)
 
                 text = '🔄 {}\n{}'.format(base_text, text)

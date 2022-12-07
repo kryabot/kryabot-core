@@ -1,7 +1,36 @@
 import asyncio
+import functools
+
 import aioredis
 import logging
 from utils.json_parser import json_to_dict, dict_to_json
+# from aiocache import Cache
+
+
+def listen_queue(redis_client, queue_name: str, sequential: bool = False, idle_sleep: int = 2, error_sleep: int = 5):
+    def decorator(function):
+        @functools.wraps(function)
+        async def wrapper(*args, **kwargs):
+            redis_client.logger.info("Listening queue %s", queue_name)
+            while True:
+                try:
+                    while True:
+                        data = await redis_client.get_one_from_list_parsed(queue_name)
+                        if data:
+                            if sequential:
+                                try:
+                                    await function(event=data, *args, **kwargs)
+                                except Exception as event_exception:
+                                    redis_client.logger.error(event_exception)
+                            else:
+                                asyncio.create_task(function(event=data, *args, **kwargs))
+                        else:
+                            await asyncio.sleep(idle_sleep)
+                except Exception as transport_exception:
+                    redis_client.logger.error(transport_exception, queue_name)
+                    await asyncio.sleep(error_sleep)
+        return wrapper
+    return decorator
 
 
 class RedisHelper:
@@ -17,6 +46,7 @@ class RedisHelper:
         self.listener = None
         self.receiver = None
         self.event_triggers = []
+        #self.cache = Cache(Cache.REDIS, endpoint=self.host, port=int(self.port), password=password, namespace='cache')
 
     async def connection_init(self):
         self.logger.info('Opening redis connection')
@@ -27,6 +57,7 @@ class RedisHelper:
                                                      maxsize=self.maxsize,
                                                      loop=self.loop,
                                                      encoding='utf-8')
+        #self.cache.
 
     async def start_listener(self, initial_subscribes=None):
         # Already started

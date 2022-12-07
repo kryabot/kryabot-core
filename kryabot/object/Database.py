@@ -407,6 +407,10 @@ class Database:
         await self.query('set_subchat_mode', [follow_only, sub_only, tg_chat_id])
         await self.get_auth_subchat(tg_chat_id, skip_cache=True)
 
+    async def updateSubchatKickMode(self, tg_chat_id, new_mode):
+        await self.query('set_subchat_kick_mode', [new_mode, tg_chat_id])
+        await self.get_auth_subchat(tg_chat_id, skip_cache=True)
+
     async def updateSubchatEntrance(self, tg_chat_id, enabled):
         await self.query('set_subchat_entrance', [enabled, tg_chat_id])
         await self.get_auth_subchat(tg_chat_id, skip_cache=True)

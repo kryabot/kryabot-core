@@ -7,7 +7,7 @@ from infobot.Listener import Listener
 from infobot.twitch.TwitchEvents import TwitchEvent
 from infobot.twitch.TwitchProfile import TwitchProfile
 import utils.redis_key as redis_key
-from utils.array import split_array_into_parts, get_first
+from utils.array import split_array_into_parts
 
 
 class TwitchListener(Listener):

@@ -25,3 +25,24 @@ async def set_chat_mode_follow(cmd):
 
 async def set_chat_mode_any(cmd):
     await set_chat_working_mode(cmd, sub_only=False, follow_only=False)
+
+
+async def set_chat_kick_mode(cmd, kick_mode: str):
+    if not cmd.channel['join_sub_only']:
+        await cmd.reply_fail(cmd.get_translation('CMD_KICKMODE_ERROR_NOT_SUBMODE'))
+        return
+
+    if cmd.channel['kick_mode'] == kick_mode:
+        await cmd.reply_fail(cmd.get_translation('CMD_KICKMODE_ERROR_ALREADY_EXISTS_' + kick_mode.upper()))
+        return
+
+    await cmd.db.updateSubchatKickMode(cmd.channel['tg_chat_id'], kick_mode)
+    await cmd.reply_success(cmd.get_translation('CMD_CHATMODE_CHANGED_' + kick_mode.upper()))
+
+
+async def set_chat_kick_mode_period(cmd):
+    await set_chat_kick_mode(cmd, 'PERIOD')
+
+
+async def set_chat_kick_mode_online(cmd):
+    await set_chat_kick_mode(cmd, 'ONLINE')
