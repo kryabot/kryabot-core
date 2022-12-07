@@ -23,7 +23,7 @@ def listen_queue(redis_client, queue_name: str, sequential: bool = False, idle_s
                                 except Exception as event_exception:
                                     redis_client.logger.error(event_exception)
                             else:
-                                asyncio.create_task(function(event=data, *args, **kwargs))
+                                redis_client.loop.create_task(function(event=data, *args, **kwargs))
                         else:
                             await asyncio.sleep(idle_sleep)
                 except Exception as transport_exception:
