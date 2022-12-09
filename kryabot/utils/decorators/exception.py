@@ -18,8 +18,10 @@ def exception(logger=None, raise_error=True, reporter=None):
                 if reporter is not None:
                     try:
                         await reporter(err, function.__name__)
-                    except:
-                        pass
+                    except Exception as reporter_exception:
+                        logger.exception(reporter_exception)
+                else:
+                    logger.info("Got exception but reporter is not defined")
 
                 # re-raise the exception
                 if raise_error:
