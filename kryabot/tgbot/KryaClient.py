@@ -20,7 +20,7 @@ from telethon.utils import get_peer_id
 from object.Database import Database
 from object.ApiHelper import ApiHelper
 from object.Pinger import Pinger
-from object.RedisHelper import listen_queue
+from object.RedisHelper import RedisHelper
 from object.System import System
 from object.Translator import Translator
 from tgbot.Moderation import Moderation
@@ -1213,7 +1213,7 @@ class KryaClient(TelegramClient):
         return data
 
     @log_exception(log=global_logger, reporter=reporter)
-    @listen_queue(redis_client=redis_client, queue_name=redis_key.get_tg_bot_requests())
+    @RedisHelper.listen_queue(queue_name=redis_key.get_tg_bot_requests())
     async def on_remote_request(self, event):
         if event['task'] == 'kick':
             self.logger.info(event)

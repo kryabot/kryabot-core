@@ -7,39 +7,12 @@ from utils.json_parser import json_to_dict, dict_to_json
 # from aiocache import Cache
 
 
-def listen_queue(redis_client, queue_name: str, sequential: bool = False, idle_sleep: int = 2, error_sleep: int = 5):
-    print('>listen_queue')
-    def decorator(function):
-        print('>listen_queue decorator')
-        @functools.wraps(function)
-        async def wrapper(*args, **kwargs):
-            print('>listen_queue wrapper')
-            redis_client.logger.info("Listening queue %s", queue_name)
-            while True:
-                try:
-                    while True:
-                        data = await redis_client.get_one_from_list_parsed(queue_name)
-                        if data:
-                            print('>listen_queue got event')
-                            if sequential:
-                                try:
-                                    await function(event=data, *args, **kwargs)
-                                except Exception as event_exception:
-                                    print('>listen_queue got event_exception')
-                                    redis_client.logger.exception(event_exception)
-                            else:
-                                redis_client.loop.create_task(function(event=data, *args, **kwargs))
-                        else:
-                            await asyncio.sleep(idle_sleep)
-                except Exception as transport_exception:
-                    print('>listen_queue got transport_exception')
-                    redis_client.logger.exception(transport_exception, queue_name)
-                    await asyncio.sleep(error_sleep)
-        return wrapper
-    return decorator
+
 
 
 class RedisHelper:
+    instance = None
+
     def __init__(self, host, port, password, loop=None, minsize=2, maxsize=40):
         self.host = host
         self.port = port
@@ -53,6 +26,15 @@ class RedisHelper:
         self.receiver = None
         self.event_triggers = []
         #self.cache = Cache(Cache.REDIS, endpoint=self.host, port=int(self.port), password=password, namespace='cache')
+
+        RedisHelper.instance = self
+
+    @staticmethod
+    async def get_instance():
+        if not RedisHelper.instance:
+            raise ValueError('RedisHelper.instance is not created yet!')
+
+        return RedisHelper.instance
 
     async def connection_init(self):
         self.logger.info('Opening redis connection')
@@ -231,3 +213,36 @@ class RedisHelper:
     async def get_one_from_list_parsed(self, list_name, first=True):
         data = await self.get_one_from_list(list_name, first)
         return json_to_dict(data)
+
+    @staticmethod
+    def listen_queue(queue_name: str, sequential: bool = False, idle_sleep: int = 2, error_sleep: int = 5):
+        print('>listen_queue')
+        def decorator(function):
+            print('>listen_queue decorator')
+            @functools.wraps(function)
+            async def wrapper(*args, **kwargs):
+                redis_client = await RedisHelper.get_instance()
+                print('>listen_queue wrapper')
+                redis_client.logger.info("Listening queue %s", queue_name)
+                while True:
+                    try:
+                        while True:
+                            data = await redis_client.get_one_from_list_parsed(queue_name)
+                            if data:
+                                print('>listen_queue got event')
+                                if sequential:
+                                    try:
+                                        await function(event=data, *args, **kwargs)
+                                    except Exception as event_exception:
+                                        print('>listen_queue got event_exception')
+                                        redis_client.logger.exception(event_exception)
+                                else:
+                                    redis_client.loop.create_task(function(event=data, *args, **kwargs))
+                            else:
+                                await asyncio.sleep(idle_sleep)
+                    except Exception as transport_exception:
+                        print('>listen_queue got transport_exception')
+                        redis_client.logger.exception(transport_exception, queue_name)
+                        await asyncio.sleep(error_sleep)
+            return wrapper
+        return decorator
