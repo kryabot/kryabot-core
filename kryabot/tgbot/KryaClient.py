@@ -1212,8 +1212,8 @@ class KryaClient(TelegramClient):
         data['summary'] = summary
         return data
 
-    @log_exception(log=global_logger, reporter=reporter)
     @RedisHelper.listen_queue(queue_name=redis_key.get_tg_bot_requests())
+    @log_exception(log=global_logger, reporter=reporter)
     async def on_remote_request(self, event):
         if event['task'] == 'kick':
             self.logger.info(event)
