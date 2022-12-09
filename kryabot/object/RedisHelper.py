@@ -237,12 +237,12 @@ class RedisHelper:
                                         print('>listen_queue got event_exception')
                                         redis_client.logger.exception(event_exception)
                                 else:
-                                    redis_client.loop.create_task(function(event=data, *args, **kwargs))
+                                    asyncio.get_event_loop().create_task(function(event=data, *args, **kwargs))
                             else:
                                 await asyncio.sleep(idle_sleep)
                     except Exception as transport_exception:
                         print('>listen_queue got transport_exception')
-                        redis_client.logger.exception(transport_exception, queue_name)
+                        redis_client.logger.exception(transport_exception)
                         await asyncio.sleep(error_sleep)
             return wrapper
         return decorator
