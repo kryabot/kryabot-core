@@ -193,7 +193,7 @@ class KryaClient(TelegramClient):
         if not isinstance(tg_user_id, PeerUser):
             tg_user_id = PeerUser(int(tg_user_id))
 
-        await self.db.update_tg_stats_join(tg_chat_id)
+        await self.db.update_tg_stats_kick(tg_chat_id)
 
         chat_entity = await self.get_entity(tg_chat_id)
         user_entity = await self.get_entity(tg_user_id)
@@ -1225,7 +1225,18 @@ class KryaClient(TelegramClient):
     @RedisHelper.listen_queue(queue_name=redis_key.get_tg_bot_requests())
     @log_exception(log=_get_logger, reporter=_get_reporter)
     async def on_remote_request(self, event):
+        self.logger.info(event)
         if event['task'] == 'kick':
-            self.logger.info(event)
+            tg_chat_id: int = int(event['tg_chat_id'])
+            tg_user_id: int = int(event['tg_user_id'])
+
+            tg_participant = await self(GetParticipantRequest(tg_chat_id, tg_user_id))
+            self.logger.info(tg_participant)
+
+            # try:
+            #
+            # except Exception as ex:
+            #     self.logger.error(str(ex))
+            #     tg_participant = None
         else:
-            self.logger.info("Unhandled request type: ", event)
+            self.logger.info("Unhandled request type: %s", event)
