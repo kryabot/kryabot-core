@@ -1230,13 +1230,15 @@ class KryaClient(TelegramClient):
             tg_chat_id: int = int(event['tg_chat_id'])
             tg_user_id: int = int(event['tg_user_id'])
 
-            tg_participant = await self(GetParticipantRequest(tg_chat_id, tg_user_id))
-            self.logger.info(tg_participant)
+            try:
+                await self(GetParticipantRequest(tg_chat_id, tg_user_id))
+            except ValueError:
+                self.logger.info("Skipping kick for user %s from %s due to missing participant", tg_chat_id, tg_user_id)
+                # Could not find the input entity for PeerUser
+                return
 
-            # try:
-            #
-            # except Exception as ex:
-            #     self.logger.error(str(ex))
-            #     tg_participant = None
+            kick_msg = await self.kick_participant(tg_chat_id, tg_user_id)
+            if kick_msg:
+                await kick_msg.delete()
         else:
             self.logger.info("Unhandled request type: %s", event)
