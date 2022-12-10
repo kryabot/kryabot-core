@@ -37,7 +37,7 @@ async def set_chat_kick_mode(cmd, kick_mode: str):
         return
 
     await cmd.db.updateSubchatKickMode(cmd.channel['tg_chat_id'], kick_mode)
-    await cmd.reply_success(cmd.get_translation('CMD_CHATMODE_CHANGED_' + kick_mode.upper()))
+    await cmd.reply_success(cmd.get_translation('CMD_KICKMODE_CHANGED_' + kick_mode.upper()))
 
 
 async def set_chat_kick_mode_period(cmd):
