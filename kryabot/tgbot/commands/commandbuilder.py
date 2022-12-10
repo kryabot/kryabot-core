@@ -75,6 +75,8 @@ command_list.append(SetMinSubMonths)
 command_list.append(SetLang)
 command_list.append(ShowReport)
 command_list.append(HideReport)
+command_list.append(SetKickModeOnline)
+command_list.append(SetKickModePeriod)
 # Chat owner
 command_list.append(AddSudo)
 command_list.append(UnSudo)

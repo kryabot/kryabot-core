@@ -18,4 +18,6 @@ from tgbot.commands.manage.ShowReport import ShowReport
 from tgbot.commands.manage.HideReport import HideReport
 from tgbot.commands.manage.EnableGlobalEvents import EnableGlobalEvents
 from tgbot.commands.manage.DisableGlobalEvents import DisableGlobalEvents
+from tgbot.commands.manage.SetKickModeOnline import SetKickModeOnline
+from tgbot.commands.manage.SetKickModePeriod import SetKickModePeriod
 
