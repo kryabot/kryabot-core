@@ -20,7 +20,7 @@ def exception(logger=None, raise_error=True, reporter=None):
 
                 if internal_reporter and callable(internal_reporter):
                     try:
-                        await internal_reporter(err, "{}\n{}\n{}".format(func.__name__, *args, **kwargs))
+                        await internal_reporter(err, "{}\n{}\n{}".format(func.__name__, args, kwargs))
                     except Exception as reporter_exception:
                         internal_logger.exception(reporter_exception)
                 else:
