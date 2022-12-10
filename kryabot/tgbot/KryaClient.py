@@ -46,7 +46,13 @@ super_admins = TG_SUPER_ADMINS
 
 
 def _get_logger():
+    # returns actual logger object
     return global_logger
+
+
+def _get_reporter():
+    # returns callable function
+    return reporter
 
 
 class KryaClient(TelegramClient):
@@ -175,11 +181,11 @@ class KryaClient(TelegramClient):
             if avoid_err is False:
                 raise err
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def restrict_user(self, channel_entity, user_entity, rights):
         await self(EditBannedRequest(channel_entity, user_entity, rights))
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def kick_user_from_channel(self, tg_chat_id, tg_user_id, ban_time):
         if not isinstance(tg_chat_id, PeerChannel):
             tg_chat_id = PeerChannel(int(tg_chat_id))
@@ -193,7 +199,7 @@ class KryaClient(TelegramClient):
         user_entity = await self.get_entity(tg_user_id)
         await self.kick_user(chat_entity, user_entity, ban_time)
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def kick_user(self, channel_entity, user_entity, ban_time):
         # print('kicking')
         # print(user_entity.stringify())
@@ -203,7 +209,7 @@ class KryaClient(TelegramClient):
 
         await self.restrict_user(channel_entity, user_entity, rights)
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def mute_user(self, channel_entity, user_entity, ban_time):
         try:
             rights = ChatBannedRights(
@@ -432,19 +438,19 @@ class KryaClient(TelegramClient):
             await self.db.get_auth_subchat(channel['tg_chat_id'], skip_cache=True)
             await self.update_data()
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def is_whitelisted(self, kb_user_id, tg_user_id, channel)->bool:
         return bool(await self.has_special_right(kb_user_id, tg_user_id, channel, 'WHITELIST'))
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def is_blacklisted(self, kb_user_id, tg_user_id, channel)->bool:
         return bool(await self.has_special_right(kb_user_id, tg_user_id, channel, 'BLACKLIST'))
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def is_chatsudo(self, kb_user_id, tg_user_id, channel)->bool:
         return bool(await self.has_special_right(kb_user_id, tg_user_id, channel, 'SUDO'))
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def has_special_right(self, kb_user_id, tg_user_id, channel, right_type)->bool:
         try:
             special_rights = await self.db.get_all_tg_chat_special_rights(channel['channel_id'])
@@ -468,7 +474,7 @@ class KryaClient(TelegramClient):
 
         return False
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def has_special_rights(self, kb_user_id, tg_user_id, channel):
         special_rights = await self.db.get_all_tg_chat_special_rights(channel['channel_id'])
 
@@ -565,7 +571,7 @@ class KryaClient(TelegramClient):
 
         return None
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def send_krya_sticker(self, chat_id, emo):
         kryabot_stickers = await self.get_sticker_set('KryaBot')
         for sticker in kryabot_stickers.packs:
@@ -574,7 +580,7 @@ class KryaClient(TelegramClient):
                     if sticker.documents[0] == pack.id:
                         await self.send_file(chat_id, pack)
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def join_channel(self, kb_user_id):
         report = '[Task]\nType: Channel join\nUser ID: ' + str(kb_user_id)
         chat_data = await self.db.getSubchatByUserId(kb_user_id)
@@ -642,7 +648,7 @@ class KryaClient(TelegramClient):
 
         await self.report_to_monitoring(report + '\nStatus: Done')
 
-    @log_exception_ignore(log=global_logger, reporter=reporter)
+    @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def is_media_banned(self, channel_id, media_id, media_type):
         if media_type is None or media_type == '':
             return False
@@ -882,7 +888,7 @@ class KryaClient(TelegramClient):
         if topic == 'telegram_award':
             await self.init_awards(channel['channel_id'], user_id)
 
-    @log_exception_ignore(log=global_logger)
+    @log_exception_ignore(log=_get_logger)
     async def get_group_member_count(self, tg_group_id: int, skip_cache=False)->int:
         if tg_group_id == TG_TEST_GROUP_ID:
             return 100
@@ -897,7 +903,7 @@ class KryaClient(TelegramClient):
 
         return int(data) if data else 0
 
-    @log_exception_ignore(log=global_logger)
+    @log_exception_ignore(log=_get_logger)
     async def task_check_chat_publicity(self, sleep=60):
         chats = await self.get_all_auth_channels()
 
@@ -929,7 +935,7 @@ class KryaClient(TelegramClient):
             except Exception as ex:
                 await self.report_exception(ex, info=chat)
 
-    @log_exception_ignore(log=global_logger)
+    @log_exception_ignore(log=_get_logger)
     async def task_check_invite_links(self):
         chats = await self.get_all_auth_channels()
 
@@ -952,7 +958,7 @@ class KryaClient(TelegramClient):
                 self.logger.exception(ex)
                 await self.report_exception(ex, info=chat)
 
-    @log_exception_ignore(log=global_logger)
+    @log_exception_ignore(log=_get_logger)
     async def task_fix_twitch_ids(self):
         try:
             sql = "select * from user where user.tw_id = 0 and user.name != ''"
@@ -979,7 +985,7 @@ class KryaClient(TelegramClient):
         except Exception as e:
             await self.exception_reporter(e, 'task_fix_twitch_ids')
 
-    @log_exception_ignore(log=global_logger)
+    @log_exception_ignore(log=_get_logger)
     async def task_fix_twitch_names(self):
         try:
             sql = "select * from user where user.name = ''"
@@ -1007,27 +1013,27 @@ class KryaClient(TelegramClient):
         except Exception as e:
             await self.exception_reporter(e, 'task_fix_twitch_names')
 
-    @log_exception_ignore(log=global_logger)
+    @log_exception_ignore(log=_get_logger)
     async def task_delete_old_messages(self):
         try:
             await self.db.deleteOldTwitchMessages()
         except Exception as ex:
             await self.exception_reporter(ex, 'task_delete_old_messages')
 
-    @log_exception_ignore(log=global_logger)
+    @log_exception_ignore(log=_get_logger)
     async def task_ping(self):
         await self.report_to_monitoring('/ping')
 
-    @log_exception_ignore(log=global_logger)
+    @log_exception_ignore(log=_get_logger)
     async def task_test(self):
         self.logger.info('This is test task')
 
-    @log_exception_ignore(log=global_logger)
+    @log_exception_ignore(log=_get_logger)
     async def task_task_error(self):
         self.logger.info('This is test task with an error')
         raise Exception("Exception from task_task_error")
 
-    @log_exception_ignore(log=global_logger)
+    @log_exception_ignore(log=_get_logger)
     async def task_delete_old_auths(self):
         try:
             await self.db.deleteOldAuths()
@@ -1217,7 +1223,7 @@ class KryaClient(TelegramClient):
         return data
 
     @RedisHelper.listen_queue(queue_name=redis_key.get_tg_bot_requests())
-    @log_exception(log=_get_logger, reporter=reporter)
+    @log_exception(log=_get_logger, reporter=_get_reporter)
     async def on_remote_request(self, event):
         if event['task'] == 'kick':
             self.logger.info(event)

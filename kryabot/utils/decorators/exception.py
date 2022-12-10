@@ -10,6 +10,7 @@ def exception(logger=None, raise_error=True, reporter=None):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             internal_logger = logger() if callable(logger) else logger
+            internal_reporter = reporter() if callable(reporter) else reporter
 
             try:
                 return await func(*args, **kwargs)
@@ -17,9 +18,9 @@ def exception(logger=None, raise_error=True, reporter=None):
                 if internal_logger:
                     internal_logger.exception(err)
 
-                if reporter and callable(reporter):
+                if internal_reporter and callable(internal_reporter):
                     try:
-                        await reporter(err, func.__name__)
+                        await internal_reporter(err, func.__name__)
                     except Exception as reporter_exception:
                         internal_logger.exception(reporter_exception)
                 else:
