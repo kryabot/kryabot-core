@@ -1237,6 +1237,7 @@ class KryaClient(TelegramClient):
                 # Could not find the input entity for PeerUser
                 return
 
+            self.logger.info("Kicking {} from {}, reason: {}".format(tg_user_id, tg_chat_id, event['reason']))
             kick_msg = await self.kick_participant(tg_chat_id, tg_user_id)
             if kick_msg:
                 await kick_msg.delete()
