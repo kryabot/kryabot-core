@@ -216,32 +216,26 @@ class RedisHelper:
 
     @staticmethod
     def listen_queue(queue_name: str, sequential: bool = False, idle_sleep: int = 2, error_sleep: int = 5):
-        print('>listen_queue')
         def decorator(function):
-            print('>listen_queue decorator')
             @functools.wraps(function)
             async def wrapper(*args, **kwargs):
                 redis_client = await RedisHelper.get_instance()
-                print('>listen_queue wrapper')
                 redis_client.logger.info("Listening queue %s", queue_name)
                 while True:
                     try:
                         while True:
                             data = await redis_client.get_one_from_list_parsed(queue_name)
                             if data:
-                                print('>listen_queue got event')
                                 if sequential:
                                     try:
                                         await function(event=data, *args, **kwargs)
                                     except Exception as event_exception:
-                                        print('>listen_queue got event_exception')
                                         redis_client.logger.exception(event_exception)
                                 else:
                                     asyncio.get_event_loop().create_task(function(event=data, *args, **kwargs))
                             else:
                                 await asyncio.sleep(idle_sleep)
                     except Exception as transport_exception:
-                        print('>listen_queue got transport_exception')
                         redis_client.logger.exception(transport_exception)
                         await asyncio.sleep(error_sleep)
             return wrapper

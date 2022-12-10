@@ -6,22 +6,24 @@ def exception(logger=None, raise_error=True, reporter=None):
     A decorator that wraps the passed in function.
     On exception, logs and sends to monitoring chat
     """
-    def decorator(function):
-        @functools.wraps(function)
+    def decorator(func):
+        @functools.wraps(func)
         async def wrapper(*args, **kwargs):
-            try:
-                return await function(*args, **kwargs)
-            except Exception as err:
-                if logger is not None:
-                    logger.exception(err)
+            internal_logger = logger() if callable(logger) else logger
 
-                if reporter is not None:
+            try:
+                return await func(*args, **kwargs)
+            except Exception as err:
+                if internal_logger:
+                    internal_logger.exception(err)
+
+                if reporter and callable(reporter):
                     try:
-                        await reporter(err, function.__name__)
+                        await reporter(err, func.__name__)
                     except Exception as reporter_exception:
-                        logger.exception(reporter_exception)
+                        internal_logger.exception(reporter_exception)
                 else:
-                    logger.info("Got exception but reporter is not defined")
+                    internal_logger.info("Got exception but reporter is not defined")
 
                 # re-raise the exception
                 if raise_error:

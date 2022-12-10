@@ -45,6 +45,10 @@ redis_client = None
 super_admins = TG_SUPER_ADMINS
 
 
+def _get_logger():
+    return global_logger
+
+
 class KryaClient(TelegramClient):
     def __init__(self, loop=None, logger=None, cfg=None):
         self.logger = logger
@@ -1213,7 +1217,7 @@ class KryaClient(TelegramClient):
         return data
 
     @RedisHelper.listen_queue(queue_name=redis_key.get_tg_bot_requests())
-    @log_exception(log=global_logger, reporter=reporter)
+    @log_exception(log=_get_logger, reporter=reporter)
     async def on_remote_request(self, event):
         if event['task'] == 'kick':
             self.logger.info(event)
