@@ -335,10 +335,16 @@ class TwitchEvents(Core):
             # we interested only in online mode
             return
 
+        special_rights = await self.db.get_all_tg_chat_special_rights(subchat['channel_id'])
+        for right in special_rights:
+            if right['user_id'] == unsubscribed_user['user_id'] and right['right_type'] == 'WHITELIST':
+                self.logger.info('Skipping kick for Twitch user {} from {} becuse user is whitelisted.'.format(event['user_id'], event['broadcaster_user_id']))
+                return
+
         request = {"task": "kick",
                    "tg_chat_id": subchat['tg_chat_id'],
                    "tg_user_id": unsubscribed_user['tg_id'],
-                   "cause": "unsubscribe"}
+                   "reason": "unsubscribe"}
 
         await self.redis.push_list_to_right(redis_key.get_tg_bot_requests(), dict_to_json(request))
 
