@@ -3,7 +3,7 @@ websockets
 aiomysql
 python-dateutil
 pympler
-Telethon==1.25.1
+Telethon==1.26.0
 markdown-it-py
 redis
 aioredis==1.3.1
