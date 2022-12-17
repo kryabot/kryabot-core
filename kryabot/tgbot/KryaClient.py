@@ -7,7 +7,7 @@ from telethon.tl.functions.channels import LeaveChannelRequest, EditBannedReques
     GetFullChannelRequest
 from telethon.tl.types import PeerUser, PeerChannel, InputStickerSetID, \
     ChatInviteAlready, ChatInvite, ChatBannedRights, ChannelParticipantsAdmins, InputPeerChannel, ChatInvitePeek, \
-    DocumentAttributeFilename, PeerChat, Chat, InputChannel, Channel
+    DocumentAttributeFilename, PeerChat, Chat, InputChannel, Channel, InputStickerSetShortName
 from telethon.tl.functions.messages import ImportChatInviteRequest, GetAllStickersRequest, GetStickerSetRequest, \
     CheckChatInviteRequest, ExportChatInviteRequest
 import os
@@ -564,12 +564,7 @@ class KryaClient(TelegramClient):
             await self.db.save_tg_stats_total(channel_id=channel['channel_id'], when_dt=when_now, counter=summary['total'])
 
     async def get_sticker_set(self, pack_name):
-        for pack in (await self(GetAllStickersRequest(0))).sets:
-            if pack.short_name == pack_name:
-                pack_content = await self(GetStickerSetRequest(stickerset=InputStickerSetID(id=pack.id, access_hash=int(0)), hash=int(0)))
-                return pack_content
-
-        return None
+        return await self(GetStickerSetRequest(stickerset=InputStickerSetShortName(pack_name), hash=0))
 
     @log_exception_ignore(log=_get_logger, reporter=_get_reporter)
     async def send_krya_sticker(self, chat_id, emo):
