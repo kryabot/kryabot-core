@@ -9,7 +9,7 @@ from tgbot.constants import TG_TEST_GROUP_ID
 from utils.array import get_first
 
 
-async def user_join_check(client, channel, tg_user_id, message_id=0):
+async def user_join_check(client, channel, tg_entity, message_id=0):
     await client.db.update_tg_stats_join(channel['tg_chat_id'])
 
     if channel['auth_status'] == 0:
@@ -17,7 +17,7 @@ async def user_join_check(client, channel, tg_user_id, message_id=0):
         return
 
     try:
-        data = await get_user_data(client, channel, tg_user_id)
+        data = await get_user_data(client, channel, tg_entity)
         text = await format_user_data(data, client, channel)
 
         need_kick = await is_kickable(data, channel)
@@ -31,7 +31,7 @@ async def user_join_check(client, channel, tg_user_id, message_id=0):
         if need_kick:
             if channel['auto_kick'] == 1:
                 try:
-                    await client.kick_user_from_channel(channel['tg_chat_id'], tg_user_id, channel['ban_time'])
+                    await client.kick_user_from_channel(channel['tg_chat_id'], tg_entity.id, channel['ban_time'])
                     text += '\n\n' + client.get_translation(channel['bot_lang'], 'JOIN_KICKED')
                 except:
                     text += '\n\n' + client.get_translation(channel['bot_lang'], 'JOIN_KICK_FAILED')
@@ -56,14 +56,14 @@ async def user_join_check(client, channel, tg_user_id, message_id=0):
                     await client.send_krya_guard_sticker(channel['tg_chat_id'])
                     await client.db.setWelcomeMessageId(channel['tg_chat_id'], 0)
                 except Exception as wex:
-                    await client.exception_reporter(wex, 'Channel join: {} -> {}'.format(tg_user_id, channel['channel_name']))
+                    await client.exception_reporter(wex, 'Channel join: {} -> {}'.format(tg_entity.id, channel['channel_name']))
             else:
                 await client.send_krya_guard_sticker(channel['tg_chat_id'])
         elif channel['auto_kick'] == 0:
             await client.send_krya_kill_sticker(channel['tg_chat_id'])
 
     except Exception as err:
-        await client.exception_reporter(err, 'Channel join: {} -> {}'.format(tg_user_id, channel['channel_name']))
+        await client.exception_reporter(err, 'Channel join: {} -> {}'.format(tg_entity.id, channel['channel_name']))
 
 
 async def user_left(client, channel, tg_user_id):

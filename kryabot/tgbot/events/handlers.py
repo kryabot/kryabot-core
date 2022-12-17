@@ -4,12 +4,9 @@ from tgbot.events.global_events.common import process_global_events
 from tgbot.commands.commandbuilder import run
 from utils.array import get_first
 from tgbot.events.chat_actions import user_join_check, user_left, process_bot_chat
+from tgbot.constants import TG_GROUP_MONITORING_ID
 
 from tgbot.events.moderate import moderate
-
-# Todo: avoid hardcode id (cache? db?)
-monitoring_id = 1255287898
-owner_id = 766888597
 
 
 @events.register(events.NewMessage(func=lambda e: e.is_private))
@@ -69,7 +66,7 @@ async def event_group_migrate(event: events.NewMessage.Event):
         await event.client.exception_reporter(ex, 'Error in event_group_migrate event')
 
 
-@events.register(events.NewMessage(monitoring_id))
+@events.register(events.NewMessage(TG_GROUP_MONITORING_ID))
 async def event_monitoring_message(event: events.NewMessage.Event):
     pass
 
@@ -90,9 +87,11 @@ async def event_chat_action(event: events.ChatAction.Event):
     elif event.new_photo is True and event.photo is not None:
         await process_event_new_photo(event)
     elif event.user_joined is True:
-        await user_join_check(event.client, channel, event.action_message.sender_id, event.action_message.id)
+        sender = await event.get_user()
+        await user_join_check(event.client, channel, sender, event.action_message.id)
     elif event.user_added is True:
-        await user_join_check(event.client, channel, event.action_message.action.users[0], event.action_message.id)
+        sender = await event.get_user()
+        await user_join_check(event.client, channel, sender, event.action_message.id)
     elif event.user_left is True:
         await user_left(event.client, channel, event.action_message.sender_id)
     elif event.user_kicked or event.created or event.unpin:

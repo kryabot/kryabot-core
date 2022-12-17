@@ -100,20 +100,21 @@ class WinterChannel(EventChannel):
         random_set = random_sets[val]
 
         sticker_set = await client.get_sticker_set(random_set['name'])
-        for sticker in sticker_set.packs:
-            if sticker.emoticon == random_set['emote']:
-                for pack in sticker_set.documents:
-                    if sticker.documents[0] == pack.id:
-                        try:
-                            sticker_message = await client.send_file(self.channel_id, pack)
-                            sticker_id, sticker_emote = WinterConfig.get_sticker_id_and_emote(message=sticker_message)
-                            if sticker_emote is not None and sticker_emote not in WinterConfig.snowing_emotes_for_sticker:
-                                self.get_logger().info('Adding emote {} to list'.format(sticker_emote))
-                                WinterConfig.snowing_emotes_for_sticker.append(sticker_emote)
-                            self.get_logger().info('End of send_random_snowing_sticker')
-                            return sticker_message
-                        except Exception as ex:
-                            self.get_logger().exception(ex)
+        if sticker_set:
+            for sticker in sticker_set.packs:
+                if sticker.emoticon == random_set['emote']:
+                    for pack in sticker_set.documents:
+                        if sticker.documents[0] == pack.id:
+                            try:
+                                sticker_message = await client.send_file(self.channel_id, pack)
+                                sticker_id, sticker_emote = WinterConfig.get_sticker_id_and_emote(message=sticker_message)
+                                if sticker_emote is not None and sticker_emote not in WinterConfig.snowing_emotes_for_sticker:
+                                    self.get_logger().info('Adding emote {} to list'.format(sticker_emote))
+                                    WinterConfig.snowing_emotes_for_sticker.append(sticker_emote)
+                                self.get_logger().info('End of send_random_snowing_sticker')
+                                return sticker_message
+                            except Exception as ex:
+                                self.get_logger().exception(ex)
 
     async def updater_snowing(self, client, event_message):
         client.logger.info('Starting updater_snowing for message {} in channel {}'.format(event_message.id, self.channel_id))

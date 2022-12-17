@@ -53,19 +53,25 @@ async def get_default_user_data():
             }
 
 
-async def get_user_data(client, channel, user_id, skip_bits=True):
+async def get_user_data(client, channel, tg_data, skip_bits=True):
     user_data = await get_default_user_data()
 
-    user_data['tg_id'] = user_id
+    # tg_data can be User entity or int
+    # If int, then we need to fetch entity
+    if isinstance(tg_data, int):
+        try:
+            tg_data = await client.get_entity(tg_data)
+        except Exception as ex:
+            await client.exception_reporter(ex, 'get_user_data')
+            user_data['tg_id'] = tg_data
 
-    try:
-        tg_user_entity = await client.get_entity(user_id)
-        if tg_user_entity.bot:
+    # Successfully converted to User entity
+    if not isinstance(tg_data, int):
+        user_data['tg_id'] = tg_data.id
+        if tg_data.bot:
             user_data['is_bot'] = True
-    except Exception as ex:
-        await client.exception_reporter(ex, 'get_user_data')
 
-    target_user = await get_first(await client.db.getUserByTgChatId(user_id))
+    target_user = await get_first(await client.db.getUserByTgChatId(user_data['tg_id']))
     user_data['kb_user'] = target_user
 
     # Basic info

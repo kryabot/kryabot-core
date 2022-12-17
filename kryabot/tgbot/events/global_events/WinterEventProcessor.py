@@ -21,6 +21,7 @@ class WinterEventProcessor(GlobalEventProcessor):
         self.register_task(self.snowball_generator)
         self.checking_snowman: bool = False
 
+
     async def snowball_generator(self, client):
         self.get_logger().info("Started winter snowball generator")
 
@@ -52,7 +53,7 @@ class WinterEventProcessor(GlobalEventProcessor):
 
         while True:
             if not await self.is_active_event(client):
-                await asyncio.sleep(600)
+                await asyncio.sleep(600 * self.speed)
                 continue
 
             await self.update_channels(client)
@@ -62,12 +63,12 @@ class WinterEventProcessor(GlobalEventProcessor):
                 diff = details['next_run'] - datetime.utcnow()
                 if details['next_run'] > datetime.utcnow() and diff.seconds > 0:
                     self.get_logger().info('Recovered after restart, sleeping for {} seconds'.format(diff))
-                    await asyncio.sleep(diff.seconds)
+                    await asyncio.sleep(diff.seconds * self.speed)
                 self.get_logger().info('Starting snowball distribution (next_run was {})'.format(details['next_run']))
 
             if client.in_refresh:
                 self.get_logger().info('Bot in refresh, delaying')
-                await asyncio.sleep(120)
+                await asyncio.sleep(120 * self.speed)
                 continue
 
             event_channels = {}
@@ -125,18 +126,18 @@ class WinterEventProcessor(GlobalEventProcessor):
                 except Exception as ex:
                     self.get_logger().exception(ex)
 
-            delay_mins = randint(180, 360)
+            delay_mins = int(randint(180, 360) * self.speed)
             details['next_run'] = datetime.utcnow() + timedelta(minutes=delay_mins)
             await client.db.set_winter_generator_details(details)
             self.get_logger().info('End of snow distribution, (next_run = {}, delay = {})'.format(details['next_run'], delay_mins))
-            await asyncio.sleep(delay_mins*60)
+            await asyncio.sleep(delay_mins*60 * self.speed)
 
     async def item_spawner(self, client):
         self.get_logger().info("Started winter item spawner")
 
         delay = 60
         while True:
-            await asyncio.sleep(delay)
+            await asyncio.sleep(delay * self.speed)
 
             try:
                 if not await self.is_active_event(client):
@@ -153,16 +154,7 @@ class WinterEventProcessor(GlobalEventProcessor):
                     count = int(await client.get_group_member_count(int(key)))
                     if self.channels.channels[key].can_start_snowing(count):
                         await self.channels.channels[key].spawn_snowing(client, member_count=count)
-                        await asyncio.sleep(randint(2, 15))
-                    # elif self.channels.channels[key].can_spawn_love(count):
-                    #     await self.channels.channels[key].spawn_love_pumpkin(client, count)
-                    #     await asyncio.sleep(randint(2, 15))
-                    # elif self.channels.channels[key].can_spawn_boss(count):
-                    #     await self.channels.channels[key].spawn_boss(client, count)
-                    #     await asyncio.sleep(randint(2, 15))
-                    # elif self.channels.channels[key].can_spawn_box(count):
-                    #     await self.channels.channels[key].spawn_box(client, count)
-                    #     await asyncio.sleep(randint(2, 15))
+                        await asyncio.sleep(randint(2, 15) * self.speed)
             except Exception as ex:
                 client.logger.exception(ex)
 
@@ -266,7 +258,7 @@ class WinterEventProcessor(GlobalEventProcessor):
                 return
 
         self.checking_snowman = True
-        convert_ration = 100 # How many snowballs needed for snowman
+        convert_ration = 100  # How many snowballs needed for snowman
         try:
             datas = await client.db.getTgChatCurrency(channel['channel_id'])
             for data in datas:
@@ -361,5 +353,5 @@ class WinterEventProcessor(GlobalEventProcessor):
         await client.db.add_currency_to_user('snowball_fights', sender['user_id'], 1)
 
         response = await client.send_message(channel['tg_chat_id'], text)
-        await asyncio.sleep(120)
+        await asyncio.sleep(120 * self.speed)
         await response.delete()

@@ -19,6 +19,7 @@ class GlobalEventProcessor(Base):
         self.required_members = 20
         self.required_messages_total = 0
         self.required_messages_interval = 0
+        self.speed: int = 1
 
     @classmethod
     def get_instance(cls):
