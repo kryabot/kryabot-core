@@ -1,6 +1,6 @@
 from telethon import TelegramClient
-from telethon import events
-from telethon.errors import UserIsBlockedError
+from telethon import events, functions, types
+from telethon.errors import UserIsBlockedError, BotCommandInvalidError
 from telethon.tl.custom import Button
 from telethon.extensions import html
 from object.Database import Database
@@ -132,6 +132,7 @@ class AuthBot(TelegramClient):
         await self.reload_translations()
         await self.start(bot_token=self.cfg.getTelegramConfig()['BOT_API_KEY'])
         self.me = await self.get_me()
+        await self.register_commands()
         #await self.catch_up()
         #await self.run_until_disconnected()
 
@@ -143,6 +144,35 @@ class AuthBot(TelegramClient):
 
     async def report_to_monitoring(self, message):
         await self.send_message(TG_GROUP_MONITORING_ID, message)
+
+    async def register_commands(self):
+        # Commands available only to admins to resetting only admins scopes
+        for supported_bot_lang in ['en', 'ru']:
+            try:
+                # About scopes: https://core.telegram.org/type/BotCommandScope
+                await self(functions.bots.ResetBotCommandsRequest(
+                    lang_code=supported_bot_lang,
+                    scope=types.BotCommandScopeDefault()
+                ))
+
+                await self(functions.bots.ResetBotCommandsRequest(
+                    lang_code=supported_bot_lang,
+                    scope=types.BotCommandScopeUsers()
+                ))
+
+                # Admins in chats and supergroups
+                await self(functions.bots.SetBotCommandsRequest(
+                    scope=types.BotCommandScopeUsers(),
+                    lang_code=supported_bot_lang,
+                    commands=[
+                        types.BotCommand(command='start', description=self.translator.getLangTranslation(supported_bot_lang, 'AUTHBOT_CMDINFO_START')),
+                        types.BotCommand(command='me', description=self.translator.getLangTranslation(supported_bot_lang, 'AUTHBOT_CMDINFO_ME')),
+                        types.BotCommand(command='unlink', description=self.translator.getLangTranslation(supported_bot_lang, 'AUTHBOT_CMDINFO_UNLINK')),
+                    ])
+                )
+            except BotCommandInvalidError as ex:
+                self.logger.error('Failed to refresh commands for language {}'.format(supported_bot_lang))
+                self.logger.exception(ex)
 
     async def process_start(self, event):
         sender = await event.get_sender()

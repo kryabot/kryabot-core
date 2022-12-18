@@ -839,7 +839,7 @@ class KryaClient(TelegramClient):
                     if await self.find_participant(ch['tg_chat_id'], unlink_tg_id):
                         await self.kick_user_from_channel(ch['tg_chat_id'], unlink_tg_id, ch['ban_time'])
                         self.logger.info('Removed user {} from chat {}'.format(unlink_kb_id, ch['tg_chat_id']))
-                        removed_from += ' ' + ch['tg_chat_id']
+                        removed_from += ' ' + str(ch['tg_chat_id'])
                 except Exception as e:
                     await asyncio.sleep(1)
                     self.logger.exception(e)
