@@ -96,6 +96,7 @@ class AuthBot(TelegramClient):
 
         self.add_event_handler(pong)
         self.add_event_handler(start)
+        self.add_event_handler(command_me)
         self.add_event_handler(reloadtranslations)
         #self.add_event_handler(pushed_start_exchange)
         #self.add_event_handler(pushed_cancel_exchange)
