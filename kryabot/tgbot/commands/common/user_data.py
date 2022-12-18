@@ -77,26 +77,28 @@ async def get_user_data(client, channel, tg_data, skip_bits=True):
     # Basic info
     user_data = await fill_basic_info(user_data)
     user_data['global_awards'] = await client.db.getGlobalUserAwards(user_data['kb_id'])
-    user_data['invitations'] = await client.db.getTgInvite(channel['channel_id'], user_data['kb_id'])
 
     if user_data['is_verified']:
         linkage = await get_first(await client.db.getLinkageDataByTwitchId(user_data['tw_id']))
         if linkage:
             user_data['linked_at'] = linkage['response_time']
 
-    # Chat related info
-    user_data = await fill_chat_info(user_data, client, channel)
     # Twitch info
     user_data = await fill_twitch_info(user_data, client, channel)
-    if skip_bits is False:
-        user_data = await fill_bits_info(user_data, client, channel)
+
+    if channel:
+        user_data['invitations'] = await client.db.getTgInvite(channel['channel_id'], user_data['kb_id'])
+        # Chat related info
+        user_data = await fill_chat_info(user_data, client, channel)
+        if not skip_bits:
+            user_data = await fill_bits_info(user_data, client, channel)
 
     return user_data
 
 
 async def format_user_data(user_data, client, channel)->str:
     answer = ''
-    lang = channel['bot_lang']
+    lang = channel['bot_lang'] if channel else 'en'
 
     if user_data['is_verified'] is False:
         answer = '⚠️<b>{}</b>⚠️'.format(client.get_translation(lang, 'USER_NOT_VERIFIED'))
@@ -116,21 +118,22 @@ async def format_user_data(user_data, client, channel)->str:
                     answer += '\n{}: {}'.format(client.get_translation(lang, 'USER_CREATED_KB'), user_data['linked_at'].date())
 
                 # Twitch sub data
-                answer += '\n{} {}: '.format(await custom_subinfo_badge(channel['channel_id']), client.get_translation(lang, 'USER_SUB_INFO'))
-                if user_data['is_sub'] is True:
-                    if user_data['sub_months'] > 0:
-                        answer += '{count} {text} {tier}'.format(count=user_data['sub_months'],
-                                                                 text=client.get_translation(lang, 'USER_SUB_MONTHS'),
-                                                                 tier=await map_sub_tier(user_data['sub_tier']))
-                        if user_data['is_gifted']:
-                            answer += ' 🎁'
+                if channel:
+                    answer += '\n{} {}: '.format(await custom_subinfo_badge(channel['channel_id']), client.get_translation(lang, 'USER_SUB_INFO'))
+                    if user_data['is_sub'] is True:
+                        if user_data['sub_months'] > 0:
+                            answer += '{count} {text} {tier}'.format(count=user_data['sub_months'],
+                                                                     text=client.get_translation(lang, 'USER_SUB_MONTHS'),
+                                                                     tier=await map_sub_tier(user_data['sub_tier']))
+                            if user_data['is_gifted']:
+                                answer += ' 🎁'
+                        else:
+                            answer += client.get_translation(lang, 'USER_SUB')
+                    elif user_data['is_sub'] is False:
+                        answer += '<b>{}</b>'.format(client.get_translation(lang, 'USER_NOT_SUB'))
                     else:
-                        answer += client.get_translation(lang, 'USER_SUB')
-                elif user_data['is_sub'] is False:
-                    answer += '<b>{}</b>'.format(client.get_translation(lang, 'USER_NOT_SUB'))
-                else:
-                    # None
-                    pass
+                        # None
+                        pass
 
                 # Twitch follow info
                 if user_data['is_follower']:
@@ -220,7 +223,7 @@ async def fill_twitch_info(user_data, client, channel):
     user_data = await fill_twitch_user_info(user_data, client)
 
     # Chat owners can not follow or sub themselfs
-    if not user_data['is_chat_owner'] and user_data['is_verified'] and user_data['twitch_user_exists']:
+    if channel and not user_data['is_chat_owner'] and user_data['is_verified'] and user_data['twitch_user_exists']:
         user_data = await fill_twitch_follow_info(user_data, client, channel)
         user_data = await fill_twitch_sub_info(user_data, client, channel)
 

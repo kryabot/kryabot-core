@@ -9,6 +9,7 @@ from object.Pinger import Pinger
 from object.System import System
 from object.Translator import Translator
 from scrape.twitch_gifter import twitch_gift_to_user
+from tgbot.commands.common.user_data import get_user_data, format_user_data
 from tgbot.constants import TG_GROUP_MONITORING_ID
 from utils.twitch import get_active_oauth_data
 from utils.array import get_first
@@ -23,11 +24,23 @@ from urllib import parse
 PUMKPIN_EXCHANGE_PRICE = 500
 PUMKPIN_EXCHANGE_KEY = 'pumpkin_2021'
 
+
 @events.register(events.NewMessage(pattern='/ping', chats=[TG_GROUP_MONITORING_ID]))
 async def pong(event):
     event.client.last_ping = datetime.now()
     await event.reply('pong')
 
+
+@events.register(events.NewMessage(pattern='/me', func=lambda e: e.is_private))
+async def command_me(event):
+    if await event.client.db.is_cooldown_whoami(0, event.sender_id):
+        return
+
+    sender = await event.get_sender()
+    user_data = await get_user_data(event.client, None, sender)
+    event.client.logger.info(user_data)
+    response = format_user_data(user_data, event.client, None)
+    await event.reply(response)
 
 @events.register(events.NewMessage(pattern='\/start*', func=lambda e: e.is_private))
 async def start(event):
