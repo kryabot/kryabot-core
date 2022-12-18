@@ -322,8 +322,11 @@ class AuthBot(TelegramClient):
             channel['expires_at'] = auth_data['expires_at']
         return channel
 
+    def get_translation(self, lang, key):
+        return self.translator.getLangTranslation(lang, key)
+
     def format_translation(self, channel_name, user_name, key):
-        raw = self.translator.getLangTranslation('ru', key)
+        raw = self.get_translation('ru', key)
         return raw.format(name=user_name, channel=channel_name)
 
     async def process_buy_gift(self, event: events.NewMessage.Event):
