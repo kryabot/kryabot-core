@@ -39,7 +39,7 @@ async def command_me(event):
     sender = await event.get_sender()
     user_data = await get_user_data(event.client, None, sender)
     event.client.logger.info(user_data)
-    response = format_user_data(user_data, event.client, None)
+    response = await format_user_data(user_data, event.client, None)
     await event.reply(response)
 
 @events.register(events.NewMessage(pattern='\/start*', func=lambda e: e.is_private))
