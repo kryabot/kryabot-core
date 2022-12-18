@@ -378,3 +378,28 @@ async def custom_subinfo_badge(channel_id):
             64: '🥢',
             }.get(channel_id, '🎖')
 
+
+async def unlink_user(db, api, user_twitch_id):
+    response = {
+        'unlinked': False,
+        'days': 0,
+        'error': ''
+    }
+
+    linkage_data = await db.getLinkageDataByTwitchId(user_twitch_id)
+    if not linkage_data or linkage_data[0]['response_id'] is None or linkage_data[0]['response_time'] is None:
+        response['error'] = 'NOT_LINKED'
+        return response
+
+    day_limit = 30
+    diff = datetime.now() - linkage_data[0]['response_time']
+    if diff.days < day_limit:
+        response['error'] = 'UNLINK_TOO_EARLY'
+        response['days'] = day_limit - diff.days
+        return response
+
+    await db.deleteTelegramLink(linkage_data[0]['user_id'])
+    await api.guardbot.notify_tg_unlink(linkage_data[0]['user_id'], user_twitch_id, linkage_data[0]['tg_id'])
+
+    response['unlinked'] = True
+    return response

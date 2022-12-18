@@ -9,7 +9,7 @@ from object.Pinger import Pinger
 from object.System import System
 from object.Translator import Translator
 from scrape.twitch_gifter import twitch_gift_to_user
-from tgbot.commands.common.user_data import get_user_data, format_user_data
+from tgbot.commands.common.user_data import get_user_data, format_user_data, unlink_user
 from tgbot.constants import TG_GROUP_MONITORING_ID
 from utils.twitch import get_active_oauth_data
 from utils.array import get_first
@@ -38,9 +38,31 @@ async def command_me(event):
 
     sender = await event.get_sender()
     user_data = await get_user_data(event.client, None, sender)
-    event.client.logger.info(user_data)
     response = await format_user_data(user_data, event.client, None)
     await event.reply(response)
+
+
+@events.register(events.NewMessage(pattern='/unlink', func=lambda e: e.is_private))
+async def command_unlink(event):
+    requestor = await event.client.db.getUserByTgChatId(event.message.chat_id, skip_cache=True)
+    if not requestor:
+        await event.reply("You do not have any linked Twitch account!")
+        return
+
+    unlink_result = await unlink_user(event.client.db, event.client.api, requestor[0]['tw_id'])
+    if unlink_result['error'] == 'NOT_LINKED':
+        await event.reply("You do not have any linked Twitch account!")
+        return
+
+    if unlink_result['error'] == 'UNLINK_TOO_EARLY':
+        await event.reply('Sorry, but can not unlink telegram account, yet! You can unlink only after {} day(s)!'.format(unlink_result['days']))
+        return
+
+    if unlink_result['unlinked']:
+        await event.reply("Unlinking completed!")
+    else:
+        await event.reply("Failed to unlink, please try later. If problem persists - report to @KryaHelp chat!")
+
 
 @events.register(events.NewMessage(pattern='\/start*', func=lambda e: e.is_private))
 async def start(event):
@@ -97,6 +119,7 @@ class AuthBot(TelegramClient):
         self.add_event_handler(pong)
         self.add_event_handler(start)
         self.add_event_handler(command_me)
+        self.add_event_handler(command_unlink)
         self.add_event_handler(reloadtranslations)
         #self.add_event_handler(pushed_start_exchange)
         #self.add_event_handler(pushed_cancel_exchange)

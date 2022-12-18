@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from tgbot.commands.common.user_data import unlink_user
 from twbot import ResponseAction
 from twbot.command.AccessType import AccessType
 from twbot.command.CommandBase import CommandBase
@@ -18,20 +19,19 @@ class UnlinkTelegram(CommandBase):
                 await ResponseAction.ResponseMessage.send(self.context.channel.name, '{} currently i am not feeling well, please try bit later.'.format(self.context.user.display_name))
                 return
 
-            linkage_data = await self.db.getLinkageDataByTwitchId(self.context.user.twitch_id)
-            if linkage_data is None or len(linkage_data) == 0 or linkage_data[0]['response_id'] is None or linkage_data[0]['response_time'] is None:
+            unlink_result = await unlink_user(self.db, self.api, self.context.user.twitch_id)
+            if unlink_result['error'] == 'NOT_LINKED':
                 await ResponseAction.ResponseMessage.send(self.context.channel.name, '{} you do not have active telegram link!'.format(self.context.user.display_name))
                 return
 
-            day_limit = 30
-            diff = datetime.now() - linkage_data[0]['response_time']
-            if diff.days < day_limit:
-                await ResponseAction.ResponseMessage.send(self.context.channel.name, '{} sorry, but can not unlink telegram account, yet! You can unlink only after {} day(s)'.format(self.context.user.display_name, day_limit - diff.days))
+            if unlink_result['error'] == 'UNLINK_TOO_EARLY':
+                await ResponseAction.ResponseMessage.send(self.context.channel.name, '{} sorry, but can not unlink telegram account, yet! You can unlink only after {} day(s)'.format(self.context.user.display_name, unlink_result['days']))
                 return
 
-            await self.db.deleteTelegramLink(linkage_data[0]['user_id'])
-            await self.api.guardbot.notify_tg_unlink(linkage_data[0]['user_id'], self.context.user.twitch_id, linkage_data[0]['tg_id'])
-            await ResponseAction.ResponseMessage.send(self.context.channel.name, '{} successfully unlinked!'.format(self.context.user.display_name))
+            if unlink_result['unlinked']:
+                await ResponseAction.ResponseMessage.send(self.context.channel.name, '{} successfully unlinked!'.format(self.context.user.display_name))
+            else:
+                await ResponseAction.ResponseMessage.send(self.context.channel.name, '{} failed to unlinked, try later!'.format(self.context.user.display_name))
         except Exception as e:
             self.logger.info(self.context.stringify())
             self.logger.exception(e)
