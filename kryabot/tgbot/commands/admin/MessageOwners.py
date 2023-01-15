@@ -39,7 +39,7 @@ class MessageOwners(BaseCommand):
                     text: str = self.reply_message.raw_text
                     text = text.replace('TARGET_USER', user['channel_name'])
 
-                    await self.client.send_message(user['tg_id'], self.reply_message, link_preview=False)
+                    await self.client.send_message(int(user['tg_id']), self.reply_message, link_preview=False)
                     i = i + 1
             except Exception as e:
                 await self.client.exception_reporter(e, 'Tried to send mass message to chat {}'.format(user))
