@@ -3,12 +3,13 @@ import asyncio
 from tgbot.commands.UserAccess import UserAccess
 from tgbot.commands.stringparser import StringParser
 
+
+from tgbot.commands import admin
 from tgbot.commands.help import *
 from tgbot.commands.getter import *
 from tgbot.commands.actions import *
 from tgbot.commands.reminder import *
 from tgbot.commands.award import *
-from tgbot.commands.vote import *
 from tgbot.commands.moderation import *
 from tgbot.commands.manage import *
 from tgbot.commands.items import *
@@ -83,23 +84,7 @@ command_list.append(UnSudo)
 # Supporter
 # TODO groups instead of levels
 # Super admin
-command_list.append(UserReport)
-command_list.append(MassMessage)
-command_list.append(ReloadTranslations)
-command_list.append(GlobalUserReport)
-command_list.append(SpeedTest)
-command_list.append(DLCoub)
-command_list.append(SpawnBoss)
-command_list.append(SpawnBox)
-command_list.append(SpawnLove)
-command_list.append(SpawnNumber)
-command_list.append(SpawnSilent)
-command_list.append(SpawnScary)
-command_list.append(SpawnGreedy)
-command_list.append(SpawnSnowing)
-command_list.append(NewUserReport)
-command_list.append(DryMassKick)
-command_list.append(RecheckPublicity)
+command_list += admin.export()
 
 
 async def build(command_name, event, parsed):
