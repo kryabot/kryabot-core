@@ -36,7 +36,7 @@ class MessageOwners(BaseCommand):
                     await self.reply_fail('Media not supported!')
                     continue
                 else:
-                    text: str = self.reply_message.raw_text
+                    text: str = self.reply_message.message
                     text = text.replace('TARGET_USER', user['channel_name'])
 
                     await self.client.send_message(int(user['tg_id']), text, link_preview=False)
