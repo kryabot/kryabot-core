@@ -17,7 +17,7 @@ class MessageOwners(BaseCommand):
         if not (await self.can_process()):
             return
 
-        users = await self.db.do_query("SELECT channel.*, response.*  FROM channel LEFT JOIN request on request.user_id = channel.user_id LEFT JOIN response ON response.request_id = request.request_id LEFT JOIN  auth on auth.user_id = channel.user_id and auth.type = 'BOT';")
+        users = await self.db.do_query("SELECT channel.*, response.*  FROM channel LEFT JOIN request on request.user_id = channel.user_id LEFT JOIN response ON response.request_id = request.request_id LEFT JOIN  auth on auth.user_id = channel.user_id and auth.type = 'BOT';", [])
         i = 0
 
         if not self.reply_message:
