@@ -26,10 +26,7 @@ class MessageOwners(BaseCommand):
 
         for user in users:
             try:
-                if not user['request_id']:
-                    continue
-
-                if int(user['user_id']) != 4673:
+                if 'request_id' not in user or not user['request_id']:
                     continue
 
                 if self.reply_message.media:
@@ -42,6 +39,6 @@ class MessageOwners(BaseCommand):
                     await self.client.send_message(int(user['tg_id']), text, link_preview=False)
                     i = i + 1
             except Exception as e:
-                await self.client.exception_reporter(e, 'Tried to send mass message to chat {}'.format(user))
+                await self.client.exception_reporter(e, 'Tried to send message to owner {}'.format(user))
 
         await self.reply_success(self.get_translation('MASS_MESSAGE_SENT').format(i=i))
