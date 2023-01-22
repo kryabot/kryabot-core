@@ -112,7 +112,12 @@ async def auth_request_with_retry(self, auth_id, request, *args, **kwargs):
         if current_try > 2:
             auth_data = await get_active_oauth_data_broadcaster(auth_id, force_refresh=True)
 
-        kwargs['token'] = auth_data['token']
+        try:
+            kwargs['token'] = auth_data['token']
+        except TypeError:
+            ah.ApiHelper.get_instance().logger.error('Failed to get auth for user {} while executing {}'.format(auth_id, getattr(request, '__name__', 'Unknown')))
+            continue
+
         try:
             return await request(self, *args, **kwargs)
         except ExpiredAuthToken as ex:
