@@ -15,12 +15,11 @@ class MassBan(CommandBase):
         try:
             search_text = self.get_word_list()
             if len(search_text) < 4:
-                await self.context.reply('Search text is too short! Must be longer than 4')
+                await self.context.reply('Search text is too short! Must be longer than 4 characters')
                 return
 
-            viewers = await self.api.twitch.get_channel_chatters(self.context.channel.channel_name)
-            viewers = viewers['chatters']
-            ignore_users = viewers['moderators'] + viewers['staff'] + viewers['admins'] + viewers['global_mods'] + [self.context.channel.channel_name]
+            vips = await self.api.twitch.get_vips(self.context.channel.tw_id)
+            mods = await self.api.twitch.get_moderators(self.context.channel.tw_id)
 
             search_text = '%{}%'.format(search_text)
             self.logger.info('Searching messages to ban like {}'.format(search_text))
@@ -34,22 +33,19 @@ class MassBan(CommandBase):
 
             ban_count = 0
             skipped = 0
-
-            def can_skip(name)->bool:
-                for ignored in ignore_users:
-                    if str(name).lower() == str(ignored).lower():
-                        return True
-
-                return False
+            skip_ids = [vip['user_id'] for vip in vips['data']] + [mod['user_id'] for mod in mods['data']]
 
             for message in messages:
-                if can_skip(message['name']):
+                if int(message['tw_id']) in skip_ids:
                     skipped = skipped + 1
                     continue
 
-                self.logger.info('Banning user {}'.format(message['name']))
+                self.logger.info('Banning user {} {}'.format(message['name'], message['tw_id']))
                 try:
-                    await self.context.ban(message['name'], 'Mass ban required by {}'.format(self.context.user.name))
+                    await self.api.twitch.ban_user(broadcaster_id=self.context.channel.tw_id,
+                                                   user_id=message['tw_id'],
+                                                   duration=0,
+                                                   reason='Mass ban requested by {}'.format(self.context.user.name))
                     ban_count = ban_count + 1
                 except Exception as ex:
                     self.logger.error(ex)

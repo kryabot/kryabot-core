@@ -3,8 +3,8 @@ import base64
 
 
 class GoogleCloud(Core):
-    def __init__(self, cfg=None):
-        super().__init__(cfg=cfg)
+    def __init__(self):
+        super().__init__()
 
     def get_api_key(self):
         return self.cfg.getgetGoogleVisionConfig()['API_KEY']

@@ -3,8 +3,8 @@ from utils.json_parser import dict_to_json
 
 
 class GuardBot(Core):
-    def __init__(self, cfg=None):
-        super().__init__(cfg=cfg)
+    def __init__(self):
+        super().__init__()
         self.base_url = self.cfg.getGuardBotConfig()['HOST']
         self.token = self.cfg.getGuardBotConfig()['TOKEN']
 

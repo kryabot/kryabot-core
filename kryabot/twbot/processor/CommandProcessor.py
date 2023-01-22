@@ -137,7 +137,7 @@ class CommandProcessor(Processor):
             elif cmd.check_type == 1 and not message.lower().startswith(cmd.command_name.lower()):
                 self.logger.debug("[{}] Request: {} Data: {} Result: skip1".format(channel_id, command_name, cmd.command_name))
                 continue
-            elif cmd.check_type == 2 and not cmd.command_name.lower() in message.lower():
+            elif cmd.check_type == 2 and cmd.command_name.lower() not in message.lower():
                 self.logger.debug("[{}] Request: {} Data: {} Result: skip2".format(channel_id, command_name, cmd.command_name))
                 continue
             elif cmd.check_type == 10 and not cmd.search(message):
@@ -231,7 +231,7 @@ class CommandProcessor(Processor):
     def get_message_word(self, message, index: int)->str:
         try:
             return message.split()[index]
-        except:
+        except IndexError:
             return ''
 
     async def replace_keywords(self, channel: Channel, cmd: Command, sender_name: str, text: str):
@@ -257,11 +257,15 @@ class CommandProcessor(Processor):
         if '#online#' in answer:
             answer = answer.replace('#online#', await channel.get_online_count())
 
+        if '#subs#' in answer:
+            answer = answer.replace('#subs#', await channel.get_sub_count())
+
         if '#uptime#' in answer:
             answer = answer.replace('#uptime#', await channel.get_uptime_formatted())
 
         while '#randomviewer#' in answer:
             answer = answer.replace('#randomviewer#', await channel.get_random_viewer(), 1)
+
 
         for i in range(1, 10):
             max_val = i * 10

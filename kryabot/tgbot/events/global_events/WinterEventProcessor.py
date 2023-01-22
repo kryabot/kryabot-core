@@ -2,7 +2,7 @@ import asyncio
 from random import randint
 from datetime import datetime, timedelta
 
-from tgbot.constants import TG_TEST_GROUP_ID
+from utils.constants import TG_TEST_GROUP_ID
 from tgbot.events.global_events.GlobalEventProcessor import GlobalEventProcessor
 from tgbot.events.global_events.winter.WinterType import WinterChannels, WinterConfig
 from utils.array import get_first

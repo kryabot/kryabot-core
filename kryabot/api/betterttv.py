@@ -4,8 +4,8 @@ from api.core import Core
 
 
 class Betterttv(Core):
-    def __init__(self, cfg=None):
-        super().__init__(cfg=cfg)
+    def __init__(self):
+        super().__init__()
 
     async def get_global_emotes(self):
         url = 'https://api.betterttv.net/3/cached/emotes/global'

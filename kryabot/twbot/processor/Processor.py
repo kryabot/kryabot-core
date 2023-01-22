@@ -13,7 +13,7 @@ class Processor:
 
     def __init__(self):
         if Processor.cfg is None:
-            Processor.cfg = BotConfig()
+            Processor.cfg = BotConfig.get_instance()
 
         self.silent: bool = False
         self.db: Database = None

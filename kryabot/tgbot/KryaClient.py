@@ -5,10 +5,9 @@ from telethon.extensions import html
 from telethon.tl import functions
 from telethon.tl.functions.channels import LeaveChannelRequest, EditBannedRequest, GetParticipantRequest, \
     GetFullChannelRequest
-from telethon.tl.types import PeerUser, PeerChannel, InputStickerSetID, \
-    ChatInviteAlready, ChatInvite, ChatBannedRights, ChannelParticipantsAdmins, InputPeerChannel, ChatInvitePeek, \
+from telethon.tl.types import PeerUser, PeerChannel, ChatInviteAlready, ChatInvite, ChatBannedRights, ChannelParticipantsAdmins, InputPeerChannel, \
     DocumentAttributeFilename, PeerChat, Chat, InputChannel, Channel, InputStickerSetShortName
-from telethon.tl.functions.messages import ImportChatInviteRequest, GetAllStickersRequest, GetStickerSetRequest, \
+from telethon.tl.functions.messages import ImportChatInviteRequest, GetStickerSetRequest, \
     CheckChatInviteRequest, ExportChatInviteRequest
 import os
 import asyncio
@@ -17,6 +16,7 @@ from datetime import datetime, date, timedelta
 
 from telethon.utils import get_peer_id
 
+from api.twitchv5.exception import ExpiredAuthToken
 from object.Database import Database
 from object.ApiHelper import ApiHelper
 from object.Pinger import Pinger
@@ -30,12 +30,11 @@ from tgbot.events.global_events.GlobalEventFactory import GlobalEventFactory
 
 from utils.formatting import format_html_user_mention
 from utils.decorators.exception import log_exception_ignore, log_exception
-from utils.value_check import avoid_none, is_empty_string, map_kick_setting
+from utils.value_check import avoid_none, map_kick_setting
 from utils.array import split_array_into_parts, get_first
-from utils.twitch import refresh_channel_token, sub_check, get_active_oauth_data, sub_check_many, \
-    refresh_channel_token_no_client
+from utils.twitch import refresh_channel_token, get_active_oauth_data
 from tgbot.commands.commandbuilder import update_command_list
-from tgbot.constants import TG_GROUP_MONITORING_ID, TG_SUPER_ADMINS, TG_TEST_GROUP_ID
+from utils.constants import TG_GROUP_MONITORING_ID, TG_SUPER_ADMINS, TG_TEST_GROUP_ID
 from utils.date_diff import get_datetime_diff_text
 from utils import redis_key
 
@@ -59,8 +58,8 @@ class KryaClient(TelegramClient):
     def __init__(self, loop=None, logger=None, cfg=None):
         self.logger = logger
         self.cfg = cfg
-        self.db = Database(loop=loop, size=self.cfg.getTelegramConfig()['MAX_SQL_POOL'])
-        self.api = ApiHelper(reporter=self.exception_reporter, redis=self.db.redis)
+        self.db = Database.get_instance()
+        self.api = ApiHelper.get_instance()
         self.translator = Translator.getInstance()
         self.moderation = None
         self.moderation_queue = asyncio.Queue()
@@ -505,7 +504,7 @@ class KryaClient(TelegramClient):
         return has_whitelist, has_blacklist, blacklist_comment
 
     async def run_user_report(self, channel, manual=False):
-        channel = await refresh_channel_token(client=self, channel=channel, force_refresh=True)
+        channel = await refresh_channel_token(channel=channel, force_refresh=True)
         data = await self.get_group_participant_full_data(channel, need_follows=channel['join_follower_only'] == 1, kick_not_verified=not manual and channel['auto_kick'] == 1, kick_deleted=channel['auto_kick'] == 1)
         lang = channel['bot_lang']
         summary = data['summary']
@@ -676,7 +675,7 @@ class KryaClient(TelegramClient):
             auths = await self.db.getBotAuths()
 
             for auth in auths:
-                new_auth = await get_active_oauth_data(auth['user_id'], self.db, self.api, sec_diff=(900 + 60))
+                new_auth = await get_active_oauth_data(auth['user_id'], sec_diff=(900 + 60))
         except Exception as e:
             self.logger.error(str(e))
             await self.exception_reporter(e, 'In task_oauth_refresher')
@@ -1126,11 +1125,13 @@ class KryaClient(TelegramClient):
                     continue
 
                 try:
-                    response, errors = await sub_check_many(channel, twitch_ids_part, self.db, self.api)
-                    if errors:
-                        raise Exception(errors)
+                    response = await self.api.twitch.get_channel_subs(broadcaster_id=channel['tw_id'], users=twitch_ids_part)
                     if response and 'data' in response and len(response['data']) > 0:
                         twitch_subs += response['data']
+                except ExpiredAuthToken as err:
+                    self.logger.exception(err)
+                    is_authorized = False
+                    continue
                 except Exception as err:
                     self.logger.exception(err)
                     if 'unauthorized' in str(err).lower():
@@ -1145,10 +1146,10 @@ class KryaClient(TelegramClient):
             twitch_subs = []
 
         if need_follows and is_authorized:
-            channel = await refresh_channel_token_no_client(channel, self.db, self.api)
+            channel = await refresh_channel_token(channel)
             for twitch_id in twitch_ids:
                 try:
-                    response = await self.api.twitch.get_channel_follows(channel_id=channel['tw_id'], users=[twitch_id], token=channel['token'])
+                    response = await self.api.twitch.get_user_follows(channel_id=channel['tw_id'], users=[twitch_id], token=channel['token'])
                     if response and 'data' in response and len(response['data']) > 0:
                         twitch_follows += response['data']
                 except ClientResponseError as err:

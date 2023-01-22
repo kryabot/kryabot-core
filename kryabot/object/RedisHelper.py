@@ -3,14 +3,16 @@ import functools
 
 import aioredis
 import logging
+
+from object.Base import Base
+from object.BotConfig import BotConfig
 from utils.json_parser import json_to_dict, dict_to_json
+
+
 # from aiocache import Cache
 
 
-
-
-
-class RedisHelper:
+class RedisHelper(Base):
     instance = None
 
     def __init__(self, host, port, password, loop=None, minsize=2, maxsize=40):
@@ -25,14 +27,18 @@ class RedisHelper:
         self.listener = None
         self.receiver = None
         self.event_triggers = []
-        #self.cache = Cache(Cache.REDIS, endpoint=self.host, port=int(self.port), password=password, namespace='cache')
-
-        RedisHelper.instance = self
+        # self.cache = Cache(Cache.REDIS, endpoint=self.host, port=int(self.port), password=password, namespace='cache')
 
     @staticmethod
-    async def get_instance():
+    def get_instance():
         if not RedisHelper.instance:
-            raise ValueError('RedisHelper.instance is not created yet!')
+            cfg = BotConfig.get_instance()
+            RedisHelper.instance = RedisHelper(cfg.getRedisConfig()['HOST'],
+                                               cfg.getRedisConfig()['PORT'],
+                                               cfg.getRedisConfig()['PASSWORD'],
+                                               minsize=1,
+                                               maxsize=50,
+                                               loop=asyncio.get_event_loop())
 
         return RedisHelper.instance
 
@@ -40,12 +46,12 @@ class RedisHelper:
         self.logger.info('Opening redis connection')
         address = (self.host, self.port)
         self.redis_pool = await aioredis.create_redis_pool(address=address,
-                                                     password=self.password,
-                                                     minsize=self.minsize,
-                                                     maxsize=self.maxsize,
-                                                     loop=self.loop,
-                                                     encoding='utf-8')
-        #self.cache.
+                                                           password=self.password,
+                                                           minsize=self.minsize,
+                                                           maxsize=self.maxsize,
+                                                           loop=self.loop,
+                                                           encoding='utf-8')
+        # self.cache.
 
     async def start_listener(self, initial_subscribes=None):
         # Already started
@@ -186,13 +192,13 @@ class RedisHelper:
         with await self.redis_pool as conn:
             return await conn.exists(key)
 
-    async def push_list_to_right(self, list_name, data)->int:
+    async def push_list_to_right(self, list_name, data) -> int:
         return await self.push_to_list(list_name, data, True)
 
-    async def push_list_to_left(self, list_name, data)->int:
+    async def push_list_to_left(self, list_name, data) -> int:
         return await self.push_to_list(list_name, data, False)
 
-    async def push_to_list(self, list_name, data, to_right=True)->int:
+    async def push_to_list(self, list_name, data, to_right=True) -> int:
         key = "rpush" if to_right else "lpush"
 
         if self.redis_pool is None:
@@ -238,5 +244,7 @@ class RedisHelper:
                     except Exception as transport_exception:
                         redis_client.logger.exception(transport_exception)
                         await asyncio.sleep(error_sleep)
+
             return wrapper
+
         return decorator

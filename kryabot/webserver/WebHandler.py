@@ -16,15 +16,15 @@ import utils.redis_key as redis_key
 
 
 class WebHandler:
-    def __init__(self, loop, cfg):
+    def __init__(self):
         self.redis = None
         self.logger: logging.Logger = logging.getLogger('krya.sanic')
-        self.cfg: BotConfig = cfg
+        self.cfg: BotConfig = BotConfig.get_instance()
         self.bot_token = self.cfg.getGuardBotConfig()['TOKEN']
         self.admin_token = 'g4h56984984dr98d4gd1rg98s198s4g9s8e4g'
         self.app: Sanic = Sanic("krya.sanic", configure_logging=False)
         self.server = None
-        self.loop = loop
+        self.loop = asyncio.get_event_loop()
         self.guard_bot: KryaClient = None
 
     def register_routes(self):
@@ -60,6 +60,7 @@ class WebHandler:
         self.guard_bot = guard_bot
         self.register_routes()
         ResponseAction.Response.redis = self.guard_bot.db.redis
+        ResponseAction.Response._api = self.guard_bot.api
 
         self.loop.create_task(Pinger(System.WEBSERVER, self.logger, guard_bot.db.redis).run_task())
 
@@ -236,10 +237,7 @@ class WebHandler:
             return self.response_bad_input()
 
         for username in users:
-            if int(duration) == 0:
-                await ResponseAction.ResponseBan.send(channel_name=channel, user=username, reason=reason)
-            else:
-                await ResponseAction.ResponseTimeout.send(channel_name=channel, user=username, duration=duration, reason=reason)
+            await ResponseAction.ResponseTimeout.send(channel_name=channel, user=username, duration=duration, reason=reason)
 
         return self.response_success()
 

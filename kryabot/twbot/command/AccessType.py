@@ -14,11 +14,11 @@ class AccessType(Enum):
     CHANNEL_ANY = 2
 
     @staticmethod
-    def admin_package()->List:
+    def admin_package() -> List:
         return [AccessType.BOT_ADMIN, AccessType.BOT_MOD] + AccessType.mod_package()
 
     @staticmethod
-    def mod_package()->List:
+    def mod_package() -> List:
         return [AccessType.CHANNEL_OWNER, AccessType.CHANNEL_MOD]
 
 

@@ -17,20 +17,20 @@ class LoopContainer:
         self.web_app: WebHandler = None
         self.loop = asyncio.get_event_loop()
         self.logger: logging.Logger = logging.getLogger('krya.tg')
-        self.cfg = BotConfig()
+        self.cfg = BotConfig.get_instance()
         self.logger.info('LoopContainer initiated')
 
     async def start(self):
         self.logger.info('Starting auth bot...')
-        bot = AuthBot(loop=self.loop, cfg=self.cfg)
+        bot = AuthBot()
         await bot.run()
 
         self.logger.info('Starting guard bot...')
-        self.guard_bot = KryaClient(loop=self.loop, logger=self.logger, cfg=self.cfg)
+        self.guard_bot = KryaClient(loop=self.loop, logger=self.logger)
         await self.guard_bot.start_bot()
 
         self.logger.info('Starting web handler...')
-        self.web_app = WebHandler(self.loop, cfg=self.cfg)
+        self.web_app = WebHandler()
         await self.web_app.start(self.guard_bot)
 
         self.logger.info('All services started')

@@ -5,7 +5,7 @@ from tgbot.events.utils import is_valid_channel
 from utils.formatting import format_html_user_mention
 from tgbot.commands.common.user_data import get_user_data, format_user_data
 from telethon.utils import get_peer_id
-from tgbot.constants import TG_TEST_GROUP_ID
+from utils.constants import TG_TEST_GROUP_ID
 from utils.array import get_first
 
 

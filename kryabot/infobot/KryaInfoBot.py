@@ -13,7 +13,7 @@ from telethon.tl.types import UpdateChannel, MessageService, MessageActionChatDe
 from telethon import TelegramClient, events, Button
 
 from infobot import Event
-from infobot.Target import Target, InfobotLang
+from infobot.Target import InfobotLang
 from infobot.TargetLink import TargetLink
 from infobot.boosty.BoostyEvents import BoostyEvent
 from infobot.instagram.InstagramEvents import InstagramPostEvent, InstagramStoryEvent
@@ -23,7 +23,7 @@ from object.System import System
 from object.Translator import Translator
 from scrape.scrape_word_cloud import get_word_cloud_screenshot
 from infobot.tg_events import register_events
-from tgbot import constants
+from utils import constants
 from utils.formatting import td_format
 
 

@@ -24,12 +24,12 @@ class MassTimeout(CommandBase):
                 if words_list[0].isnumeric():
                     ban_time = int(words_list[0])
                     search_text = words_list[1:]
-            except:
+            except (IndexError, KeyError):
                 ban_time = 600
 
-            viewers = await self.api.twitch.get_channel_chatters(self.context.channel.channel_name)
-            viewers = viewers['chatters']
-            ignore_users = viewers['moderators'] + viewers['staff'] + viewers['admins'] + viewers['global_mods'] + [self.context.channel.channel_name]
+            vips = await self.api.twitch.get_vips(self.context.channel.tw_id)
+            mods = await self.api.twitch.get_moderators(self.context.channel.tw_id)
+            skip_ids = [int(vip['user_id']) for vip in vips['data']] + [int(mod['user_id']) for mod in mods['data']]
 
             search_text = '%{}%'.format(search_text)
             self.logger.info('Searching messages to ban for {} like {}'.format(ban_time, search_text))
@@ -45,25 +45,17 @@ class MassTimeout(CommandBase):
             ban_count = 0
             skipped = 0
 
-            def can_skip(name)->bool:
-                for ignored in ignore_users:
-                    if str(name).lower() == str(ignored).lower():
-                        return True
-
-                return False
-
             for message in messages:
-                if can_skip(message['name']):
+                if int(message['tw_id']) in skip_ids:
                     skipped = skipped + 1
                     continue
 
                 self.logger.info('Banning user {}'.format(message['name']))
                 try:
-                    if ban_time > 0:
-                        await self.context.channel.timeout(message['name'], ban_time, 'Mass ban required by {}'.format(self.context.user.name))
-                    else:
-                        await self.context.ban(message['name'], 'Mass ban required by {}'.format(self.context.user.name))
-
+                    await self.api.twitch.ban_user(broadcaster_id=self.context.channel.tw_id,
+                                                   user_id=message['tw_id'],
+                                                   duration=ban_time,
+                                                   reason='Mass ban requested by {}'.format(self.context.user.name))
                     ban_count = ban_count + 1
                 except Exception as ex:
                     self.logger.error(ex)

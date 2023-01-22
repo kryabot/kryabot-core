@@ -38,10 +38,10 @@ class AddVote(BaseCommand):
         else:
             try:
                 num = int(self.parsed.pop(1))
-            except Exception as ex:
+            except Exception:
                 num = 0
 
-            if num is None or num <= 0:
+            if num <= 0:
                 await self.reply_incorrect_input()
                 return
 

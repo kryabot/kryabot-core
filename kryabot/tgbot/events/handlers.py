@@ -3,8 +3,8 @@ from telethon.tl.types import PeerChat
 from tgbot.events.global_events.common import process_global_events
 from tgbot.commands.commandbuilder import run
 from utils.array import get_first
-from tgbot.events.chat_actions import user_join_check, user_left, process_bot_chat
-from tgbot.constants import TG_GROUP_MONITORING_ID
+from tgbot.events.chat_actions import user_join_check, user_left
+from utils.constants import TG_GROUP_MONITORING_ID
 
 from tgbot.events.moderate import moderate
 

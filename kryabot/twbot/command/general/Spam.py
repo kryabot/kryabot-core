@@ -11,10 +11,10 @@ class Spam(CommandBase):
 
     async def process(self):
         try:
-            async def get_word_count(list, idx):
+            async def get_word_count(input_list, idx):
                 try:
-                    return int(list[idx])
-                except:
+                    return int(input_list[idx])
+                except (IndexError, ValueError):
                     return 0
 
             default_message_count = 10
@@ -33,7 +33,7 @@ class Spam(CommandBase):
                 spam_text = ' '.join(wlist)
 
                 if len(spam_text) > 0:
-                    for x in range(count):
+                    for _ in range(count):
                         await self.context.reply(spam_text)
             except Exception as e:
 

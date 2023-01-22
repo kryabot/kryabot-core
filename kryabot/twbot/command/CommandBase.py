@@ -20,26 +20,26 @@ class CommandBase(Base):
         self.context: MessageContext = context
 
     async def process(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     @property
-    def db(self)->Database:
+    def db(self) -> Database:
         if CommandBase.database_instance is None:
-            raise Exception('CommandBase.database_instance is not initiated!')
+            raise ValueError('CommandBase.database_instance is not initiated!')
 
         return CommandBase.database_instance
 
     @property
-    def api(self)->ApiHelper:
+    def api(self) -> ApiHelper:
         if CommandBase.api_instance is None:
-            raise Exception('CommandBase.api_instance is not initiated!')
+            raise ValueError('CommandBase.api_instance is not initiated!')
 
         return CommandBase.api_instance
 
     @property
-    def logger(self)->logging:
+    def logger(self) -> logging:
         if CommandBase.logger_instance is None:
-            raise Exception('CommandBase.logger_instance is not initiated!')
+            raise ValueError('CommandBase.logger_instance is not initiated!')
 
         return CommandBase.logger_instance
 
@@ -54,5 +54,5 @@ class CommandBase(Base):
                 return word_list[1]
             else:
                 return None
-        except:
+        except IndexError:
             return None

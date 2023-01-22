@@ -1,36 +1,39 @@
+import functools
 from datetime import datetime, timedelta
+
+from api.twitchv5.exception import ExpiredAuthToken
+import object.ApiHelper as ApiHelper
+import object.Database as Database
 from utils import redis_key
 import asyncio
 
+from utils.constants import BOT_TWITCH_ID, BOT_INTERNAL_ID
 
-async def refresh_channel_token_no_client(channel, db, api, force_refresh=False):
-    new_data = await get_active_oauth_data(channel['user_id'], db, api, force_refresh=force_refresh)
+
+async def refresh_channel_token(channel, force_refresh=False):
+    new_data = await get_active_oauth_data(channel['user_id'], force_refresh=force_refresh)
+    db = Database.Database.get_instance()
     channel = await db.get_auth_subchat(channel['tg_chat_id'])
 
     try:
         return channel[0]
-    except:
+    except IndexError:
         return channel
 
 
-async def refresh_channel_token(client, channel, force_refresh=False):
-    return await refresh_channel_token_no_client(channel=channel, db=client.db, api=client.api, force_refresh=force_refresh)
+async def get_active_oauth_data_broadcaster(broadcaster_id: int, force_refresh: bool = False, sec_diff: int = 30):
+    db = Database.Database.get_instance()
+    kb_user = await db.getUserRecordByTwitchId(broadcaster_id)
+    if not kb_user or not kb_user[0]:
+        raise IndexError('Failed to find kb user for twitch ID {}'.format(broadcaster_id))
+
+    return await get_active_oauth_data(kb_user[0]['user_id'], force_refresh=force_refresh, sec_diff=sec_diff)
 
 
-async def sub_check(req_channel, requestor, db, api):
-    if requestor['tw_id'] == 0:
-        twitch_user = await api.twitch.get_users(usernames=[requestor['name']])
-        if twitch_user is None or len(twitch_user['data']) == 0:
-            return None, "deleted_twitch_account"
-        await db.updateUserTwitchId(requestor['user_id'], int(twitch_user['data'][0]['id']))
-        user_twitch_id = int(twitch_user['data'][0]['id'])
-    else:
-        user_twitch_id = requestor['tw_id']
+async def get_active_oauth_data(kb_user_id, force_refresh=False, sec_diff=30):
+    db = Database.Database.get_instance()
+    api = ApiHelper.ApiHelper.get_instance()
 
-    return await sub_check_many(req_channel, [user_twitch_id], db, api)
-
-
-async def get_active_oauth_data(kb_user_id, db, api, force_refresh=False, sec_diff=30):
     user = await db.getUserById(kb_user_id)
     if user is None or len(user) == 0:
         return None
@@ -52,7 +55,7 @@ async def get_active_oauth_data(kb_user_id, db, api, force_refresh=False, sec_di
                 data = {"token": resp['access_token'], "tw_id": user['tw_id'], "scope": resp['scope']}
                 await db.redis.publish_event(redis_key.get_token_update_topic(), data)
             except Exception as ex:
-                print('Failed to publish redis data:' + str(ex))
+                db.logger.exception(ex)
 
             # Update in cache
             tg_chat = await db.getTgChatIdByUserId(kb_user_id)
@@ -71,7 +74,7 @@ async def get_active_oauth_data(kb_user_id, db, api, force_refresh=False, sec_di
     return auth_data
 
 
-async def get_active_app_token(api, forced=False)->str:
+async def get_active_app_token(api, forced=False) -> str:
     if api.redis is None:
         raise Exception("Can not use get_active_app_token if redis is not enabled")
 
@@ -82,7 +85,6 @@ async def get_active_app_token(api, forced=False)->str:
         token = await api.redis.get_value_by_key(cache_key)
 
     if token is None:
-        print('App token was not found in cache, generating new one')
         api.logger.info('App token was not found in cache, generating new one')
         resp = await api.refresh_app_token()
         token = resp['access_token']
@@ -94,32 +96,121 @@ async def get_active_app_token(api, forced=False)->str:
     return token
 
 
-async def sub_check_many(req_channel, users, db, api):
-    req_channel = await refresh_channel_token_no_client(req_channel, db, api)
+async def auth_request_with_retry(self, auth_id, request, *args, **kwargs):
     current_try = 0
     max_tries = 3
-    sub_data = None
-    sub_error = None
 
+    auth_data = await get_active_oauth_data_broadcaster(auth_id)
     while True:
         current_try += 1
-        if current_try > max_tries:
-            break
-
         if current_try > 1:
             await asyncio.sleep(current_try)
 
         if current_try == 2:
-            req_channel = await refresh_channel_token_no_client(req_channel, db, api)
+            auth_data = await get_active_oauth_data_broadcaster(auth_id)
 
         if current_try > 2:
-            req_channel = await refresh_channel_token_no_client(req_channel, db, api, force_refresh=True)
+            auth_data = await get_active_oauth_data_broadcaster(auth_id, force_refresh=True)
 
-        sub_data, sub_error = await api.sub_check(req_channel['token'], req_channel['tw_id'], users)
-        if sub_error is not None and (sub_error.startswith('401') or 'unauthorized' in sub_error.lower()):
-            api.logger.error('Skip because of unauthorized')
+        kwargs['token'] = auth_data['token']
+        try:
+            return await request(self, *args, **kwargs)
+        except ExpiredAuthToken as ex:
+            if current_try > max_tries:
+                raise ex
             continue
 
-        break
 
-    return sub_data, sub_error
+def app_auth():
+    """
+        Use with endpoints which require app access token.
+        When expired, function will refresh app token and retry the call.
+    """
+    def decorator(f):
+        @functools.wraps(f)
+        async def decorated_function(self, *args, **kwargs):
+            try:
+                return await f(self, *args, **kwargs)
+            except ExpiredAuthToken:
+                await get_active_app_token(self, forced=True)
+                return await f(self, *args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+def bot_auth():
+    """
+        Use with endpoints which require user token on behalf of bot account.
+        Injects `token` parameter of bot account when it is not provided by consumer.
+    """
+    def decorator(f):
+        @functools.wraps(f)
+        async def decorated_function(self, *args, **kwargs):
+            return await auth_request_with_retry(self, BOT_TWITCH_ID, f, *args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+def broadcaster_auth(key: str = 'broadcaster_id'):
+    """
+        Use with endpoints which require user token on behalf of broadcaster account.
+        Injects `token` parameter of broadcaster account. Key value is Twitch user ID, by it we find required auth token.
+    """
+    def decorator(f):
+        @functools.wraps(f)
+        async def decorated_function(self, *args, **kwargs):
+            broadcaster_id: int = int(kwargs.get(key))
+            return await auth_request_with_retry(self, broadcaster_id, f, *args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+def inject_moderator():
+    """
+        Use with endpoints which require to do action on behalf of moderator (bot)
+        Injects `moderator_id` parameter when it is not provided by consumer.
+    """
+    def decorator(f):
+        @functools.wraps(f)
+        async def decorated_function(self, *args, **kwargs):
+            if 'moderator_id' not in kwargs or not kwargs['moderator_id']:
+                kwargs['moderator_id'] = BOT_TWITCH_ID
+            return await f(self, *args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+def _get_default_cursor(response):
+    try:
+        return response['pagination']['cursor']
+    except KeyError:
+        return None
+
+
+def pagination(first: int = 1000, merge_array_key: str = 'data', extract_cursor: callable = _get_default_cursor):
+    """
+        Use with endpoints which uses pagination and and you always need all pages.
+    """
+    def decorator(f):
+        @functools.wraps(f)
+        async def decorated_function(self, *args, **kwargs):
+            if 'first' not in kwargs:
+                kwargs['first'] = first
+
+            final_response = {}
+            while True:
+                current_response = await f(self, *args, **kwargs)
+                if final_response:
+                    current_response[merge_array_key] = final_response[merge_array_key] + current_response[merge_array_key]
+
+                final_response = current_response
+
+                cursor = extract_cursor(current_response)
+                if not cursor:
+                    break
+
+                kwargs['after'] = cursor
+
+            return final_response
+        return decorated_function
+    return decorator

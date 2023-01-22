@@ -33,9 +33,9 @@ class TwitchHandler(Base):
         self.logger = logging.getLogger('krya.twitch')
         self.logger.info('Initiating bot')
         self.loop = loop or asyncio.get_event_loop()
-        self.cfg: BotConfig = BotConfig()
-        self.db: Database = Database(self.loop, self.cfg.getTwitchConfig()['MAX_SQL_POOL'])
-        self.api: ApiHelper = ApiHelper(redis=self.db.redis, cfg=self.cfg)
+        self.cfg: BotConfig = BotConfig.get_instance()
+        self.db: Database = Database.get_instance()
+        self.api: ApiHelper = ApiHelper.get_instance()
         self.viewer_list: List = []
         self.admins: List = []
         self.tasks: List = []
@@ -50,6 +50,7 @@ class TwitchHandler(Base):
         self.global_commands: []
 
         ResponseAction.Response.redis = self.db.redis
+        ResponseAction.Response._api = self.api
         CommandBase.database_instance = self.db
         CommandBase.api_instance = self.api
         CommandBase.logger_instance = self.logger
@@ -77,6 +78,9 @@ class TwitchHandler(Base):
     async def init_scheduler(self):
         self.logger.info("Registering scheduler tasks...")
         aioschedule.every(1).hours.do(self.schedule_eventsub_register)
+        aioschedule.every(10).minutes.do(self.sync_vips)
+        aioschedule.every(10).minutes.do(self.sync_mods)
+        aioschedule.every(10).minutes.do(self.sync_editors)
 
     async def start(self):
         await self.bot_data_update_all()
@@ -491,7 +495,11 @@ class TwitchHandler(Base):
             EventSubType.CHANNEL_POINTS_REDEMPTION_UPDATE,
             EventSubType.CHANNEL_HYPE_TRAIN_BEGIN,
             EventSubType.CHANNEL_HYPE_TRAIN_PROGRESS,
-            EventSubType.CHANNEL_HYPE_TRAIN_END
+            EventSubType.CHANNEL_HYPE_TRAIN_END,
+            EventSubType.CHANNEL_MOD_ADD,
+            EventSubType.CHANNEL_MOD_REMOVE,
+            EventSubType.CHANNEL_PREDICTION_BEGIN,
+            EventSubType.CHANNEL_PREDICTION_END
         ]
 
         required_client_topics = [
@@ -568,3 +576,44 @@ class TwitchHandler(Base):
                 resp = await self.api.twitch_events.create_for_client(topic)
             except Exception as ex:
                 self.logger.exception(ex)
+
+    async def _sync(self, right_type: str, fetch_method: callable):
+        # right_type: WHITELIST, BLACKLIST, SUDO
+        for channel in ChannelCache.iter():
+            changed: bool = False
+
+            try:
+                remote_rights = await fetch_method(broadcaster_id=channel.tw_id)
+                current_rights = await self.db.get_tg_chat_special_rights(channel_id=channel.channel_id)
+            except Exception as ex:
+                self.logger.exception(ex)
+                continue
+
+            for remote_right in remote_rights['data']:
+                # Available fields:
+                # ['user_id'] ['user_name'] ['created_at']
+                synced = False
+                for current_right in current_rights:
+                    if current_right['right_type'] != right_type:
+                        continue
+                    if remote_right['user_id'] != current_right['tw_id']:
+                        continue
+                    synced = True
+
+                if not synced:
+                    # add new
+                    pass
+
+
+            if changed:
+                await self.db.get_all_tg_chat_special_rights(channel_id=channel.channel_id)
+
+    async def sync_vips(self):
+        await self._sync('WHITELIST', self.api.twitch.get_vips)
+
+    async def sync_editors(self):
+        await self._sync('SUDO', self.api.twitch.get_editors)
+
+
+    async def sync_mods(self):
+        pass

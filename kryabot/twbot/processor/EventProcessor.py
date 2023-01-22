@@ -15,6 +15,12 @@ class EventProcessor(Processor):
         self.events = []
 
     async def update(self, channel_id: int = None) -> None:
+        """
+        For event processor nothing to update.
+
+        :param channel_id:
+        :return:
+        """
         pass
 
     async def process_message(self, context: MessageContext):
@@ -50,7 +56,7 @@ class EventProcessor(Processor):
 
         try:
             existing_event = await self.find_event(context.channel.name, context.user.name)
-            if not existing_event is None:
+            if existing_event is not None:
                 if await existing_event.is_active():
                     await context.reply('{u} can not start new event - you already have active rate event. Participants: {p}'.format(u=context.user.name, p=len(existing_event.users)))
                     return
@@ -78,9 +84,9 @@ class EventProcessor(Processor):
 
         try:
             existing_event = await self.find_event(context.channel.name, context.user.name)
-            if not existing_event is None:
+            if existing_event is not None:
                 if await existing_event.is_active():
-                    await context.reply('{u} can not start new event - you already have active event. Participants: {p}, keyword: {k}'.format(u=irc_data.author.name, k=existing_event.keyword, p=len(existing_event.users)))
+                    await context.reply('{u} can not start new event - you already have active event. Participants: {p}, keyword: {k}'.format(u=context.user.name, k=existing_event.keyword, p=len(existing_event.users)))
                     return
                 else:
                     self.events.remove(existing_event)
@@ -170,22 +176,22 @@ class EventProcessor(Processor):
             self.logger.exception(e)
 
     async def random_event_text(self, event_type):
-        list = []
+        options = []
         if event_type == 1:
-            list.append(' ТЫ ПОБЕДИЛ! Теперь ты проклят! Потеряешь все ноль друзей и на всегда будешь один! olyashLove')
-            list.append(' ГОООООООЛ olyashLove')
-            list.append(' сожалею но тебе придется сесть на бутылку olyashLove')
-            list.append(' ТЫ ПОБЕДИЛ! Теперь у тебя есть самые крутые смайлики на твиче olyashGasm')
+            options.append(' ТЫ ПОБЕДИЛ! Теперь ты проклят! Потеряешь все ноль друзей и на всегда будешь один! olyashLove')
+            options.append(' ГОООООООЛ olyashLove')
+            options.append(' сожалею но тебе придется сесть на бутылку olyashLove')
+            options.append(' ТЫ ПОБЕДИЛ! Теперь у тебя есть самые крутые смайлики на твиче olyashGasm')
         if event_type == 2:
-            list.append(' has won!')
+            options.append(' has won!')
 
-        if len(list) == 0:
-            list.append(' you have won! <3 ')
+        if len(options) == 0:
+            options.append(' you have won! <3 ')
 
-        idx = randint(0, len(list) - 1)
-        return list[idx]
+        idx = randint(0, len(options) - 1)
+        return options[idx]
 
-    async def is_follower(self, channel_id, username)-> bool:
+    async def is_follower(self, channel_id, username) -> bool:
         try:
             user_data = await self.api.twitch.get_users(usernames=[username])
             response = await self.api.twitch.check_channel_following(channel_id, user_data['data'][0]['id'])

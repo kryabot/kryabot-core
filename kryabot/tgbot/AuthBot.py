@@ -3,6 +3,8 @@ from telethon import events, functions, types
 from telethon.errors import UserIsBlockedError, BotCommandInvalidError
 from telethon.tl.custom import Button
 from telethon.extensions import html
+
+from object.BotConfig import BotConfig
 from object.Database import Database
 from object.ApiHelper import ApiHelper
 from object.Pinger import Pinger
@@ -10,7 +12,7 @@ from object.System import System
 from object.Translator import Translator
 from scrape.twitch_gifter import twitch_gift_to_user
 from tgbot.commands.common.user_data import get_user_data, format_user_data, unlink_user
-from tgbot.constants import TG_GROUP_MONITORING_ID
+from utils.constants import TG_GROUP_MONITORING_ID
 from utils.twitch import get_active_oauth_data
 from utils.array import get_first
 import logging
@@ -100,11 +102,11 @@ async def reloadtranslations(event):
 
 
 class AuthBot(TelegramClient):
-    def __init__(self, loop=None, cfg=None):
+    def __init__(self):
         self.logger = logging.getLogger('krya.auth')
-        self.cfg = cfg
-        self.db = Database(None, 2, cfg=self.cfg)
-        self.api = ApiHelper(cfg=self.cfg, redis=self.db.redis)
+        self.cfg = BotConfig.get_instance()
+        self.db = Database.get_instance()
+        self.api = ApiHelper.get_instance()
         self.translator = Translator.getInstance()
         self.me = None
         self.last_ping = datetime.now()
@@ -176,13 +178,21 @@ class AuthBot(TelegramClient):
 
     async def process_start(self, event):
         sender = await event.get_sender()
-        sender_string = '{} {} {} {}'.format(sender.id, sender.first_name, sender.last_name, sender.username)
+        sender_string = '[{} {} {} {}]'.format(sender.id, sender.first_name, sender.last_name, sender.username)
 
-        self.logger.info('{}: {}'.format(sender_string, event.raw_text))
+        # Internal method to avoid formatting message with `sender_string` multiple times
+        def format_log(log_message):
+            return '{} {}'.format(sender_string, log_message)
+
+        # Internal method to avoid formatting Result message multiple times
+        def format_log_result(result_message):
+            return format_log('Result: {}'.format(result_message))
+
+        self.logger.info(format_log(event.raw_text))
         words = event.raw_text.split(' ')
         if len(words) != 2:
             await event.reply(self.format_translation('', '', 'AUTH_BAD_START'))
-            self.logger.info('Result: start_empty')
+            self.logger.info(format_log_result('start_empty'))
             return
 
         val = words[1]
@@ -195,32 +205,30 @@ class AuthBot(TelegramClient):
             params = dict(parse.parse_qsl(input_data))
         except Exception as e:
             await event.reply(self.format_translation('', '', 'AUTH_BAD_HASH'))
-            self.logger.error('Decode failed for: ' + str(input_data) + ' error: ' + str(e))
-            self.logger.info('Result: start_failed_parse')
+            self.logger.exception(e)
+            self.logger.info(format_log_result('start_failed_parse, failed to decode: {}'.format(str(input_data))))
             return
 
         if 'code' not in params or params['code'] is None or params['code'] == '':
-            self.logger.info('{}: {}'.format(sender_string, 'Hash has no code parameter'))
             await event.reply(self.format_translation('', '', 'AUTH_BAD_HASH'))
-            self.logger.info('Result: start_failed_parse')
+            self.logger.info(format_log_result('start_failed_parse, hash has no code parameter'))
             return
 
         if 'id' not in params or params['id'] is None or params['id'] == '':
-            self.logger.info('{}: {}'.format(sender_string, 'Hash has no id parameter'))
             await event.reply(self.format_translation('', '', 'AUTH_BAD_HASH'))
-            self.logger.info('Result: start_failed_parse')
+            self.logger.info(format_log_result('start_failed_parse, hash has no id parameter'))
             return
 
-        self.logger.info('Received code: ' + params['code'])
+        self.logger.info(format_log('Received code: {}'.format(params['code'])))
+
         # Check if tg chat already linked to any twitch account
         chatCheck = await self.db.getResponseByChatId(event.message.sender_id)
         if len(chatCheck) == 0:
             # Check if request with this code exists. What to do if 1+ found?
             request = await self.db.selectExisingActiveRequestsByCode(params['code'])
             if len(request) != 1:
-                self.logger.info('{}: {} {}'.format(sender_string, 'Unknown or ambig code', params['code']))
                 await event.reply(self.format_translation('', '', 'AUTH_INACTIVE_CODE'))
-                self.logger.info('Result: start_duplicate')
+                self.logger.info(format_log_result('start_duplicate, received unknown or ambig code: {}'.format(params['code'])))
                 return
 
             # Check if response does not exists yet
@@ -235,7 +243,7 @@ class AuthBot(TelegramClient):
         # Technical problems, records was not created.
         if len(chatCheck) == 0:
             await event.reply(self.format_translation('', '', 'AUTH_SYS_ERR'))
-            self.logger.info('Result: sys_err, empty chatCheck')
+            self.logger.info(format_log_result('sys_err, empty chatCheck'))
             return
 
         availableChannels = await self.db.getTgChatAvailChannelsWithAuth()
@@ -246,16 +254,14 @@ class AuthBot(TelegramClient):
 
         if currentChannel is None:
             await event.reply(self.format_translation('', '', 'AUTH_NO_SUBCHAT'))
-            self.logger.info('{}: {}'.format(sender_string, 'channel_no_subchat'))
-            self.logger.info('Result: start_no_chat')
+            self.logger.info(format_log_result('start_no_chat'))
             return
 
         requestor = await self.db.getUserByTgChatId(event.message.chat_id, skip_cache=True)
 
         if len(requestor) == 0:
             await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_NOT_VERIFIED'))
-            self.logger.info('{}: {}'.format(sender_string, 'user_not_verified'))
-            self.logger.info('Result: start_missing_link')
+            self.logger.info(format_log_result('start_missing_link'))
             return
 
         try:
@@ -265,7 +271,8 @@ class AuthBot(TelegramClient):
                 await self.db.updateUserTwitchId(requestor[0]['user_id'], int(twitch_user_by_name['id']))
                 requestor[0]['tw_id'] = int(twitch_user_by_name['id'])
         except Exception as e:
-            self.logger.error('Failed to upate tw_id for {uname}: {err}'.format(uname=requestor[0]['name'], err=str(e)))
+            self.logger.error('Failed to upate tw_id for {uname}'.format(uname=requestor[0]['name']))
+            self.logger.exception(e)
             pass
 
         rights = await self.db.getUserRightsInChannel(currentChannel['channel_id'], requestor[0]['user_id'])
@@ -283,7 +290,7 @@ class AuthBot(TelegramClient):
 
         if is_banned:
             await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_USER_BLACKLISTED'))
-            self.logger.info('Result: join_reject_blacklist')
+            self.logger.info(format_log_result('join_reject_blacklist'))
             return
 
         invites = await self.db.getTgInvite(currentChannel['channel_id'], requestor[0]['user_id'])
@@ -295,12 +302,12 @@ class AuthBot(TelegramClient):
 
         if (not skip_checks) and currentChannel['enabled_join'] == 0:
             await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_GROUP_CLOSED'))
-            self.logger.info('Result: join_reject_closed')
+            self.logger.info(format_log_result('join_reject_closed'))
             return
 
         if (not skip_checks) and currentChannel['auth_status'] == 0:
             await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_GROUP_CLOSED'))
-            self.logger.info('Result: join_reject_closed')
+            self.logger.info(format_log_result('join_reject_closed'))
             return
 
         if (not skip_checks) and currentChannel['join_follower_only'] == 1:
@@ -310,25 +317,25 @@ class AuthBot(TelegramClient):
                     pass
                 else:
                     await event.reply(self.format_translation(currentChannel['channel_name'], '', 'AUTH_NOT_FOLLOWER'))
-                    self.logger.info('Result: join_reject_not_follower')
+                    self.logger.info(format_log_result('join_reject_not_follower'))
             except Exception as e:
-                self.logger.error(str(e))
+                self.logger.exception(e)
                 await event.reply(self.format_translation(currentChannel['channel_name'], requestor[0]['name'], 'AUTH_SYS_ERR'))
-                self.logger.info('Result: sys_err, failed to check follow status')
+                self.logger.info(format_log_result('sys_err, failed to check follow status'))
                 return
 
         if (not skip_checks) and currentChannel['join_sub_only'] == 1:
             currentChannel = await self.refresh_channel(currentChannel)
-            sub = await self.api.is_sub_v2(currentChannel, requestor[0], self.db)
+            sub, sub_data, sub_error = await self.api.is_sub_v3(currentChannel, requestor[0])
 
             if sub is None:
                 await event.reply(self.format_translation(currentChannel['channel_name'], requestor[0]['name'], 'AUTH_SYS_ERR'))
-                self.logger.info('Result: sys_err, failed to check sub status')
+                self.logger.info(format_log_result('sys_err, failed to check sub status'))
                 return
 
             if sub is False:
                 await event.reply(self.format_translation(currentChannel['channel_name'], requestor[0]['name'], 'AUTH_NOT_SUB'))
-                self.logger.info('Result: join_reject_not_sub')
+                self.logger.info(format_log_result('join_reject_not_sub'))
                 return
 
             if currentChannel['min_sub_months'] > 0:
@@ -344,7 +351,7 @@ class AuthBot(TelegramClient):
 
                 if cache_info < currentChannel['min_sub_months']:
                     await event.reply(self.format_translation(currentChannel['channel_name'], requestor[0]['name'], 'AUTH_SUB_LOW_MONTH'))
-                    self.logger.info('Result: join_reject_low_sub_months')
+                    self.logger.info(format_log_result('join_reject_low_sub_months'))
                     return
 
         try:
@@ -356,7 +363,7 @@ class AuthBot(TelegramClient):
 
         # Success
         reply = self.format_translation(currentChannel['channel_name'], twitch_display_name, 'AUTH_JOIN_SUCCESS')
-        self.logger.info('Result: join_success')
+        self.logger.info(format_log_result('join_success'))
 
         link = ""
         if currentChannel['join_link'].startswith('http'):
@@ -369,7 +376,7 @@ class AuthBot(TelegramClient):
         await msg.delete()
 
     async def refresh_channel(self, channel):
-        auth_data = await get_active_oauth_data(channel['user_id'], self.db, self.api)
+        auth_data = await get_active_oauth_data(channel['user_id'])
         if auth_data is not None:
             channel['token'] = auth_data['token']
             channel['expires_at'] = auth_data['expires_at']

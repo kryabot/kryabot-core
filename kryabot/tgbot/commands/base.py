@@ -1,9 +1,11 @@
-from telethon.tl.types import ChannelParticipantsAdmins, MessageMediaDocument, MessageMediaPhoto, MessageMediaGeoLive, MessageMediaPoll, InputMediaDocument, InputMediaPhoto, InputPhoto, InputDocument
+from typing import List
+
+from telethon.tl.types import InputMediaDocument, InputMediaPhoto, InputPhoto, InputDocument
 from tgbot.commands.UserAccess import UserAccess
 from tgbot.commands.common.media import get_media_info
 
 # TODO: cache?
-from tgbot.constants import TG_TEST_GROUP_ID
+from utils.constants import TG_TEST_GROUP_ID
 
 super_admin_list = [766888597]
 
@@ -30,7 +32,7 @@ class BaseCommand:
         self.sender = None
         self.chat = None
         self.min_level = min_level
-        self.user_level = UserAccess.UNKNOWN
+        self.user_level: List[UserAccess] = [UserAccess.UNKNOWN]
         self.admins = []
         self.bot_lang = 'en'
         self.must_be_reply = False
@@ -57,30 +59,29 @@ class BaseCommand:
                 return None
             return array
 
-    async def select_user_access(self):
-        if self.channel is None or self.chat is None:
-            return UserAccess.UNKNOWN
+    async def fill_user_rights(self):
         if self.sender is None or self.sender == [] or self.sender == {}:
-            return UserAccess.NOT_VERIFIED
+            self.user_level += UserAccess.NOT_VERIFIED
+        else:
+            self.user_level += UserAccess.VERIFIED
+
         if self.event.message.sender_id in super_admin_list:
-            return UserAccess.SUPER_ADMIN
+            self.user_level += UserAccess.SUPER_ADMIN
         if self.sender['user_id'] == self.channel['user_id']:
-            return UserAccess.CHAT_OWNER
+            self.user_level += UserAccess.CHAT_OWNER
         if await self.is_chatsudo(self.sender['user_id'], self.event.message.sender_id):
-            return UserAccess.CHAT_SUDO
+            self.user_level += UserAccess.CHAT_SUDO
         if await self.is_chatadmin(self.event.message.sender_id):
-            return UserAccess.CHAT_ADMIN
+            self.user_level += UserAccess.CHAT_ADMIN
 
         # TODO: follow and sub flags (from cache, not from api!)
-
-        return UserAccess.VERIFIED
 
     async def fetch_data(self):
         self.chat = await self.event.get_input_chat()
         self.channel = await self.get_first(await self.client.db.get_auth_subchat(self.event.message.to_id.channel_id))
         self.sender = await self.get_first(await self.client.db.getUserByTgChatId(self.event.message.sender_id))
         self.admins = await self.client.get_group_admins_cache(self.chat)
-        self.user_level = await self.select_user_access()
+        await self.fill_user_rights()
 
         if self.channel is not None:
             self.bot_lang = self.channel['bot_lang']
@@ -98,7 +99,7 @@ class BaseCommand:
         if self.test_only and not self.is_test_group():
             return False
 
-        if self.user_level < self.min_level:
+        if self.min_level not in self.user_level:
             return False
 
         if self.channel['auth_status'] == 0:

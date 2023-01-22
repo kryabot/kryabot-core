@@ -6,8 +6,11 @@ from typing import Dict
 from aiohttp import ClientResponseError
 
 from api.core import Core
-from api.twitch import app_auth
-from exceptions.twitch import ExpiredAuthToken
+from api.twitchv5.exception import ExpiredAuthToken
+from object.RedisHelper import RedisHelper
+from twbot import ResponseAction
+from utils.constants import BOT_TWITCH_ID
+from utils.twitch import app_auth
 from object.Base import Base
 from object.Database import Database
 from utils.array import get_first
@@ -79,15 +82,15 @@ class Event(Base):
 
 
 class TwitchEvents(Core):
-    def __init__(self, redis, cfg=None):
-        super().__init__(cfg=cfg)
+    def __init__(self):
+        super().__init__()
         self.client_id = self.cfg.getTwitchConfig()['API_KEY']
         self.client_secret = self.cfg.getTwitchConfig()['SECRET']
         self.events_url = 'https://api.twitch.tv/helix/eventsub/subscriptions'
         self.callback = 'https://api2.krya.dev/public/callback/twitch_events'
-        self.redis = redis
+        self.redis = RedisHelper.get_instance()
         self.webhook_secret = 'supermegasecret'
-        self.db = Database(loop=None, size=2)
+        self.db = Database.get_instance()
 
     async def get_headers(self, oauth_token=None):
         if oauth_token:
@@ -108,7 +111,8 @@ class TwitchEvents(Core):
             return await super().is_success(response)
         except ClientResponseError as e:
             if e.status == 401:
-                raise ExpiredAuthToken(e)
+                body = await response.json()
+                raise ExpiredAuthToken(body) from e
             else:
                 raise e
 
@@ -275,6 +279,8 @@ class TwitchEvents(Core):
             await self.redis.publish_event(redis_key.get_pubsub_topic(), event)
         elif topic.eq(EventSubType.AUTH_GRANTED):
             await self.handle_auth_granted(event)
+        elif topic.eq(EventSubType.CHANNEL_MOD_REMOVE) or topic.eq(EventSubType.CHANNEL_MOD_ADD):
+            await self.handle_mod_status_change(topic, event)
         else:
             self.logger.info('Unhandled type {}'.format(topic))
 
@@ -300,17 +306,17 @@ class TwitchEvents(Core):
 
         try:
             message = data['message']['text']
-        except:
+        except KeyError:
             message = ''
 
         try:
             gifted = bool(data['is_gift'])
-        except:
+        except KeyError:
             gifted = False
 
         try:
             tier = data['tier']
-        except:
+        except KeyError:
             tier = ''
 
         await self.db.saveTwitchSubEvent(channel['channel_id'], user['user_id'], '', event_type, datetime.utcnow(), gifted, tier, message)
@@ -350,6 +356,7 @@ class TwitchEvents(Core):
 
     async def handle_revoked(self, data):
         broadcaster_id = int(data['subscription']['condition']['broadcaster_user_id'])
+        channel_name: str = data['event']['user_login']
         self.logger.info('[{}] Revoked auth topic {}'.format(broadcaster_id, data['subscription']['type']))
 
         try:
@@ -373,8 +380,11 @@ class TwitchEvents(Core):
             # Refresh cache
             await self.db.get_auth_subchat(chat['tg_chat_id'], True)
 
+        await ResponseAction.ResponseUpdateModStatus.send(channel_name=channel_name)
+
     async def handle_auth_granted(self, data):
-        broadcaster_id = int(data['event']['user_id'])
+        broadcaster_id: int = int(data['event']['user_id'])
+        channel_name: str = data['event']['user_login']
 
         user = await get_first(await self.db.getUserRecordByTwitchId(broadcaster_id))
         if user is None:
@@ -392,3 +402,15 @@ class TwitchEvents(Core):
 
         # Refresh cache
         await self.db.get_auth_subchat(chat['tg_chat_id'], True)
+        await ResponseAction.ResponseUpdateModStatus.send(channel_name=channel_name)
+
+    async def handle_mod_status_change(self, topic: EventSubType, data: Dict):
+        try:
+            user_id: int = data['event']['user_id']
+            channel_name: str = data['event']['broadcaster_user_login']
+        except IndexError as err:
+            self.logger.exception(err)
+            return
+
+        if user_id == BOT_TWITCH_ID:
+            await ResponseAction.ResponseUpdateModStatus.send(channel_name=channel_name, status='add' if topic.eq(EventSubType.CHANNEL_MOD_ADD) else 'remove')

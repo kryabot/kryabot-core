@@ -63,9 +63,9 @@ class TargetLinkList:
 class InfoManager:
     def __init__(self, ):
         self.loop = asyncio.get_event_loop()
-        self.cfg: BotConfig = BotConfig()
-        self.db: Database = Database(self.loop, self.cfg.getTwitchConfig()['MAX_SQL_POOL'], cfg=self.cfg)
-        self.api: ApiHelper = ApiHelper(cfg=self.cfg, redis=self.db.redis)
+        self.cfg: BotConfig = BotConfig.get_instance()
+        self.db: Database = Database.get_instance()
+        self.api: ApiHelper = ApiHelper.get_instance()
         self.logger: logging.Logger = logging.getLogger('krya.infomanager')
 
         # Target services

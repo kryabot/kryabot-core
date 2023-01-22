@@ -91,6 +91,14 @@ class Channel(Base):
 
         return str(data['viewer_count'])
 
+    async def get_sub_count(self):
+        try:
+            response = await self.ah.twitch.get_channel_subs(broadcaster_id=self.tw_id, first=1)
+            return response['total']
+        except Exception as err:
+            self.logger.exception(err)
+            return 0
+
     async def get_started_at(self)->Union[datetime, None]:
         data = await self.get_stream_data()
         if data is None or data == {}:
@@ -158,4 +166,4 @@ class Channel(Base):
         await ResponseAction.ResponseTimeout.send(channel_name=self.channel_name, user=user, duration=duration, reason=reason)
 
     async def ban(self, user: str, reason: str):
-        await ResponseAction.ResponseBan.send(channel_name=self.channel_name, user=user, reason=reason)
+        await self.timeout(user, 0, reason)

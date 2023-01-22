@@ -4,8 +4,8 @@ from api.core import Core
 
 
 class Frankerfacez(Core):
-    def __init__(self, cfg=None):
-        super().__init__(cfg=cfg)
+    def __init__(self):
+        super().__init__()
 
     async def get_channel_emotes(self, channel_name):
         url = 'https://api.frankerfacez.com/v1/room/{}'.format(channel_name)

@@ -3,9 +3,10 @@ from datetime import datetime
 import logging
 from typing import Dict, List, Union
 
+from object.ApiHelper import ApiHelper
 from object.Pinger import Pinger
 from object.System import System
-from twbot.ResponseAction import ResponseAction
+from twbot.ResponseAction import ResponseAction, Response
 from twitchio import Context, Message, Channel, User
 from twitchio.ext import commands
 from object.Base import Base
@@ -17,13 +18,10 @@ from utils import schedule
 
 
 class ChatAdapter(Base, commands.Bot):
-    async def event_pubsub(self, data):
-        pass
-
     def __init__(self):
         self.loop: asyncio.BaseEventLoop = asyncio.get_event_loop()
-        self.cfg: BotConfig = BotConfig()
-        self.db: Database = Database(self.loop, 3, cfg=self.cfg)
+        self.cfg: BotConfig = BotConfig.get_instance()
+        self.db: Database = Database.get_instance()
         self.logger: logging = logging.getLogger('krya.irc')
         self.tasks: List = []
         self.channels = Channels()
@@ -84,6 +82,8 @@ class ChatAdapter(Base, commands.Bot):
 
         if self.response is None:
             self.response = ResponseAction(self._ws, self.logger)
+            Response.redis = self.db.redis
+            Response._api = ApiHelper.get_instance()
 
         await self.on_update()
         await self.schedule_tasks()
@@ -116,9 +116,32 @@ class ChatAdapter(Base, commands.Bot):
         await self.publish_notice(context)
 
     async def event_channel_notice(self, channel: Channel, tags: Dict):
+        """
+        Skip, we not using it
+
+        :param channel:
+        :param tags:
+        :return:
+        """
         pass
 
     async def event_roomstate(self, channel: Channel, tags: Dict):
+        """
+        Skip, we not using it
+
+        :param channel:
+        :param tags:
+        :return:
+        """
+        pass
+
+    async def event_pubsub(self, data):
+        """
+        Skip, we not using it
+
+        :param data:
+        :return:
+        """
         pass
 
     async def event_command_error(self, ctx, error)->None:
@@ -156,10 +179,10 @@ class ChatAdapter(Base, commands.Bot):
 
         await self.db.redis.publish_event(redis_key.get_irc_topic_notice(), body)
 
-    async def publish_movement(self, type: str, user: User)->None:
+    async def publish_movement(self, movement_type: str, user: User)->None:
         body = {
             "channel": user.channel.name,
-            "type": type,
+            "type": movement_type,
             "sender": user.name,
             "display_name": user.display_name,
         }
@@ -182,7 +205,7 @@ class ChatAdapter(Base, commands.Bot):
         self.logger.info(data)
         jc: JoinedChannel = self.channels.get_by_name(data['channel'])
         if jc is None or not jc.working:
-            self.logger.info('skip1')
+            self.logger.info('Received response action for non-working channel: {}'.format(data))
             return
 
         try:

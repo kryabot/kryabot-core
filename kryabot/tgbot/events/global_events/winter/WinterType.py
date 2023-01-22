@@ -177,7 +177,7 @@ class WinterChannel(EventChannel):
                 user = await get_first(await self.client.db.getUserByTgChatId(user_id))
                 if sub_only or sub_extra > 0:
                     try:
-                        is_sub = await self.client.api.is_sub_v2(channel, user, self.client.db)
+                        is_sub, sub_data, sub_error = await self.client.api.is_sub_v3(channel, user)
                     except Exception as ex:
                         is_sub = False
                 else:

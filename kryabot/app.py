@@ -4,7 +4,7 @@ import asyncio
 
 
 async def main():
-	handler = WebHandler(loop=asyncio.get_event_loop(), cfg=BotConfig())
+	handler = WebHandler()
 	await handler.start()
 	while True:
 		await asyncio.sleep(5)

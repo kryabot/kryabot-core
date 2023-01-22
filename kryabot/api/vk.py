@@ -2,8 +2,8 @@ from api.core import Core
 
 
 class VK(Core):
-    def __init__(self, cfg=None):
-        super().__init__(cfg=cfg)
+    def __init__(self):
+        super().__init__()
         self.session_key = self.cfg.getVKConfig()['SESSION']
         self.vk_version = '5.131'
 

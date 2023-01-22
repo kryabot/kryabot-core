@@ -1,65 +1,70 @@
 import asyncio
-from typing import List
+from typing import List, Union
 
 import aiomysql
+
+from object.Base import Base
 from object.BotConfig import BotConfig
 from object.SqlSwitch import getSql
-from aiomysql import pool
+from aiomysql import pool, Pool
 import time
 import logging
 from object.RedisHelper import RedisHelper
 import utils.redis_key as redis_key
 
 
-class Database:
-    def __init__(self, loop, size=-1, cfg=None):
-        if loop is None:
-            loop = asyncio.get_event_loop()
+class Database(Base):
+    instance = None
 
+    def __init__(self, pool_size=0):
         self.logger = logging.getLogger('krya.db')
-        self.logger.info('Database init')
-        self.loop = loop
+        self.connection_pool: Union[Pool, None] = None
+        self.cfg = BotConfig.get_instance()
+        self.loop = asyncio.get_event_loop()
         self.active = False
         self.last_activity = time.time()
         self.max_error_count = 5
-        self.max_size = size
-        if cfg is None:
-            cfg = BotConfig()
+        self.max_size = pool_size if pool_size else self.cfg.getSQLConfig()['MAX_POOL']
 
-        self.cfg = cfg
+        self.logger.info('Created database object with pool size of {}'.format(self.max_size))
 
-        self.redis = RedisHelper(self.cfg.getRedisConfig()['HOST'],
-                                 self.cfg.getRedisConfig()['PORT'],
-                                 self.cfg.getRedisConfig()['PASSWORD'],
-                                 minsize=1,
-                                 maxsize=5,
-                                 loop=self.loop)
+        self.redis = RedisHelper.get_instance()
+
+    @staticmethod
+    def get_instance(pool_size: int = 0):
+        if not Database.instance:
+            Database.instance = Database(pool_size=pool_size)
+
+        return Database.instance
 
     async def connection_init(self):
-        self.logger.debug('Opening SQL connections')
-        cfg = self.cfg
-        if self.max_size == -1:
-            self.max_size = cfg.getSQLConfig()['MAX_POOL']
-
-        self.connection_pool = await pool._create_pool(maxsize=self.max_size,
-                                                       host=cfg.getSQLConfig()['HOST'],
-                                                       port=cfg.getSQLConfig()['PORT'],
-                                                       user=cfg.getSQLConfig()['USER'],
-                                                       password=cfg.getSQLConfig()['PASSWORD'],
-                                                       db=cfg.getSQLConfig()['DB'],
-                                                       loop=self.loop,
-                                                       use_unicode=True,
-                                                       charset=cfg.getSQLConfig()['CHARSET'])
+        if not self.connection_pool:
+            self.logger.debug('Opening SQL connections with pool of {}'.format(self.max_size))
+            self.connection_pool = await pool.create_pool(maxsize=self.max_size,
+                                                           host=self.cfg.getSQLConfig()['HOST'],
+                                                           port=self.cfg.getSQLConfig()['PORT'],
+                                                           user=self.cfg.getSQLConfig()['USER'],
+                                                           password=self.cfg.getSQLConfig()['PASSWORD'],
+                                                           db=self.cfg.getSQLConfig()['DB'],
+                                                           loop=self.loop,
+                                                           use_unicode=True,
+                                                           charset=self.cfg.getSQLConfig()['CHARSET'])
         await self.update_activity()
 
     async def db_activity(self):
         while True:
             await asyncio.sleep(30)
             await self.activity_check()
+            await self.poolsize_check()
+
+    async def poolsize_check(self):
+        if self.connection_pool and self.connection_pool.freesize == 0:
+            self.logger.info('Databse pool check - out of free connections! (max={})'.format(self.connection_pool.maxsize))
 
     async def connection_close(self):
-        self.logger.info('Closing SQL connections')
-        self.connection_pool.terminate()
+        self.logger.debug('Closing SQL connections')
+        if self.connection_pool:
+            await self.connection_pool.clear()
         self.active = False
 
     async def activity_check(self):
@@ -75,14 +80,11 @@ class Database:
         return await self.do_query(sql_query, params)
 
     async def do_query(self, query, params):
+        await self.connection_init()
         current_error_count = 0
-
-        if not self.active:
-            await self.connection_init()
 
         while True:
             async with self.connection_pool.acquire() as conn:
-            #print('Free connections: ' + str(self.connection_pool.freesize))
                 try:
                     if current_error_count >= self.max_error_count:
                         return
@@ -90,40 +92,36 @@ class Database:
                     cursor = await conn.cursor(aiomysql.DictCursor)
                     await cursor.execute(query, params)
                     await conn.commit()
-                    await self.update_activity()
                     result = await cursor.fetchall()
                     return result
                 except Exception as e:
                     if 'Unhandled user-defined exception condition' in str(e):
                         break
                     current_error_count = current_error_count + 1
-                    self.logger.error('{name}: {error}'.format(name=e.__class__.__name__, error=str(e)))
+                    self.logger.exception(e)
                     self.logger.info(query)
                     self.logger.info(str(params))
                     await asyncio.sleep(0.1)
                     continue
-                #break
 
     async def queryProc(self, procName, params):
+        await self.connection_init()
         current_error_count = 0
-
-        if not self.active:
-            await self.connection_init()
 
         while True:
             async with self.connection_pool.acquire() as conn:
                 try:
                     if current_error_count >= self.max_error_count:
                         return
-                    self.logger.info(procName)
-                    self.logger.info(params)
+                    #self.logger.info(procName)
+                    #self.logger.info(params)
                     async with conn.cursor() as cur:
                         await cur.callproc(procName, params)
                         await self.update_activity()
                         return await cur.fetchall()
                 except Exception as e:
                     current_error_count = current_error_count + 1
-                    self.logger.error('{name}: {error}'.format(name=e.__class__.__name__, error=str(e)))
+                    self.logger.exception(e)
                     self.logger.info(procName)
                     self.logger.info(str(params))
                     await asyncio.sleep(0.1)
@@ -298,6 +296,9 @@ class Database:
 
     async def addUserToSudo(self, channel_id, user_id, tg_user_id, first_name, last_name, user_name, by_user_id, comment):
         return await self.query('sp_saveTgSpecialRight', ['SUDO', channel_id, user_id, tg_user_id, first_name, last_name, user_name, by_user_id, comment])
+
+    async def removeSpecialRightFromUser(self, channel_id, kb_user_id, right_type, by_tg_user_id, comment):
+        return await self.query('remove_special_right', [by_tg_user_id, comment, channel_id, kb_user_id, right_type])
 
     async def removeTgSudoRight(self, channel_id, tg_user_id):
         return await self.query('remove_sudo_right', [channel_id, tg_user_id])

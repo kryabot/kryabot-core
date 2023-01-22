@@ -2,8 +2,8 @@ from api.core import Core
 
 
 class ScanMedia(Core):
-    def __init__(self, cfg=None):
-        super().__init__(cfg=cfg)
+    def __init__(self):
+        super().__init__()
         self.endpoint = 'https://northeurope.api.cognitive.microsoft.com/contentmoderator/moderate/v1.0/ProcessImage/Evaluate'
         self.key = 'db31d5b8aa1347079046234f79f80fd4'
 

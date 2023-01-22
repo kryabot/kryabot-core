@@ -12,7 +12,7 @@ class StartRate(CommandBase):
 
     async def process(self):
         try:
-            await EventProcessor.get_instance().start_rate_event(irc_data=ctx, runtime=0)
+            await EventProcessor.get_instance().start_rate_event(irc_data=self.context, runtime=0)
         except Exception as e:
             self.logger.info(self.context)
             self.logger.exception(e)

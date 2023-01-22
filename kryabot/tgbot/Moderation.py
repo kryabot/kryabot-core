@@ -21,7 +21,7 @@ class Moderation:
         self.limit_ban = 3
         self.restrict_time = 300
         self.cfg = cfg
-        self.rh = RedisHelper(cfg['HOST'], cfg['PORT'], cfg['PASSWORD'], minsize=1, maxsize=1)
+        self.rh = RedisHelper.get_instance()
         self.WARN_ROOT = 'tg.moderation.warns'
         self.datetime_string_format = '%Y-%m-%d %H:%M:%S'
 

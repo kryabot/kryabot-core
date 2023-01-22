@@ -269,7 +269,7 @@ async def fill_twitch_follow_info(user_data, client, channel):
 
 async def fill_twitch_sub_info(user_data, client, channel):
     # Refreshed token for sub checking if expired token
-    sub, sub_data, sub_error = await client.api.is_sub_v3(channel, user_data['kb_user'], client.db)
+    sub, sub_data, sub_error = await client.api.is_sub_v3(channel, user_data['kb_user'])
     if sub is True:
         user_data['is_sub'] = True
 

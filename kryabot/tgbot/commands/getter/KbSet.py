@@ -1,6 +1,6 @@
 from tgbot.commands.UserAccess import UserAccess
 from tgbot.commands.base import BaseCommand
-from tgbot.constants import TG_GROUP_CACHE_ID
+from utils.constants import TG_GROUP_CACHE_ID
 
 
 class KbSet(BaseCommand):

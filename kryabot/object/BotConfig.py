@@ -1,15 +1,28 @@
 import json
 import os
 
-class BotConfig:
+default_file: str = 'bot.conf'
 
-    def __init__(self, file_name='bot.conf'):
+
+class BotConfig:
+    cached_files = {}
+
+    def __init__(self, file_name=default_file):
         secret_path = os.getenv('SECRET_DIR')
         if secret_path is None:
             secret_path = ''
-        #print("Opening secret file from: ${dir}${fname}".format(dir=secret_path, fname=file_name))
+
         with open(secret_path + file_name, 'r') as f:
             self.data = json.load(f)
+
+    @staticmethod
+    def get_instance(file_name=default_file):
+        existing_config = BotConfig.cached_files.get(file_name, None)
+        if not existing_config:
+            existing_config = BotConfig(file_name=file_name)
+            BotConfig.cached_files[file_name] = existing_config
+
+        return existing_config
 
     def getConfig(self):
         return self.data

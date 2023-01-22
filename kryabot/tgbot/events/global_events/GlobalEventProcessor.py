@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Dict
 
 from object.Base import Base
-from tgbot.constants import TG_TEST_GROUP_ID
+from utils.constants import TG_TEST_GROUP_ID
 from tgbot.events.utils import is_valid_channel
 
 
@@ -29,7 +29,7 @@ class GlobalEventProcessor(Base):
         return cls.instance
 
     async def process(self, **args):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_logger(self)->logging:
         return logging.getLogger('krya.tg')

@@ -91,7 +91,7 @@ class Message:
 
 class Channel(Messageable):
 
-    __slots__ = ('_channel', '_ws', '_http', '_echo', '_users')
+    __slots__ = ('_channel', '_ws', '_http', '_echo', '_users', 'access_rights')
 
     def __init__(self, name, ws, http):
         self._channel = name
@@ -99,6 +99,7 @@ class Channel(Messageable):
         self._ws = ws
         self._echo = False
         self._users = {}
+        self.access_rights: bool = None
 
     def __str__(self):
         return self._channel

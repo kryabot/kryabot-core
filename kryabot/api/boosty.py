@@ -2,8 +2,8 @@ from api.core import Core
 
 
 class Boosty(Core):
-    def __init__(self, cfg=None):
-        super().__init__(cfg=cfg)
+    def __init__(self):
+        super().__init__()
         self.base = 'https://api.boosty.to/v1/blog'
 
     async def get_user_posts(self, user: str, limit: int=5, offset: str=None):

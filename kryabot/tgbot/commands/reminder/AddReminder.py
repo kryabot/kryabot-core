@@ -18,7 +18,7 @@ class AddReminder(BaseCommand):
 
         try:
             keyword = self.parsed.pop(1)
-        except:
+        except IndexError:
             await self.event.reply(self.get_translation('KB_NO_KEYWORD'))
             return
 
@@ -33,10 +33,10 @@ class AddReminder(BaseCommand):
 
         existing_reminder = await find_reminder(keyword, self)
         await self.db.saveReminderByUserId(self.channel['user_id'],
-                                            0 if existing_reminder is None else existing_reminder['reminder_id'],
-                                            keyword,
-                                            text,
-                                            False)
+                                           0 if existing_reminder is None else existing_reminder['reminder_id'],
+                                           keyword,
+                                           text,
+                                           False)
 
         if existing_reminder is None:
             await self.event.reply(self.get_translation('CMD_REMINDER_CREATED'))

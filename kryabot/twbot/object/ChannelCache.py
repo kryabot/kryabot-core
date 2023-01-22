@@ -9,7 +9,7 @@ class ChannelCache(Base):
     instance = None
 
     def __init__(self):
-        self.channels: Dict(str, Channel) = {}
+        self.channels: Dict[str, Channel] = {}
 
     @staticmethod
     def get_instance()->ChannelCache:
