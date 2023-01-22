@@ -69,7 +69,8 @@ async def get_active_oauth_data(kb_user_id, force_refresh=False, sec_diff=30):
                 return None
             auth_data = auth_data[0]
         except Exception as e:
-            api.logger.error('On token refresh: {}'.format(str(e)))
+            api.logger.info("Failed to refresh Twitch auth for kb user {}".format(kb_user_id))
+            api.logger.exception(e)
 
     return auth_data
 
