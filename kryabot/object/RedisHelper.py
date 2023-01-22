@@ -225,7 +225,7 @@ class RedisHelper(Base):
         def decorator(function):
             @functools.wraps(function)
             async def wrapper(*args, **kwargs):
-                redis_client = await RedisHelper.get_instance()
+                redis_client = RedisHelper.get_instance()
                 redis_client.logger.info("Listening queue %s", queue_name)
                 while True:
                     try:
