@@ -5,7 +5,7 @@ from tgbot.commands.common.user_data import get_user_data, format_user_data
 
 class Whoami(BaseCommand):
     command_names = ['whoami', 'who']
-    access_level = UserAccess.NOT_VERIFIED
+    access_level = UserAccess.UNKNOWN
 
     def __init__(self, event, parsed):
         super().__init__(event, parsed, Whoami.access_level)

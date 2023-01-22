@@ -4,7 +4,7 @@ from tgbot.commands.base import BaseCommand
 
 class Invite(BaseCommand):
     command_names = ['invite']
-    access_level = UserAccess.NOT_VERIFIED
+    access_level = UserAccess.UNKNOWN
 
     def __init__(self, event, parsed):
         super().__init__(event, parsed, Invite.access_level)
