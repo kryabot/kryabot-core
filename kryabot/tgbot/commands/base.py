@@ -93,6 +93,7 @@ class BaseCommand:
         return self.translator.getLangTranslation(self.bot_lang, key)
 
     async def can_process(self)->bool:
+        self.logger.info("Command: {}, required right: {}, user {} got rights {}".format(self.__class__, self.min_level, self.sender['user_id'], self.user_level))
         if self.channel is None:
             return False
 
