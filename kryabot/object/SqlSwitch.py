@@ -13,7 +13,7 @@ async def getSql(sqlType):
         'update_user_twitch_id': 'UPDATE user SET tw_id = %s WHERE user_id = %s',
         'find_user_right': 'SELECT admin, blacklisted FROM user_right WHERE channel_id = %s AND user_id = %s',
         'find_channel_notices': 'SELECT * FROM channel_notice',
-        'find_auto_join': 'SELECT c.channel_id, c.channel_name, c.channel_name, c.default_notification, c.auto_join, c.trigger_period, c.scan_messages, c.on_spam_detect, c.priority, u.user_id, u.name, u.dname, u.tw_id, u.is_admin FROM channel c JOIN user u on c.user_id = u.user_id WHERE auto_join = TRUE ORDER BY c.priority DESC',
+        'find_auto_join': 'SELECT c.channel_id, c.channel_name, c.channel_name, c.default_notification, c.auto_join, c.trigger_period, c.scan_messages, c.on_spam_detect, c.priority, u.user_id, u.name, u.dname, u.tw_id, u.is_admin FROM channel c JOIN user u on c.user_id = u.user_id LEFT JOIN auth ON auth.user_id = u.user_id WHERE c.auto_join = TRUE and auth.type = "BOT" ORDER BY c.priority DESC',
         'find_channel_commands': 'SELECT * FROM channel_command ORDER BY level DESC',
         'find_channel_command_options': 'SELECT cco.channel_command_option_id, cco.channel_command_id, cco.response, cco.ratio FROM channel_command_option cco',
         'find_channel_commands_by_id': 'SELECT * FROM channel_command where channel_command.channel_id = %s ORDER BY level DESC',
