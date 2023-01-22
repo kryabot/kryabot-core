@@ -31,7 +31,7 @@ class BaseCommand:
         self.channel = None
         self.sender = None
         self.chat = None
-        self.min_level = min_level
+        self.min_level: UserAccess = min_level
         self.user_level: List[UserAccess] = [UserAccess.UNKNOWN]
         self.admins = []
         self.bot_lang = 'en'

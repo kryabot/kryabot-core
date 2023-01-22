@@ -17,7 +17,7 @@ async def refresh_channel_token(channel, force_refresh=False):
 
     try:
         return channel[0]
-    except IndexError:
+    except (IndexError, KeyError):
         return channel
 
 
