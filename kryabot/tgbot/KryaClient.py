@@ -17,6 +17,7 @@ from datetime import datetime, date, timedelta
 from telethon.utils import get_peer_id
 
 from api.twitchv5.exception import ExpiredAuthToken
+from object.BotConfig import BotConfig
 from object.Database import Database
 from object.ApiHelper import ApiHelper
 from object.Pinger import Pinger
@@ -55,9 +56,9 @@ def _get_reporter():
 
 
 class KryaClient(TelegramClient):
-    def __init__(self, loop=None, logger=None, cfg=None):
+    def __init__(self, loop=None, logger=None):
         self.logger = logger
-        self.cfg = cfg
+        self.cfg = BotConfig.get_instance()
         self.db = Database.get_instance()
         self.api = ApiHelper.get_instance()
         self.translator = Translator.getInstance()
