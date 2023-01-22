@@ -79,9 +79,9 @@ class TwitchHandler(Base):
     async def init_scheduler(self):
         self.logger.info("Registering scheduler tasks...")
         aioschedule.every(1).hours.do(self.schedule_eventsub_register)
-        aioschedule.every(10).minutes.do(self.sync_vips)
+        # aioschedule.every(10).minutes.do(self.sync_vips)
         aioschedule.every(10).minutes.do(self.sync_mods)
-        aioschedule.every(10).minutes.do(self.sync_editors)
+        # aioschedule.every(10).minutes.do(self.sync_editors)
 
     async def start(self):
         await self.bot_data_update_all()
@@ -581,7 +581,7 @@ class TwitchHandler(Base):
     async def _sync(self, right_type: str, fetch_method: callable):
         # right_type: WHITELIST, BLACKLIST, SUDO
         for channel in ChannelCache.iter():
-            self.logger.info("Sync {} {} for {}".format(right_type, fetch_method.__name__, channel))
+            self.logger.info("Sync {} {} for {}".format(right_type, fetch_method.__name__, channel.channel_name))
             changed: bool = False
 
             try:
