@@ -40,7 +40,7 @@ class Response(Base):
                 if channel.access_rights is None:
                     user = await self.fetch_user_by_username(channel.name)
                     channel.access_rights, (await self.get_me())._mod = await self.api.twitch.is_bot_mod(broadcaster_id=user['id'])
-                    self.api.logger.info("[{}] access: {}, mod: {}".format(user['id'], channel.access_rights, self.me._mod))
+                    self.api.logger.info("[{}] access: {}, mod: {}".format(user['id'], channel.access_rights, self.me.is_mod))
                 return channel
             except (KeyError, TypeError) as err:
                 self.api.logger.exception(err)
