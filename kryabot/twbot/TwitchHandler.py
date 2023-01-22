@@ -4,7 +4,7 @@ import aioschedule
 from typing import List, Dict
 from datetime import datetime
 
-from api.twitch_events import EventSubType, EventSubStatus
+import api.twitch_events as twitch_events
 from object.ApiHelper import ApiHelper
 from object.Base import Base
 from object.BotConfig import BotConfig
@@ -480,31 +480,31 @@ class TwitchHandler(Base):
         await asyncio.sleep(30)
 
         required_broadcaster_topics = [
-            EventSubType.CHANNEL_SUBSCRIBE,
-            EventSubType.CHANNEL_SUBSCRIBE_END,
-            EventSubType.CHANNEL_SUBSCRIBE_GIFT,
-            EventSubType.CHANNEL_SUBSCRIBE_MESSAGE,
-            EventSubType.CHANNEL_RAID,
-            EventSubType.CHANNEL_GOAL_BEGIN,
-            EventSubType.CHANNEL_GOAL_END,
-            EventSubType.CHANNEL_GOAL_PROGRESS,
-            EventSubType.CHANNEL_POLL_BEGIN,
-            EventSubType.CHANNEL_POLL_PROGRESS,
-            EventSubType.CHANNEL_POLL_END,
-            EventSubType.CHANNEL_POINTS_REDEMPTION_NEW,
-            EventSubType.CHANNEL_POINTS_REDEMPTION_UPDATE,
-            EventSubType.CHANNEL_HYPE_TRAIN_BEGIN,
-            EventSubType.CHANNEL_HYPE_TRAIN_PROGRESS,
-            EventSubType.CHANNEL_HYPE_TRAIN_END,
-            EventSubType.CHANNEL_MOD_ADD,
-            EventSubType.CHANNEL_MOD_REMOVE,
-            EventSubType.CHANNEL_PREDICTION_BEGIN,
-            EventSubType.CHANNEL_PREDICTION_END
+            twitch_events.EventSubType.CHANNEL_SUBSCRIBE,
+            twitch_events.EventSubType.CHANNEL_SUBSCRIBE_END,
+            twitch_events.EventSubType.CHANNEL_SUBSCRIBE_GIFT,
+            twitch_events.EventSubType.CHANNEL_SUBSCRIBE_MESSAGE,
+            twitch_events.EventSubType.CHANNEL_RAID,
+            twitch_events.EventSubType.CHANNEL_GOAL_BEGIN,
+            twitch_events.EventSubType.CHANNEL_GOAL_END,
+            twitch_events.EventSubType.CHANNEL_GOAL_PROGRESS,
+            twitch_events.EventSubType.CHANNEL_POLL_BEGIN,
+            twitch_events.EventSubType.CHANNEL_POLL_PROGRESS,
+            twitch_events.EventSubType.CHANNEL_POLL_END,
+            twitch_events.EventSubType.CHANNEL_POINTS_REDEMPTION_NEW,
+            twitch_events.EventSubType.CHANNEL_POINTS_REDEMPTION_UPDATE,
+            twitch_events.EventSubType.CHANNEL_HYPE_TRAIN_BEGIN,
+            twitch_events.EventSubType.CHANNEL_HYPE_TRAIN_PROGRESS,
+            twitch_events.EventSubType.CHANNEL_HYPE_TRAIN_END,
+            twitch_events.EventSubType.CHANNEL_MOD_ADD,
+            twitch_events.EventSubType.CHANNEL_MOD_REMOVE,
+            twitch_events.EventSubType.CHANNEL_PREDICTION_BEGIN,
+            twitch_events.EventSubType.CHANNEL_PREDICTION_END
         ]
 
         required_client_topics = [
-            EventSubType.AUTH_GRANTED,
-            EventSubType.AUTH_REVOKED,
+            twitch_events.EventSubType.AUTH_GRANTED,
+            twitch_events.EventSubType.AUTH_REVOKED,
         ]
 
         def filter_row(row, twitch_id)->bool:
@@ -542,8 +542,8 @@ class TwitchHandler(Base):
                 topic_event = next(filter(lambda row: row['type'] == topic.key, channel_events), None)
                 if topic_event:
                     # topic was already registered, check status
-                    status = EventSubStatus(topic_event['status'])
-                    if status != EventSubStatus.ENABLED:
+                    status = twitch_events.EventSubStatus(topic_event['status'])
+                    if status != twitch_events.EventSubStatus.ENABLED:
                         self.logger.info("[{}] Deleting not enabled event: {}".format(channel.tw_id, topic_event))
                         await self.api.twitch_events.delete(message_id=topic_event['id'])
                     else:
@@ -552,7 +552,7 @@ class TwitchHandler(Base):
 
                 self.logger.info("[{}] Creating broadcaster topic ${}".format(channel.tw_id, topic.key))
                 try:
-                    if topic.eq(EventSubType.CHANNEL_RAID):
+                    if topic.eq(twitch_events.EventSubType.CHANNEL_RAID):
                         resp = await self.api.twitch_events.create(topic=topic, to_broadcaster_user_id=channel.tw_id)
                     else:
                         resp = await self.api.twitch_events.create(topic=topic, broadcaster_id=channel.tw_id)
@@ -563,8 +563,8 @@ class TwitchHandler(Base):
         for topic in required_client_topics:
             topic_event = next(filter(lambda row: row['type'] == topic.key, current_events['data']), None)
             if topic_event:
-                status = EventSubStatus(topic_event['status'])
-                if status != EventSubStatus.ENABLED:
+                status = twitch_events.EventSubStatus(topic_event['status'])
+                if status != twitch_events.EventSubStatus.ENABLED:
                     self.logger.info("Deleting not enabled client event {}".format(topic_event))
                     await self.api.twitch_events.delete(message_id=topic_event['id'])
                 else:
