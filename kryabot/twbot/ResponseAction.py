@@ -33,6 +33,9 @@ class Response(Base):
         raise NotImplementedError
 
     async def get_channel(self) -> [Channel, None]:
+        if self.channel:
+            return self.channel
+
         tries = 0
         while tries < self.max_retries:
             try:
@@ -40,7 +43,8 @@ class Response(Base):
                 if channel.access_rights is None:
                     channel.access_rights, self.me._mod = await self.api.twitch.is_bot_mod(broadcaster_id=channel['id'])
                 return channel
-            except (KeyError, TypeError):
+            except (KeyError, TypeError) as err:
+                self.api.logger.exception(err)
                 await asyncio.sleep(tries / 2)
                 tries += 1
                 continue
@@ -61,7 +65,7 @@ class Response(Base):
         if not self.me:
             self.me = await self.get_me()
 
-        return self.me and self.me.is_mod and self.channel.access_rights
+        return self.me and self.me.is_mod and (await self.get_channel()).access_rights
 
     async def fetch_user_by_username(self, username: str):
         user = await self.api.twitch.get_users(usernames=[username])
