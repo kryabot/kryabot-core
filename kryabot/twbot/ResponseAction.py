@@ -27,10 +27,6 @@ class Response(Base):
 
     @property
     def api(self):
-        # Add redis to api helper if it was initialized without redis
-        if Response._api and not Response._api.redis:
-            Response._api.redis = Response.redis
-
         return Response._api
 
     async def process(self):

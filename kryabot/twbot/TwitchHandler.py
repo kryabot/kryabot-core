@@ -581,6 +581,7 @@ class TwitchHandler(Base):
     async def _sync(self, right_type: str, fetch_method: callable):
         # right_type: WHITELIST, BLACKLIST, SUDO
         for channel in ChannelCache.iter():
+            self.logger.info("Sync {} {} for {}".format(right_type, fetch_method.__name__, channel))
             changed: bool = False
 
             try:
@@ -604,7 +605,6 @@ class TwitchHandler(Base):
                 if not synced:
                     # add new
                     pass
-
 
             if changed:
                 await self.db.get_all_tg_chat_special_rights(channel_id=channel.channel_id)
