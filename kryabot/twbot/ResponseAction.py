@@ -40,7 +40,7 @@ class Response(Base):
                 if channel.access_rights is None:
                     user = await self.fetch_user_by_username(channel.name)
                     channel.access_rights, (await self.get_me())._mod = await self.api.twitch.is_bot_mod(broadcaster_id=user['id'])
-                    self.api.logger.info("[{}] access: {}, mod: {}".format(user['id'], channel.access_rights, self.me.is_mod))
+                    self.api.logger.info("[{}] access: {}, mod: {}".format(user['id'], channel.access_rights, (await self.get_me()).is_mod))
                 return channel
             except (KeyError, TypeError) as err:
                 self.api.logger.exception(err)
@@ -61,11 +61,11 @@ class Response(Base):
         if self.type == ResponseType.ACTION_JOIN:
             return True
 
-        if not self.channel:
-            self.channel = await self.get_channel()
-
         if not self.me:
             self.me = await self.get_me()
+
+        if not self.channel:
+            self.channel = await self.get_channel()
 
         return self.me and self.me.is_mod and self.channel.access_rights
 
