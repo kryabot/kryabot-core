@@ -5,9 +5,9 @@ class TwitchException(Exception):
     match_text: str = None
 
     def __init__(self, body: Dict):
-        self.error: str = body['error']
-        self.status: int = body['status']
-        self.nessage: str = body['message']
+        self.error: str = body.get('error', '')
+        self.status: int = body.get('status', 0)
+        self.message: str = body.get('message', '')
 
     @classmethod
     def matches(cls, body: Dict) -> bool:
