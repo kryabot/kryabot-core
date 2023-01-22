@@ -61,18 +61,18 @@ class BaseCommand:
 
     async def fill_user_rights(self):
         if self.sender is None or self.sender == [] or self.sender == {}:
-            self.user_level += UserAccess.NOT_VERIFIED
+            self.user_level.append(UserAccess.NOT_VERIFIED)
         else:
-            self.user_level += UserAccess.VERIFIED
+            self.user_level.append(UserAccess.VERIFIED)
 
         if self.event.message.sender_id in super_admin_list:
-            self.user_level += UserAccess.SUPER_ADMIN
+            self.user_level.append(UserAccess.SUPER_ADMIN)
         if self.sender['user_id'] == self.channel['user_id']:
-            self.user_level += UserAccess.CHAT_OWNER
+            self.user_level.append(UserAccess.CHAT_OWNER)
         if await self.is_chatsudo(self.sender['user_id'], self.event.message.sender_id):
-            self.user_level += UserAccess.CHAT_SUDO
+            self.user_level.append(UserAccess.CHAT_SUDO)
         if await self.is_chatadmin(self.event.message.sender_id):
-            self.user_level += UserAccess.CHAT_ADMIN
+            self.user_level.append(UserAccess.CHAT_ADMIN)
 
         # TODO: follow and sub flags (from cache, not from api!)
 
@@ -132,7 +132,8 @@ class BaseCommand:
 
     async def is_chatadmin(self, tg_user_id=None):
         if tg_user_id is None:
-            return self.user_level in [UserAccess.CHAT_ADMIN, UserAccess.CHAT_SUDO, UserAccess.CHAT_OWNER, UserAccess.SUPER_ADMIN]
+            any_of = [UserAccess.CHAT_ADMIN, UserAccess.CHAT_SUDO, UserAccess.CHAT_OWNER, UserAccess.SUPER_ADMIN]
+            return len(set(self.user_level).intersection(any_of)) > 0
 
         for admin in self.admins:
             if admin.id == tg_user_id:
