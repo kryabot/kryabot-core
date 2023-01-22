@@ -2,7 +2,7 @@ from api.betterttv import Betterttv
 from api.boosty import Boosty
 from api.frankerfacez import Frankerfacez
 from api.instagram import Instagram
-from api.twitch_events import TwitchEvents
+from api.twitchevents.twitch_events import TwitchEvents
 from api.vk import VK
 from api.twitchv5.TwitchClient import TwitchClient
 from api.guardbot import GuardBot

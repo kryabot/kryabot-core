@@ -1,7 +1,7 @@
 from typing import List
 from dateutil.parser import parse
 
-from api.twitch_events import EventSubType
+from api.twitchevents.twitch_events import EventSubType
 from infobot.UpdateBuilder import TwitchUpdate, UpdateAction
 from infobot.Listener import Listener
 from infobot.twitch.TwitchEvents import TwitchEvent

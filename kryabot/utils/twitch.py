@@ -2,8 +2,8 @@ import functools
 from datetime import datetime, timedelta
 
 from api.twitchv5.exception import ExpiredAuthToken
-import object.ApiHelper as ApiHelper
-import object.Database as Database
+import object.ApiHelper as ah
+import object.Database as database
 from utils import redis_key
 import asyncio
 
@@ -12,7 +12,7 @@ from utils.constants import BOT_TWITCH_ID, BOT_INTERNAL_ID
 
 async def refresh_channel_token(channel, force_refresh=False):
     new_data = await get_active_oauth_data(channel['user_id'], force_refresh=force_refresh)
-    db = Database.Database.get_instance()
+    db = database.Database.get_instance()
     channel = await db.get_auth_subchat(channel['tg_chat_id'])
 
     try:
@@ -22,7 +22,7 @@ async def refresh_channel_token(channel, force_refresh=False):
 
 
 async def get_active_oauth_data_broadcaster(broadcaster_id: int, force_refresh: bool = False, sec_diff: int = 30):
-    db = Database.Database.get_instance()
+    db = database.Database.get_instance()
     kb_user = await db.getUserRecordByTwitchId(broadcaster_id)
     if not kb_user or not kb_user[0]:
         raise IndexError('Failed to find kb user for twitch ID {}'.format(broadcaster_id))
@@ -31,8 +31,8 @@ async def get_active_oauth_data_broadcaster(broadcaster_id: int, force_refresh: 
 
 
 async def get_active_oauth_data(kb_user_id, force_refresh=False, sec_diff=30):
-    db = Database.Database.get_instance()
-    api = ApiHelper.ApiHelper.get_instance()
+    db = database.Database.get_instance()
+    api = ah.ApiHelper.get_instance()
 
     user = await db.getUserById(kb_user_id)
     if user is None or len(user) == 0:

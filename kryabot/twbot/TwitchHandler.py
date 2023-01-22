@@ -1,10 +1,10 @@
 import asyncio
 import logging
 import aioschedule
-from typing import List, Dict
+from typing import List
 from datetime import datetime
 
-import api.twitch_events as twitch_events
+import api.twitchevents.twitch_events as twitch_events
 from object.ApiHelper import ApiHelper
 from object.Base import Base
 from object.BotConfig import BotConfig
