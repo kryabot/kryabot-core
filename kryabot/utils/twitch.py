@@ -101,7 +101,7 @@ async def auth_request_with_retry(self, auth_id, request, *args, **kwargs):
     max_tries = 3
 
     auth_data = await get_active_oauth_data_broadcaster(auth_id)
-    while True:
+    while current_try <= max_tries:
         current_try += 1
         if current_try > 1:
             await asyncio.sleep(current_try)
