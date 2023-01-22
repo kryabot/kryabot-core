@@ -2,5 +2,4 @@
 
 cd $WORK_DIR
 
-
-./scripts/info_bot.sh start
+python kryabot/info_bot.py

@@ -2,5 +2,4 @@
 
 cd $WORK_DIR
 
-
-./scripts/guard_bot.sh start
+python kryabot/tg_bot.py
