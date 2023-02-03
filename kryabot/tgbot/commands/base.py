@@ -143,12 +143,21 @@ class BaseCommand:
         return False
 
     async def is_blacklisted(self, kb_id, tg_id)->bool:
+        if not self.channel:
+            return False
+
         return bool(await self.client.is_blacklisted(kb_user_id=kb_id, tg_user_id=tg_id, channel=self.channel))
 
     async def is_whitelisted(self, kb_id, tg_id)->bool:
+        if not self.channel:
+            return False
+
         return bool(await self.client.is_whitelisted(kb_user_id=kb_id, tg_user_id=tg_id, channel=self.channel))
 
     async def is_chatsudo(self, kb_id, tg_id)->bool:
+        if not self.channel:
+            return False
+
         return bool(await self.client.is_chatsudo(kb_user_id=kb_id, tg_user_id=tg_id, channel=self.channel))
 
     async def get_media_info(self, media=None):
