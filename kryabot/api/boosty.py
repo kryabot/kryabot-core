@@ -14,3 +14,8 @@ class Boosty(Core):
             url = '{}&offset={}'.format(url, offset)
 
         return await self.make_get_request(url)
+
+    async def get_stream_data(self, user: str):
+        # https://api.boosty.to/v1/blog/fasolka/video_stream
+        url = '{}/{}/video_stream'.format(self.base, user)
+        return await self.make_get_request(url)

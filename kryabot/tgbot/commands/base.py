@@ -67,9 +67,9 @@ class BaseCommand:
 
         if self.event.message.sender_id in super_admin_list:
             self.user_level.append(UserAccess.SUPER_ADMIN)
-        if self.sender['user_id'] == self.channel['user_id']:
+        if self.sender and self.channel and self.sender['user_id'] == self.channel['user_id']:
             self.user_level.append(UserAccess.CHAT_OWNER)
-        if await self.is_chatsudo(self.sender['user_id'], self.event.message.sender_id):
+        if self.sender and await self.is_chatsudo(self.sender['user_id'], self.event.message.sender_id):
             self.user_level.append(UserAccess.CHAT_SUDO)
         if await self.is_chatadmin(self.event.message.sender_id):
             self.user_level.append(UserAccess.CHAT_ADMIN)

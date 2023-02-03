@@ -124,3 +124,73 @@ class BoostyEvent(Event):
             await db.saveBoostEvent(self)
         except Exception as ex:
             self.profile.logger.error(ex)
+
+
+class BoostyStreamEvent(Event):
+    def __init__(self, profile: BoostyProfile):
+        super().__init__(profile)
+        self.profile: BoostyProfile = profile
+        self.title: str = None
+        self.start_time: datetime = None
+        self.required_level: str = None
+        self.likes: int = 0
+        self.online: int = 0
+
+        self.updated_data = {}
+        self.profile.last_stream_event = self
+
+        self.new_start: bool = False
+        self.new_update: bool = False
+        self.new_finish: bool = False
+
+    def _extract_data(self, data):
+        return {
+            self.to_datetime(self.get_attr(data, 'createdAt', None)),
+            self.get_attr(data, 'title', None),
+            self.get_attr(self.get_attr(data, 'subscriptionLevel', None), 'name', None),
+            self.get_attr(self.get_attr(data, 'count', None), 'likes', 0),
+            self.get_attr(self.get_attr(data, 'count', None), 'viewers', 0),
+        }
+
+    def patch(self, new_data):
+        self.updated_data = {}
+
+        new_start_time = None
+        new_title = None
+        new_required_level = None
+        new_likes = 0
+        new_online = 0
+
+        if new_data:
+            new_start_time, new_title, new_required_level, new_likes, new_online = self._extract_data(new_data)
+
+        if self.title != new_title and new_title is not None:
+            self.updated_data['title'] = new_title
+
+        if self.required_level != new_required_level and new_required_level is not None:
+            self.updated_data['required_level'] = new_required_level
+
+        self.new_start = new_start_time is not None and self.start_time is None
+        self.new_finish = new_start_time is None and self.start_time is not None
+        self.new_update = not self.new_start and self.updated_data != {}
+
+        self.start_time = new_start_time
+        self.title = new_title
+        self.required_level = new_required_level
+        self.likes = new_likes
+        self.online = new_online
+
+    def requires_dispatch(self) -> bool:
+        return self.new_start or self.new_update or self.new_finish
+
+    def stream_started(self) -> bool:
+        return self.new_start and not self.new_update
+
+    def stream_updated(self) -> bool:
+        return self.new_start and self.new_update
+
+    def stream_finished(self) -> bool:
+        return self.new_finish
+
+    def get_stream_url(self) -> str:
+        return "https://boosty.to/{}/streams/video_stream".format(self.profile.boosty_username)

@@ -15,7 +15,7 @@ from telethon import TelegramClient, events, Button
 from infobot import Event
 from infobot.Target import InfobotLang
 from infobot.TargetLink import TargetLink
-from infobot.boosty.BoostyEvents import BoostyEvent
+from infobot.boosty.BoostyEvents import BoostyEvent, BoostyStreamEvent
 from infobot.instagram.InstagramEvents import InstagramPostEvent, InstagramStoryEvent
 from infobot.twitch.TwitchEvents import TwitchEvent
 from object.Pinger import Pinger
@@ -159,6 +159,8 @@ class KryaInfoBot(TelegramClient):
                 await self.twitch_stream_event(links, event)
             elif isinstance(event, BoostyEvent):
                 await self.boosty_post_event(links, event)
+            elif isinstance(event, BoostyStreamEvent):
+                await self.boosty_stream_event(links, event)
             else:
                 raise ValueError('Received unsupported event type: ' + str(type(event)))
         except Exception as ex:
@@ -170,9 +172,9 @@ class KryaInfoBot(TelegramClient):
 
         if event.media_list:
             for media in event.media_list:
-                file = await self.manager.api.twitch.download_file_io(media.video_url or media.url)
-                file.seek(0)
-                files.append(file)
+                media_file = await self.manager.api.twitch.download_file_io(media.video_url or media.url)
+                media_file.seek(0)
+                files.append(media_file)
 
         self.logger.info('Sending instagram post event after getting files')
         
@@ -306,6 +308,29 @@ class KryaInfoBot(TelegramClient):
                 await self.report_to_monitoring('ChannelPrivateError. Target ID: {}, TG ID: {}'.format(link.target.id, link.target.target_id), True)
             except Exception as ex:
                 await self.exception_reporter(ex, 'twitch_stream_event')
+
+    async def boosty_stream_event(self, links: List[TargetLink], event: BoostyStreamEvent):
+        for link in links:
+            text = None
+            button = None
+
+            if event.new_start:
+                base_text = self.translator.getLangTranslation(link.target.get_lang(), 'BOOSTY_STREAM_NOTIFICATION_START').format(event.profile.boosty_username)
+                text = '<b>{}</b>\nRequired level: {}\n\n▶️ {}'.format(event.title if event.title else '', event.required_level if event.required_level else '', base_text)
+                button = [Button.url('{} 👀'.format(event.profile.boosty_username), url=event.get_stream_url())]
+            elif event.new_update:
+                pass
+            elif event.new_finish:
+                base_text = self.translator.getLangTranslation(link.target.get_lang(), 'BOOSTY_STREAM_NOTIFICATION_FINISH').format(event.profile.boosty_username)
+                text = '⏹ ' + base_text
+            else:
+                self.logger.info("Received BoostyStreamEvent but it does not requires publishing: {}".format(event))
+
+            if text:
+                try:
+                    event_message = await self.send_message(link.target.target_id, message=text, buttons=button, link_preview=False, parse_mode='html')
+                except Exception as err:
+                    self.logger.exception(err)
 
     async def boosty_post_event(self, links: List[TargetLink], event: BoostyEvent):
         max_length = 1000

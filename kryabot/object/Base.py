@@ -88,4 +88,6 @@ class Base:
             return default
 
     def to_datetime(self, time: int)->datetime:
+        if time is None:
+            return None
         return datetime.utcfromtimestamp(time)

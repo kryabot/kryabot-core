@@ -3,7 +3,7 @@ from typing import List
 
 from infobot.UpdateBuilder import BoostyUpdate
 from infobot.Listener import Listener
-from infobot.boosty.BoostyEvents import BoostyEvent
+from infobot.boosty.BoostyEvents import BoostyEvent, BoostyStreamEvent
 from infobot.boosty.BoostyProfile import BoostyProfile
 
 
@@ -42,6 +42,14 @@ class BoostyListener(Listener):
 
                     event = BoostyEvent(profile, post)
                     self.loop.create_task(self.manager.event(event))
+
+            stream_data = await self.manager.api.boosty.get_stream_data(profile.boosty_username)
+            stream_event = profile.last_stream_event if profile.last_stream_event else BoostyStreamEvent(profile)
+            stream_event.patch(stream_data)
+
+            if stream_event.requires_dispatch():
+                self.loop.create_task(self.manager.event(stream_event))
+
 
     async def update_data(self, start: bool = False)->None:
         self.logger.info('Updating boosty listener data')

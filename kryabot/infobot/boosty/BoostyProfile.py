@@ -8,7 +8,7 @@ class BoostyProfile(Profile):
     def __init__(self, raw, ts):
         self.boosty_username: str = None
         self.last_post_id: str = None
-
+        self.last_stream_event = None
         self.post_history: List = []
 
         super().__init__(raw, ts, LinkTable.BOOSTY)
