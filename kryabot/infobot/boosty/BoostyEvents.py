@@ -163,7 +163,7 @@ class BoostyStreamEvent(Event):
 
         if new_data:
             new_start_time, new_title, new_required_level, new_likes, new_online = self._extract_data(new_data)
-        print(self._extract_data(new_data))
+
         if self.title != new_title and new_title is not None:
             self.updated_data['title'] = new_title
 
