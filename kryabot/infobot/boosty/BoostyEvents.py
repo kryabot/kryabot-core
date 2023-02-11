@@ -144,13 +144,13 @@ class BoostyStreamEvent(Event):
         self.new_finish: bool = False
 
     def _extract_data(self, data):
-        return {
+        return (
             self.to_datetime(self.get_attr(data, 'createdAt', None)),
             self.get_attr(data, 'title', None),
             self.get_attr(self.get_attr(data, 'subscriptionLevel', None), 'name', None),
             self.get_attr(self.get_attr(data, 'count', None), 'likes', 0),
             self.get_attr(self.get_attr(data, 'count', None), 'viewers', 0),
-        }
+        )
 
     def patch(self, new_data):
         self.updated_data = {}
@@ -163,7 +163,7 @@ class BoostyStreamEvent(Event):
 
         if new_data:
             new_start_time, new_title, new_required_level, new_likes, new_online = self._extract_data(new_data)
-
+        print(self._extract_data(new_data))
         if self.title != new_title and new_title is not None:
             self.updated_data['title'] = new_title
 
