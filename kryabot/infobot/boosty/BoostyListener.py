@@ -50,7 +50,6 @@ class BoostyListener(Listener):
             if stream_event.requires_dispatch():
                 self.loop.create_task(self.manager.event(stream_event))
 
-
     async def update_data(self, start: bool = False)->None:
         self.logger.info('Updating boosty listener data')
 

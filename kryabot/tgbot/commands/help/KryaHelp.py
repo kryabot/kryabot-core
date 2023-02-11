@@ -34,7 +34,7 @@ class KryaHelp(BaseCommand):
         reply += nl + self.get_translation('HELP_SETTING_INVITATION').format(
             val=label_yes if self.channel['enabled_join'] else label_no)
         reply += nl + self.get_translation('HELP_SETTING_MODE').format(val=channel_mode)
-        reply += nl + self.get_translation('HELP_SETTING_KICK_MODE').format(val=self.channel['kick_mode'])
+        reply += nl + self.get_translation('HELP_SETTING_KICK_MODE').format(self.channel['kick_mode'])
         reply += nl + self.get_translation('HELP_SETTING_AUTOKICK').format(
             val=label_yes if self.channel['auto_kick'] else label_no)
         reply += nl + self.get_translation('HELP_SETTING_AUTOMASSKICK').format(
