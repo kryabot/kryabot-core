@@ -10,7 +10,7 @@ from scrape.twitch_message_history import replicate_messages
 class Random(BaseCommand):
     command_names = ['random']
     access_level = UserAccess.CHAT_ADMIN
-    semaphore = asyncio.Semaphore(1)
+    semaphore = None
 
     def __init__(self, event, parsed):
         super().__init__(event, parsed, Random.access_level)
@@ -25,6 +25,9 @@ class Random(BaseCommand):
             return
 
         await self.db.set_random_cooldown(self.channel['tg_chat_id'], self.sender['user_id'])
+
+        if Random.semaphore is None:
+            Random.semaphore = asyncio.Semaphore(1)
 
         async with Random.semaphore:
             try:
