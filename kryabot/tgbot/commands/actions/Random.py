@@ -42,7 +42,7 @@ class Random(BaseCommand):
         # Check last existing message
         # avoid fetching if last message was within 7 days
         latest: TwitchMessage = await TwitchMessage.getLatestUserMessageInChannel(channel_id=self.channel['tw_id'], user_id=self.sender['tw_id'])
-        if datetime.utcnow() - latest.sent_at > timedelta(days=7):
+        if latest and datetime.utcnow() - latest.sent_at > timedelta(days=7):
             return
 
         await replicate_messages(channel_name=self.channel['name'], user_id=self.sender['tw_id'])
