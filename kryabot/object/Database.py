@@ -875,7 +875,7 @@ class Database(Base):
         return bool(exists)
 
     async def set_random_cooldown(self, tg_chat_id, tg_user_id, seconds=60):
-        cache_key = redis_key.get_tg_cd_whoami(tg_chat_id, tg_user_id)
+        cache_key = redis_key.get_tg_cd_random(tg_chat_id, tg_user_id)
         await self.redis.set_value_by_key(key=cache_key, val=tg_chat_id, expire=seconds)
 
     async def is_cooldown_inventory(self, tg_chat_id, tg_user_id) -> bool:
