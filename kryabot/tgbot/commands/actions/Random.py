@@ -9,7 +9,7 @@ from scrape.twitch_message_history import replicate_messages
 
 class Random(BaseCommand):
     command_names = ['random']
-    access_level = UserAccess.SUBSCRIBER
+    access_level = UserAccess.CHAT_ADMIN
     semaphore = asyncio.Semaphore(1)
 
     def __init__(self, event, parsed):
