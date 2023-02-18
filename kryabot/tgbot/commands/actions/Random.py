@@ -45,4 +45,9 @@ class Random(BaseCommand):
         if latest and datetime.utcnow() - latest.sent_at > timedelta(days=7):
             return
 
-        await replicate_messages(channel_name=self.channel['name'], user_id=self.sender['tw_id'])
+        broadcaster = await self.db.getUserRecordByTwitchId(self.channel['tw_id'])
+        if not broadcaster or not broadcaster[0]:
+            self.logger.error("Failed to find user record by twitch id: {}".format(self.channel['tw_id']))
+            return
+
+        await replicate_messages(channel_name=broadcaster['name'], user_id=self.sender['tw_id'])
