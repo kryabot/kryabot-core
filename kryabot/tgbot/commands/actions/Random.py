@@ -50,4 +50,4 @@ class Random(BaseCommand):
             self.logger.error("Failed to find user record by twitch id: {}".format(self.channel['tw_id']))
             return
 
-        await replicate_messages(channel_name=broadcaster['name'], user_id=self.sender['tw_id'])
+        await replicate_messages(channel_name=broadcaster[0]['name'], user_id=self.sender['tw_id'])
