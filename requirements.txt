@@ -22,3 +22,5 @@ aioschedule
 selenium
 ecs-logging
 aiocache[redis]
+sqlalchemy
+asyncpg

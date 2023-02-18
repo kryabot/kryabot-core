@@ -137,7 +137,7 @@ class Listener:
         :param kwargs:
         :return:
         """
-        raise NotImplemented('Method Listener.get_new_profile must be overridden')
+        raise NotImplementedError('Method Listener.get_new_profile must be overridden')
 
     async def handle_new_profile(self, profile: Profile):
         """

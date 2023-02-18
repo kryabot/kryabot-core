@@ -68,6 +68,10 @@ def get_tg_cd_whoami(tg_chat_id, tg_user_id):
     return '{}cd.whoami:{}:{}'.format(tg_prefix, tg_chat_id, tg_user_id)
 
 
+def get_tg_cd_random(tg_chat_id, tg_user_id):
+    return '{}cd.random:{}:{}'.format(tg_prefix, tg_chat_id, tg_user_id)
+
+
 def get_tg_cd_inventory(tg_chat_id, tg_user_id):
     return '{}cd.inventory:{}:{}'.format(tg_prefix, tg_chat_id, tg_user_id)
 

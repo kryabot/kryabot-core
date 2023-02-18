@@ -59,3 +59,6 @@ class BotConfig:
 
     def getInfoManagerConfig(self):
         return self.data['INFOMANAGER']
+
+    def getPostgresqlConfig(self):
+        return self.data['POSTGRESQL']

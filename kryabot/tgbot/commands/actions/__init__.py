@@ -14,3 +14,4 @@ from tgbot.commands.actions.GetMessageDetails import GetMessageDetails
 from tgbot.commands.actions.SubHistory import SubHistory
 from tgbot.commands.actions.AddHelper import AddHelper
 from tgbot.commands.actions.DLCoub import DLCoub
+from tgbot.commands.actions.Random import Random
