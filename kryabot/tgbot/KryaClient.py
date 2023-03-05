@@ -17,6 +17,8 @@ from datetime import datetime, date, timedelta
 from telethon.utils import get_peer_id
 
 from api.twitchv5.exception import ExpiredAuthToken
+from models.dao.BotTask import BotTask, TaskType
+from models.dao.TwitchMessage import TwitchMessage
 from object.BotConfig import BotConfig
 from object.Database import Database
 from object.ApiHelper import ApiHelper
@@ -24,6 +26,7 @@ from object.Pinger import Pinger
 from object.RedisHelper import RedisHelper
 from object.System import System
 from object.Translator import Translator
+from scheduler.scheduler import Scheduler
 from tgbot.Moderation import Moderation
 import tgbot.events.handlers as krya_events
 from tgbot.events.utils import is_valid_channel
@@ -104,6 +107,7 @@ class KryaClient(TelegramClient):
         await self.update_data()
         self.loop.create_task(Pinger(System.KRYABOT_TELEGRAM, self.logger, self.db.redis).run_task())
         self.loop.create_task(self.db.redis.start_listener(self.redis_subscribe))
+        self.loop.create_task(self.bot_task_processor())
 
         GlobalEventFactory.start_all(self)
 
@@ -1240,3 +1244,44 @@ class KryaClient(TelegramClient):
                 await kick_msg.delete()
         else:
             self.logger.info("Unhandled request type: %s", event)
+
+    async def task_create_tasks_for_message_export(self):
+        members = await self.db.getAllTgMembers()
+        chats = await self.db.getTgChatAvailChannelsWithAuth()
+        tasks = []
+        ids = []
+        for member in members:
+            if member['tg_user_id'] not in ids:
+                ids.append(member['tg_user_id'])
+
+        users = await self.db.getUsersByTgId(ids)
+
+        for member in members:
+            user = next(filter(lambda row: row['tg_id'] == member['tg_user_id'], users), None)
+            if not user:
+                self.logger.info("Failed to find user data for member: {}".format(member))
+                continue
+
+            channel = next(filter(lambda row: row['tg_chat_id'] == member['tg_chat_id'] , chats), None)
+            if not channel:
+                self.logger.info("Failed to find channel data for member: {}".format(member))
+                continue
+
+            latest: TwitchMessage = await TwitchMessage.getLatestUserMessageInChannel(channel_id=channel['tw_id'], user_id=user['tw_id'])
+            if latest and datetime.utcnow() - latest.sent_at > timedelta(days=7):
+                self.logger.info("Skipping task creation for user {}".format(user))
+                continue
+
+            task = BotTask.createTask(TaskType.FETCH_TWITCH_MESSAGES, request={"channel_name": channel['name'], "user_id": user['tw_id']})
+            tasks.append(task)
+
+        if tasks:
+            tasks[0].save(tasks)
+
+    async def bot_task_processor(self):
+        try:
+            self.logger.info("Starting task scheduler")
+            engine = Scheduler()
+            await engine.run()
+        except Exception as ex:
+            await self.report_exception(ex, 'bot_task_processor')

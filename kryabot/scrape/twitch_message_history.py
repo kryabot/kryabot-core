@@ -5,17 +5,17 @@ from api.twitchgql.TwitchGraph import TwitchGraph
 from models.dao.TwitchMessage import TwitchMessage
 
 
-async def replicate_messages(channel_name: str, user_id: int) -> int:
+async def replicate_messages(channel_name: str, user_id: int, cursor: str, progress_func=None) -> int:
+    print(channel_name, user_id)
     client = TwitchGraph()
     count = 0
-    cursor = None
 
     while True:
         content = []
         can_continue: bool = False
         responses = await client.get_message_history(channel_login=channel_name, user_id=user_id, cursor=cursor)
         for response in responses:
-            if 'error' in response:
+            if 'errors' in response or 'error' in response:
                 raise ValueError(response)
 
             if 'data' not in response:
@@ -28,7 +28,10 @@ async def replicate_messages(channel_name: str, user_id: int) -> int:
                     continue
 
                 message_text = row['node']['content']['text']
-                sender_id = int(row['node']['sender']['id'])
+                if row['node']['sender']:
+                    sender_id = int(row['node']['sender']['id'])
+                else:
+                    sender_id = int(user_id)
                 sent_at = dateutil.parser.isoparse(row['node']['sentAt'])
                 sent_at = sent_at.replace(tzinfo=None)
                 message_id = row['node']['id']
@@ -41,6 +44,8 @@ async def replicate_messages(channel_name: str, user_id: int) -> int:
         if content:
             try:
                 await content[0].save(content)
+                if progress_func:
+                    await progress_func(cursor)
                 count = count + len(content)
             except IntegrityError as integrityErr:
                 if 'UniqueViolationError' in str(integrityErr.orig):

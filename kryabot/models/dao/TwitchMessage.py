@@ -2,7 +2,7 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import DateTime
-from sqlalchemy.sql.functions import random
+from sqlalchemy.sql.functions import random, func
 from sqlalchemy.orm import declarative_base
 from utils.DaoUtils import DaoUtils
 from sqlalchemy import select
@@ -35,6 +35,13 @@ class TwitchMessage(Base, DaoUtils):
         response = await DaoUtils.execute_first(query)
 
         return response[0] if response else None
+
+    @staticmethod
+    async def getCountOfUserMessagesInChannel(channel_id: int, user_id: int) -> int:
+        query = select(func.count(TwitchMessage.message_id)).where(TwitchMessage.channel_id == channel_id, TwitchMessage.user_id == user_id)
+        response = await DaoUtils.execute_first(query)
+
+        return response[0] if response else 0
 
     @staticmethod
     async def getLatestUserMessageInChannel(channel_id: int, user_id: int):
